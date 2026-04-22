@@ -1,25 +1,25 @@
-prompt_id,strategy,phase,text
-A-D-01,A,divergence,What would this look like for a first-year student on their busiest week?
-A-D-02,A,divergence,Imagine an international student arriving this month; what would help most?
-A-D-03,A,divergence,If accessibility was the starting point, what idea changes first?
-A-D-04,A,divergence,How would this work for someone who commutes 2 hours daily?
-A-C-01,A,convergence,Which idea helps the widest range of students without losing focus?
-A-C-02,A,convergence,If you had to pick one user group first, which idea fits them best?
-A-C-03,A,convergence,Which option still works when campus is crowded and time is limited?
-A-C-04,A,convergence,Which idea remains useful after the novelty wears off?
-B-D-01,B,divergence,Assume budget is very small; what is a lightweight version of your idea?
-B-D-02,B,divergence,If implementation had to start next month, what could be piloted quickly?
-B-D-03,B,divergence,If no app is allowed, how else could this be solved?
-B-D-04,B,divergence,If this had to run with existing campus spaces only, what could you do?
-B-C-01,B,convergence,Which idea has the best impact-to-effort ratio?
-B-C-02,B,convergence,Which concept can be tested in 2 weeks with minimal risk?
-B-C-03,B,convergence,Which option depends least on uncertain resources?
-B-C-04,B,convergence,Which idea is easiest to explain in one clear sentence?
-C-D-01,C,divergence,Pick one idea and add one concrete user journey step.
-C-D-02,C,divergence,What would a student see do and feel in the first 5 minutes?
-C-D-03,C,divergence,What failure case could happen and how might you prevent it?
-C-D-04,C,divergence,What simple evidence could support this idea?
-C-C-01,C,convergence,Which idea has the clearest success metric?
-C-C-02,C,convergence,What is the strongest argument against your top idea and your response?
-C-C-03,C,convergence,What assumption is most risky and how would you test it first?
-C-C-04,C,convergence,Which concept has the strongest next action for a real pilot?
+prompt_id,strategy,phase,literature_basis,text
+P-D-01,perspective_shift,divergence,Galinsky & Moskowitz 2000,What would this look like for a commuter student on their busiest week?
+P-D-02,perspective_shift,divergence,Galinsky & Moskowitz 2000,"Imagine an international first-year student hearing this for the first time; what would help most?"
+P-D-03,perspective_shift,divergence,Galinsky & Moskowitz 2000,"If accessibility were the starting point, what would change first?"
+P-D-04,perspective_shift,divergence,Galinsky & Moskowitz 2000,"How would this idea change for a student with little time between classes?"
+P-C-01,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which idea works best across different student types without losing focus?"
+P-C-02,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which idea still makes sense if a student has to use it alone?"
+P-C-03,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which option is easiest to understand from a new student's point of view?"
+P-C-04,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which idea is the most robust when circumstances change?"
+P-D-05,constraint_reframing,divergence,Stokes 2005,"If budget were nearly zero, what small version of this idea would still be useful?"
+P-D-06,constraint_reframing,divergence,Stokes 2005,"If this had to start next month, what is the smallest pilot you could run?"
+P-D-07,constraint_reframing,divergence,Stokes 2005,"If no app were allowed, how else could this problem be solved?"
+P-D-08,constraint_reframing,divergence,Stokes 2005,"If you could only use existing campus spaces, what would you do?"
+P-C-05,constraint_reframing,convergence,Stokes 2005,"Which idea has the best impact-to-effort ratio?"
+P-C-06,constraint_reframing,convergence,Stokes 2005,"Which concept is easiest to pilot with the resources already available?"
+P-C-07,constraint_reframing,convergence,Stokes 2005,"Which option depends least on uncertain funding or staffing?"
+P-C-08,constraint_reframing,convergence,Stokes 2005,"Which idea can be explained in one clear sentence?"
+P-D-09,elaboration_evidence,divergence,Finke et al. 1992,"Pick one idea and add one concrete user journey step."
+P-D-10,elaboration_evidence,divergence,Finke et al. 1992,"What would a student actually see, do, or feel in the first five minutes?"
+P-D-11,elaboration_evidence,divergence,Finke et al. 1992,"What failure case could happen, and how might you prevent it?"
+P-D-12,elaboration_evidence,divergence,Finke et al. 1992,"What simple evidence would make this idea more convincing?"
+P-C-09,elaboration_evidence,convergence,Finke et al. 1992,"Which idea has the clearest success metric?"
+P-C-10,elaboration_evidence,convergence,Finke et al. 1992,"What is the strongest argument against your top idea, and how would you answer it?"
+P-C-11,elaboration_evidence,convergence,Finke et al. 1992,"Which idea is easiest to test in a small pilot first?"
+P-C-12,elaboration_evidence,convergence,Finke et al. 1992,"Which concept has the strongest next action for a real trial?"

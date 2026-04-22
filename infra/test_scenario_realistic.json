@@ -1,0 +1,71 @@
+{
+  "session_id": "S_REALISTIC",
+  "group_id": "G_REALISTIC",
+  "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+  "model": "google/gemma-4-e4b",
+  "theme": "How might TU Delft improve first-year transition and belonging?",
+  "log_path": "data/prompt_log.csv",
+  "seed_ideas": [
+    "peer connections",
+    "campus resources",
+    "student events"
+  ],
+  "mode_combo": {
+    "elicitation": "perspective_shift",
+    "style": "passive",
+    "initiative": "proactive"
+  },
+  "temperature": 0.35,
+  "max_tokens": 60,
+  "timeout_seconds": 3.0,
+  "turns": [
+    {
+      "speaker": "P1",
+      "text": "I think the main issue is that first-years don't know each other or the campus.",
+      "phase": "divergence",
+      "prompt_id": "P-D-04"
+    },
+    {
+      "speaker": "P2",
+      "text": "Yeah, but also the curriculum is intense and they're overwhelmed with lectures.",
+      "phase": "divergence",
+      "prompt_id": "P-D-05"
+    },
+    {
+      "speaker": "P1",
+      "text": "That's true, but social connection might actually help them manage the stress better.",
+      "phase": "divergence",
+      "prompt_id": "P-D-06"
+    },
+    {
+      "speaker": "P2",
+      "text": "So we need something that's not too time-consuming for them?",
+      "phase": "divergence",
+      "prompt_id": "P-D-07"
+    },
+    {
+      "speaker": "P1",
+      "text": "Exactly. Low commitment, easy to access, happens naturally.",
+      "phase": "convergence",
+      "prompt_id": "P-C-04"
+    },
+    {
+      "speaker": "P2",
+      "text": "Like study buddy groups that meet in the library or residence halls?",
+      "phase": "convergence",
+      "prompt_id": "P-C-05"
+    },
+    {
+      "speaker": "P1",
+      "text": "Perfect. And maybe we match them by course or major?",
+      "phase": "convergence",
+      "prompt_id": "P-C-06"
+    },
+    {
+      "speaker": "P2",
+      "text": "That could scale easily. Who would coordinate it?",
+      "phase": "convergence",
+      "prompt_id": "P-C-07"
+    }
+  ]
+}

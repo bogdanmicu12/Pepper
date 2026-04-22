@@ -1,0 +1,7 @@
+session_id,group_id,timestamp,phase,strategy,prompt_id,prompt_text,operator_trigger,transition_reason,response_window_start,response_window_end,notes
+S_BUDGET,G_BUDGET,2026-04-22T18:15:00,divergence,perspective_shift,P-D-03,"If accessibility were the starting point, what would change first?",P-D-03,phase-matched prompt,2026-04-22T18:15:00,2026-04-22T18:15:00,
+S_BUDGET,G_BUDGET,2026-04-22T18:15:03,divergence,perspective_shift,P-D-04,How would this idea change for a student with little time between classes?,P-D-04,phase-matched prompt,2026-04-22T18:15:03,2026-04-22T18:15:03,
+S_BUDGET,G_BUDGET,2026-04-22T18:15:06,divergence,constraint_reframing,P-D-05,"If budget were nearly zero, what small version of this idea would still be useful?",P-D-05,phase-matched prompt,2026-04-22T18:15:06,2026-04-22T18:15:06,
+S_BUDGET,G_BUDGET,2026-04-22T18:15:09,convergence,perspective_shift,P-C-04,Which idea is the most robust when circumstances change?,P-C-04,phase-matched prompt,2026-04-22T18:15:09,2026-04-22T18:15:09,
+S_BUDGET,G_BUDGET,2026-04-22T18:15:12,convergence,constraint_reframing,P-C-05,Which idea has the best impact-to-effort ratio?,P-C-05,phase-matched prompt,2026-04-22T18:15:12,2026-04-22T18:15:12,
+S_BUDGET,G_BUDGET,2026-04-22T18:15:15,convergence,constraint_reframing,P-C-06,Which concept is easiest to pilot with the resources already available?,P-C-06,phase-matched prompt,2026-04-22T18:15:15,2026-04-22T18:15:15,

@@ -1,0 +1,59 @@
+{
+  "session_id": "S_WELLBEING",
+  "group_id": "G_WELLBEING",
+  "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+  "model": "google/gemma-4-e4b",
+  "theme": "How might TU Delft better support student wellbeing and academic engagement?",
+  "log_path": "data/prompt_log.csv",
+  "seed_ideas": [
+    "mental health services",
+    "study groups",
+    "stress management"
+  ],
+  "mode_combo": {
+    "elicitation": "constraint_reframing",
+    "style": "assertive",
+    "initiative": "proactive"
+  },
+  "temperature": 0.35,
+  "max_tokens": 60,
+  "timeout_seconds": 3.0,
+  "turns": [
+    {
+      "speaker": "P1",
+      "text": "First-years are really stressed about workload and fitting in. We should have counseling available.",
+      "phase": "divergence",
+      "prompt_id": "P-D-01"
+    },
+    {
+      "speaker": "P2",
+      "text": "That costs a lot. We need something sustainable with limited resources.",
+      "phase": "divergence",
+      "prompt_id": "P-D-02"
+    },
+    {
+      "speaker": "P1",
+      "text": "What if we trained peer mentors to do basic stress management workshops?",
+      "phase": "divergence",
+      "prompt_id": "P-D-03"
+    },
+    {
+      "speaker": "P2",
+      "text": "That could work, but they'd need proper training. How would we scale it?",
+      "phase": "convergence",
+      "prompt_id": "P-C-01"
+    },
+    {
+      "speaker": "P1",
+      "text": "Maybe start in the first-year commons area, once a week during lunch?",
+      "phase": "convergence",
+      "prompt_id": "P-C-02"
+    },
+    {
+      "speaker": "P2",
+      "text": "Low barrier to entry, good visibility. We could measure attendance and gather feedback.",
+      "phase": "convergence",
+      "prompt_id": "P-C-03"
+    }
+  ]
+}

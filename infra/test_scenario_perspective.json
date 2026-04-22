@@ -1,0 +1,59 @@
+{
+  "session_id": "S_PERSPECTIVE",
+  "group_id": "G_PERSPECTIVE",
+  "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+  "model": "google/gemma-4-e4b",
+  "theme": "How might TU Delft improve first-year transition and belonging?",
+  "log_path": "data/prompt_log.csv",
+  "seed_ideas": [
+    "orientation week",
+    "buddy matching",
+    "housing support"
+  ],
+  "mode_combo": {
+    "elicitation": "perspective_shift",
+    "style": "passive",
+    "initiative": "reactive"
+  },
+  "temperature": 0.35,
+  "max_tokens": 60,
+  "timeout_seconds": 3.0,
+  "turns": [
+    {
+      "speaker": "P1",
+      "text": "Most first-years are stressed about finding their place and making friends.",
+      "phase": "divergence",
+      "prompt_id": "P-D-10"
+    },
+    {
+      "speaker": "P2",
+      "text": "Right, and they're away from home. Maybe structured social events help?",
+      "phase": "divergence",
+      "prompt_id": "P-D-11"
+    },
+    {
+      "speaker": "P1",
+      "text": "But what about students who live with family and commute? They might not join evening events.",
+      "phase": "divergence",
+      "prompt_id": "P-D-12"
+    },
+    {
+      "speaker": "P2",
+      "text": "Good point. What about international students who don't know Dutch culture yet?",
+      "phase": "convergence",
+      "prompt_id": "P-C-10"
+    },
+    {
+      "speaker": "P1",
+      "text": "So we might need different touchpoints for different groups?",
+      "phase": "convergence",
+      "prompt_id": "P-C-11"
+    },
+    {
+      "speaker": "P2",
+      "text": "Yeah, maybe a flexible buddy system that works for both residential and commuter students.",
+      "phase": "convergence",
+      "prompt_id": "P-C-12"
+    }
+  ]
+}
