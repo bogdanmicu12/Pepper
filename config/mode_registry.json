@@ -1,0 +1,22 @@
+{
+  "dimensions": {
+    "elicitation": [
+      "perspective_shift",
+      "constraint_reframing",
+      "elaboration_evidence"
+    ],
+    "style": [
+      "passive",
+      "assertive"
+    ],
+    "initiative": [
+      "reactive",
+      "proactive"
+    ]
+  },
+  "defaults": {
+    "elicitation": "perspective_shift",
+    "style": "passive",
+    "initiative": "reactive"
+  }
+}

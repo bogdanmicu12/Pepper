@@ -1,0 +1,16 @@
+{
+  "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+  "model": "google/gemma-4-e4b",
+  "theme": "How might TU Delft improve first-year transition and belonging?",
+  "phase": "divergence",
+  "mode_combo": {
+    "elicitation": "constraint_reframing",
+    "style": "assertive",
+    "initiative": "reactive"
+  },
+  "last_user_utterance": "We have ideas but they all feel expensive.",
+  "fallback_prompt": "What is a low-cost version you could test next week?",
+  "temperature": 0.4,
+  "max_tokens": 36,
+  "timeout_seconds": 1.2
+}
