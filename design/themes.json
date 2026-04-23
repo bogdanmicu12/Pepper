@@ -1,0 +1,24 @@
+{
+  "themes": {
+    "T1": {
+      "title": "Student wellbeing on campus",
+      "description": "How might TU Delft better support student wellbeing and academic engagement?",
+      "literature": [
+        "O'Brien, L. T. (2018). UES-SF: Ultra-Brief User Engagement Scale. Educational Psychology Review, 30(2), 535-550.",
+        "Strayhorn, T. L. (2012). College students' sense of belonging: A key to educational success for all students. Routledge.",
+        "Tinto, V. (1993). Leaving college: Rethinking the causes and cures of student attrition (2nd ed.). University of Chicago Press.",
+        "Reason, R. D., & Kimmons, R. D. (2012). A new model for institutional effectiveness: Exploring the path to student success. NASPA Journal About Women in Higher Education, 5(1), 1-27."
+      ]
+    },
+    "T2": {
+      "title": "Ways to reduce product costs on campus",
+      "description": "How might TU Delft reduce operational and product costs while maintaining quality of services?",
+      "literature": [
+        "Kaplan, R. S., & Norton, D. P. (2006). Alignment: Using the balanced scorecard to create corporate synergies. Harvard Business School Press.",
+        "Porter, M. E. (1985). Competitive advantage: Creating and sustaining superior performance. Free Press.",
+        "Christensen, C. M., & Raynor, M. E. (2003). The innovator's solution: Creating and sustaining successful growth. Harvard Business School Press.",
+        "Ries, E. (2011). The lean startup: How today's entrepreneurs use continuous innovation to create radically successful businesses. Crown Business."
+      ]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+  "model": "google/gemma-4-e4b",
+  "theme": "How might TU Delft improve first-year transition and belonging?",
+  "phase": "divergence",
+  "seed_ideas": [
+    "peer buddy check-ins",
+    "first-week map",
+    "quiet study buddy matching"
+  ],
+  "mode_combo": {
+    "elicitation": "constraint_reframing",
+    "style": "assertive",
+    "initiative": "reactive"
+  },
+  "last_user_utterance": "We have ideas but they all feel expensive.",
+  "prompt_id": "P-D-05",
+  "fallback_prompt": "If budget were nearly zero, what small version would still be useful?",
+  "temperature": 0.35,
+  "max_tokens": 600,
+  "timeout_seconds": 30.0
+}

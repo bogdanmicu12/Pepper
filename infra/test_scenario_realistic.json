@@ -4,7 +4,7 @@
   "server_url": "http://127.0.0.1:1234/v1/chat/completions",
   "model": "google/gemma-4-e4b",
   "theme": "How might TU Delft improve first-year transition and belonging?",
-  "log_path": "data/prompt_log.csv",
+  "log_path": "data/logs.csv",
   "seed_ideas": [
     "peer connections",
     "campus resources",
@@ -15,57 +15,59 @@
     "style": "passive",
     "initiative": "proactive"
   },
+  "history_window_turns": 12,
+  "intervene_every_n_participant_turns": null,
   "temperature": 0.35,
-  "max_tokens": 60,
-  "timeout_seconds": 3.0,
+  "max_tokens": 600,
+  "timeout_seconds": 30.0,
   "turns": [
     {
       "speaker": "P1",
       "text": "I think the main issue is that first-years don't know each other or the campus.",
-      "phase": "divergence",
-      "prompt_id": "P-D-04"
+      "phase": "divergence"
     },
     {
       "speaker": "P2",
       "text": "Yeah, but also the curriculum is intense and they're overwhelmed with lectures.",
       "phase": "divergence",
-      "prompt_id": "P-D-05"
+      "force_robot": true,
+      "use_context_only": true
     },
     {
       "speaker": "P1",
       "text": "That's true, but social connection might actually help them manage the stress better.",
-      "phase": "divergence",
-      "prompt_id": "P-D-06"
+      "phase": "divergence"
     },
     {
       "speaker": "P2",
       "text": "So we need something that's not too time-consuming for them?",
       "phase": "divergence",
-      "prompt_id": "P-D-07"
+      "force_robot": true,
+      "prompt_id": "P-D-04"
     },
     {
       "speaker": "P1",
       "text": "Exactly. Low commitment, easy to access, happens naturally.",
-      "phase": "convergence",
-      "prompt_id": "P-C-04"
+      "phase": "convergence"
     },
     {
       "speaker": "P2",
       "text": "Like study buddy groups that meet in the library or residence halls?",
-      "phase": "convergence",
-      "prompt_id": "P-C-05"
+      "phase": "convergence"
     },
     {
       "speaker": "P1",
       "text": "Perfect. And maybe we match them by course or major?",
       "phase": "convergence",
-      "prompt_id": "P-C-06"
+      "force_robot": true,
+      "use_context_only": true
     },
     {
       "speaker": "P2",
       "text": "That could scale easily. Who would coordinate it?",
       "phase": "convergence",
-      "prompt_id": "P-C-07"
+      "force_robot": true,
+      "prompt_id": "P-C-05"
     }
   ]
 }

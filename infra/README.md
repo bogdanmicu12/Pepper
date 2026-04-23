@@ -5,7 +5,7 @@
 From workspace root:
 
 ```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --request infra/example_request.json
+C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --request infra/test_request.json
 ```
 
 Expected result:
@@ -17,16 +17,28 @@ Expected result:
 Run scripted two-person simulation:
 
 ```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --simulate infra/example_session.json
+C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --simulate infra/test_scenario_X.json
 ```
 
-Run live console mode:
+Run experiment-controlled intervention mode:
 
 ```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --interactive
+C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --intervene
 ```
 
 Type participant lines one by one. Type `exit` to stop.
+
+In `--intervene` mode:
+
+- You type `group_id` and `theme_id` at start.
+- If `theme_id` is recognized (T1 or T2 from design/themes.json), theme text is loaded automatically.
+- If `theme_id` is not recognized, you are prompted for theme text.
+- Participants can speak uninterrupted for any number of turns.
+- The robot only replies when you type `ROBOT`.
+- Type `CHANGE` to switch divergence/convergence phase.
+- Every 4th robot reply (within the current phase), the robot uses the next unused strategy from `design/counterbalancing_elicitation.csv`.
+- Non-4th replies are context-only (no prompt-bank shaping).
+- After all 3 phase strategies are used, remaining replies stay context-only until phase changes.
 
 ## If you still see fallback
 
@@ -43,12 +55,24 @@ Disable thinking/reasoning mode in the LM Studio model settings, then run the sa
 - Endpoint: `http://127.0.0.1:1234/v1/chat/completions`
 - Model: `google/gemma-4-e4b`
 - Temperature: `0.30-0.40`
-- Max tokens: `24-40`
-- Timeout in request/session files: start with `3.0`, then lower until acceptable latency/fallback tradeoff.
+- Timeout in request/session files: start with `30.0`, then lower until acceptable latency/fallback tradeoff.
 
-## Themes
+## Logging format
 
-- First-year transition and belonging.
-	Anchor: Tinto (1993), Strayhorn (2012).
-- Student wellbeing and workload support.
-	Anchor: broad student wellbeing and engagement research (O'Brien et al., 2018).
+The bridge writes `logs/logs.csv` in readable blocks instead of one compact CSV row.
+
+Each conversation starts with:
+
+```text
+session_id,group_id,conversation_id
+```
+
+Each turn is stored as three lines:
+
+```text
+timestamp,phase,strategy,prompt_id,,prompt_text
+participant_message_timestamp,participant_message
+robot_reply_timestamp,robot_reply
+```
+
+Blank lines separate turns and conversations.

@@ -1,2 +1,0 @@
-session_id,group_id,timestamp,phase,strategy,prompt_id,prompt_text,operator_trigger,transition_reason,response_window_start,response_window_end,notes
-S01,G01,2026-04-22T10:00:00,divergence,perspective_shift,P-D-01,"What would this look like for a commuter student on their busiest week?",scheduled,,2026-04-22T10:00:05,2026-04-22T10:01:15,

@@ -1,25 +1,25 @@
 prompt_id,strategy,phase,literature_basis,text
-P-D-01,perspective_shift,divergence,Galinsky & Moskowitz 2000,What would this look like for a commuter student on their busiest week?
-P-D-02,perspective_shift,divergence,Galinsky & Moskowitz 2000,"Imagine an international first-year student hearing this for the first time; what would help most?"
-P-D-03,perspective_shift,divergence,Galinsky & Moskowitz 2000,"If accessibility were the starting point, what would change first?"
-P-D-04,perspective_shift,divergence,Galinsky & Moskowitz 2000,"How would this idea change for a student with little time between classes?"
-P-C-01,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which idea works best across different student types without losing focus?"
-P-C-02,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which idea still makes sense if a student has to use it alone?"
-P-C-03,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which option is easiest to understand from a new student's point of view?"
-P-C-04,perspective_shift,convergence,Galinsky & Moskowitz 2000,"Which idea is the most robust when circumstances change?"
-P-D-05,constraint_reframing,divergence,Stokes 2005,"If budget were nearly zero, what small version of this idea would still be useful?"
-P-D-06,constraint_reframing,divergence,Stokes 2005,"If this had to start next month, what is the smallest pilot you could run?"
-P-D-07,constraint_reframing,divergence,Stokes 2005,"If no app were allowed, how else could this problem be solved?"
-P-D-08,constraint_reframing,divergence,Stokes 2005,"If you could only use existing campus spaces, what would you do?"
-P-C-05,constraint_reframing,convergence,Stokes 2005,"Which idea has the best impact-to-effort ratio?"
-P-C-06,constraint_reframing,convergence,Stokes 2005,"Which concept is easiest to pilot with the resources already available?"
-P-C-07,constraint_reframing,convergence,Stokes 2005,"Which option depends least on uncertain funding or staffing?"
-P-C-08,constraint_reframing,convergence,Stokes 2005,"Which idea can be explained in one clear sentence?"
-P-D-09,elaboration_evidence,divergence,Finke et al. 1992,"Pick one idea and add one concrete user journey step."
-P-D-10,elaboration_evidence,divergence,Finke et al. 1992,"What would a student actually see, do, or feel in the first five minutes?"
-P-D-11,elaboration_evidence,divergence,Finke et al. 1992,"What failure case could happen, and how might you prevent it?"
-P-D-12,elaboration_evidence,divergence,Finke et al. 1992,"What simple evidence would make this idea more convincing?"
-P-C-09,elaboration_evidence,convergence,Finke et al. 1992,"Which idea has the clearest success metric?"
-P-C-10,elaboration_evidence,convergence,Finke et al. 1992,"What is the strongest argument against your top idea, and how would you answer it?"
-P-C-11,elaboration_evidence,convergence,Finke et al. 1992,"Which idea is easiest to test in a small pilot first?"
-P-C-12,elaboration_evidence,convergence,Finke et al. 1992,"Which concept has the strongest next action for a real trial?"
+P-D-01,perspective_shift,divergence,Galinsky & Moskowitz 2000,Imagine a day in the life of [target] as if you were that person, looking at the world through [their] eyes and walking through the world in [their] shoes.
+P-D-02,perspective_shift,divergence,Davis et al. 1996,Imagine how [target] feels.
+P-D-03,perspective_shift,divergence,Davis et al. 1996,Try to take [target]'s perspective.
+P-D-04,perspective_shift,divergence,Batson et al. 1997 / 2003,Imagine how [target] is feeling in that situation.
+P-C-01,perspective_shift,convergence,Batson et al. 1997 / 2003,Imagine how you would feel in [target]'s situation.
+P-C-02,perspective_shift,convergence,Davis et al. 1996,Try to take [target]'s perspective.
+P-C-03,perspective_shift,convergence,Batson et al. 1997 / 2003,Imagine how [target] is feeling in that situation.
+P-C-04,perspective_shift,convergence,Arriaga & Rusbult 1998,Visualize the incident from [target]'s point of view, and ask yourself why does [target] feel this way?
+P-D-05,generative,divergence,Chin 2007,What else?
+P-D-06,generative,divergence,Chin 2007,How is [target] going to solve the problem?
+P-D-07,generative,divergence,Chin 2007,In order to find [goal], what must we do?
+P-D-08,generative,divergence,Chin 2007,What do you need to do next?
+P-C-05,generative,convergence,Chin 2007,How do we find [output]?
+P-C-06,generative,convergence,Chin 2007,With these [values], how do we find [result]?
+P-C-07,generative,convergence,Chin 2007,What do we do next?
+P-C-08,generative,convergence,Chin 2007,How do you find [X]?
+P-D-09,elaboration_evidence,divergence,Chin 2007,What is the difference between [A] and [B]?
+P-D-10,elaboration_evidence,divergence,Chin 2007,Where does [X] come into the calculation?
+P-D-11,elaboration_evidence,divergence,Chin 2007,Was it necessary for you to [step]?
+P-D-12,elaboration_evidence,divergence,Chin 2007,Could you have done with fewer steps?
+P-C-09,elaboration_evidence,convergence,Chin 2007,Can you modify it in such a way that you do not need to do unnecessary steps?
+P-C-10,elaboration_evidence,convergence,Chin 2007,What do you think are some of the problems and how do you think you can overcome it?
+P-C-11,elaboration_evidence,convergence,Chin 2007,How would that affect the accuracy?
+P-C-12,elaboration_evidence,convergence,Chin 2007,How would you avoid [problem]?

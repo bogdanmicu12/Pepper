@@ -11,11 +11,18 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROMPT_BANK = ROOT / "prompts" / "prompt_bank.csv"
+COUNTERBALANCING = ROOT / "design" / "counterbalancing_elicitation.csv"
+THEMES_FILE = ROOT / "design" / "themes.json"
+DEFAULT_LOG_PATH = "logs/logs.csv"
 
 MODE_REGISTRY = {
-    "elicitation": ["perspective_shift", "constraint_reframing", "elaboration_evidence"],
+    "elicitation": ["perspective_shift", "generative", "elaboration_evidence"],
     "style": ["passive", "assertive"],
     "initiative": ["reactive", "proactive"],
+}
+
+ELICITATION_ALIASES = {
+    "constraint_reframing": "generative",
 }
 
 MODE_DEFAULTS = {
@@ -38,8 +45,8 @@ ELICITATION_SETUP = {
     "perspective_shift": (
         "Use perspective-taking to broaden idea search before judgement."
     ),
-    "constraint_reframing": (
-        "Use realistic constraints to make ideas concrete without shutting creativity down."
+    "generative": (
+        "Use creative brainstorming techniques to generate new ideas."
     ),
     "elaboration_evidence": (
         "Push abstract ideas into concrete, testable details and evidence checks."
@@ -54,6 +61,20 @@ BASE_SETUP = (
 )
 
 
+def format_history_window(history, window_turns):
+    if not history:
+        return "none"
+
+    window = history[-window_turns:]
+    lines = []
+    for item in window:
+        timestamp = item.get("timestamp", "")
+        speaker = item.get("speaker", "Participant")
+        text = item.get("text", "")
+        lines.append(f"{timestamp} {speaker}: {text}".strip())
+    return "\n".join(lines)
+
+
 def load_json(path):
     # utf-8-sig also handles JSON files saved from PowerShell with BOM.
     with path.open("r", encoding="utf-8-sig") as handle:
@@ -65,11 +86,53 @@ def load_prompt_bank():
         return list(csv.DictReader(handle))
 
 
+def load_counterbalancing():
+    with COUNTERBALANCING.open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def load_themes():
+    if not THEMES_FILE.exists():
+        return {}
+    try:
+        with THEMES_FILE.open("r", encoding="utf-8-sig") as handle:
+            data = json.load(handle)
+            return data.get("themes", {})
+    except Exception as e:
+        print(f"Warning: Could not load themes: {e}")
+        return {}
+
+
 def get_mode_value(payload, key):
     selected = payload.get("mode_combo", {}).get(key, MODE_DEFAULTS[key])
+    if key == "elicitation":
+        selected = ELICITATION_ALIASES.get(selected, selected)
     if selected not in MODE_REGISTRY[key]:
         raise ValueError(f"Invalid mode for {key}: {selected}")
     return selected
+
+
+def normalize_elicitation(value):
+    return ELICITATION_ALIASES.get(value, value)
+
+
+def get_strategy_sequence(group_id, theme_id, phase):
+    rows = load_counterbalancing()
+    for row in rows:
+        if row.get("group_id") == group_id and row.get("theme_id") == theme_id and row.get("phase") == phase:
+            return [
+                normalize_elicitation(row.get("order_slot_1", "")),
+                normalize_elicitation(row.get("order_slot_2", "")),
+                normalize_elicitation(row.get("order_slot_3", "")),
+            ]
+    raise ValueError(f"No counterbalancing row for {group_id}/{theme_id}/{phase}")
+
+
+def select_first_prompt_for_strategy(prompt_bank, strategy, phase):
+    for row in prompt_bank:
+        if normalize_elicitation(row.get("strategy", "")) == strategy and row.get("phase") == phase:
+            return row
+    return None
 
 
 def select_prompt(payload, prompt_bank):
@@ -94,6 +157,13 @@ def build_messages(payload, prompt_row, elicitation_key):
     initiative_key = get_mode_value(payload, "initiative")
     seed_ideas = payload.get("seed_ideas", [])
     seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
+    history_window_turns = int(payload.get("history_window_turns", 10))
+    history_text = format_history_window(payload.get("conversation_history", []), history_window_turns)
+    pending_turns = payload.get("recent_participant_turns", [])
+    pending_text = "\n".join(
+        f"{item.get('timestamp', '')} {item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
+        for item in pending_turns
+    ) if pending_turns else "none"
 
     system_text = (
         f"{BASE_SETUP} "
@@ -105,10 +175,48 @@ def build_messages(payload, prompt_row, elicitation_key):
     user_text = (
         f"Theme: {payload.get('theme', '')}\n"
         f"Phase: {payload.get('phase', '')}\n"
+        f"Recent conversation history:\n{history_text}\n"
+        f"Latest uninterrupted participant turns:\n{pending_text}\n"
         f"Last participant utterance: {payload.get('last_user_utterance', '')}\n"
         f"Seed ideas: {seed_text}\n"
         f"Intervention to deliver: {prompt_row['text']}\n"
         "Respond naturally as if speaking in the conversation, not as meta-commentary. Keep your response brief and direct."
+    )
+
+    return [
+        {"role": "system", "content": system_text},
+        {"role": "user", "content": user_text},
+    ]
+
+
+def build_messages_context_only(payload):
+    style_key = get_mode_value(payload, "style")
+    initiative_key = get_mode_value(payload, "initiative")
+    seed_ideas = payload.get("seed_ideas", [])
+    seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
+    history_window_turns = int(payload.get("history_window_turns", 10))
+    history_text = format_history_window(payload.get("conversation_history", []), history_window_turns)
+    pending_turns = payload.get("recent_participant_turns", [])
+    pending_text = "\n".join(
+        f"{item.get('timestamp', '')} {item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
+        for item in pending_turns
+    ) if pending_turns else "none"
+
+    system_text = (
+        f"{BASE_SETUP} "
+        f"Style guidance: {STYLE_SETUP[style_key]} "
+        f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]} "
+        "No predefined intervention prompt is active. Respond only based on conversation context."
+    )
+
+    user_text = (
+        f"Theme: {payload.get('theme', '')}\n"
+        f"Phase: {payload.get('phase', '')}\n"
+        f"Recent conversation history:\n{history_text}\n"
+        f"Latest uninterrupted participant turns:\n{pending_text}\n"
+        f"Last participant utterance: {payload.get('last_user_utterance', '')}\n"
+        f"Seed ideas: {seed_text}\n"
+        "Respond naturally and briefly based only on the context above."
     )
 
     return [
@@ -122,7 +230,7 @@ def call_lmstudio(payload, messages):
         "model": payload.get("model", "google/gemma-4-e4b"),
         "messages": messages,
         "temperature": payload.get("temperature", 0.35),
-        "max_tokens": payload.get("max_tokens", 60),
+        "max_tokens": payload.get("max_tokens", 600),
         "thinking": False,
         "enable_thinking": False,
     }
@@ -134,7 +242,7 @@ def call_lmstudio(payload, messages):
         method="POST",
     )
 
-    timeout = float(payload.get("timeout_seconds", 5.0))
+    timeout = float(payload.get("timeout_seconds", 30.0))
     with urllib.request.urlopen(request, timeout=timeout) as response:
         decoded = json.loads(response.read().decode("utf-8"))
 
@@ -229,34 +337,73 @@ def process(payload):
     }
 
 
-def append_log_row(log_path, payload, result):
+def process_context_only(payload):
+    messages = build_messages_context_only(payload)
+    fallback_reason = ""
+    fallback_text = payload.get("context_fallback") or "Could you expand on that a bit more?"
+
+    try:
+        reply = sanitize_reply(call_lmstudio(payload, messages))
+        if not reply:
+            raise ValueError("Unusable LM Studio reply")
+        source = "lmstudio"
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, KeyError, ValueError) as error:
+        fallback_reason = f"{type(error).__name__}: {error}"
+        reply = fallback_text
+        source = "fallback"
+
+    return {
+        "ok": True,
+        "source": source,
+        "reply": reply,
+        "prompt_id": "",
+        "strategy": "context_only",
+        "phase": payload.get("phase", "divergence"),
+        "prompt_text": "",
+        "fallback_reason": fallback_reason,
+    }
+
+
+def append_log_conversation_header(handle, session_id, group_id, conversation_id):
+    handle.write(f"{session_id},{group_id},{conversation_id}\n")
+    handle.write("\n")
+
+
+def append_log_turn_block(log_path, payload, result, participant_turns, robot_timestamp):
     if not log_path:
         return
 
     path = ROOT / log_path
     path.parent.mkdir(parents=True, exist_ok=True)
-    exists = path.exists()
-    now = time.strftime("%Y-%m-%dT%H:%M:%S")
-    row = {
-        "session_id": payload.get("session_id", "S01"),
-        "group_id": payload.get("group_id", "G01"),
-        "timestamp": now,
-        "phase": result["phase"],
-        "strategy": result["strategy"],
-        "prompt_id": result["prompt_id"],
-        "prompt_text": result["prompt_text"],
-        "operator_trigger": payload.get("prompt_id", "manual"),
-        "transition_reason": payload.get("transition_reason", "phase-matched prompt"),
-        "response_window_start": now,
-        "response_window_end": now,
-        "notes": payload.get("notes", ""),
-    }
+    session_id = payload.get("session_id", "S01")
+    group_id = payload.get("group_id", "G01")
+    conversation_id = payload.get("conversation_id", session_id)
+    prompt_text = result["prompt_text"]
+    robot_reply = result["reply"]
+    turn_timestamp = payload.get("turn_timestamp")
+    if not turn_timestamp and participant_turns:
+        turn_timestamp = participant_turns[0].get("timestamp", "")
+    if not turn_timestamp:
+        turn_timestamp = robot_timestamp
+
+    needs_header = (not path.exists()) or path.stat().st_size == 0 or payload.get("turn_index", 1) == 1
 
     with path.open("a", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(row.keys()))
-        if not exists:
-            writer.writeheader()
-        writer.writerow(row)
+        writer = csv.writer(handle)
+        if needs_header:
+            if path.exists() and path.stat().st_size > 0:
+                handle.write("\n")
+            append_log_conversation_header(handle, session_id, group_id, conversation_id)
+
+        writer.writerow([turn_timestamp, result["phase"], result["strategy"], result["prompt_id"], "", prompt_text])
+        for participant_turn in participant_turns:
+            writer.writerow([
+                participant_turn.get("timestamp", turn_timestamp),
+                participant_turn.get("speaker", "Participant"),
+                participant_turn.get("text", ""),
+            ])
+        writer.writerow([robot_timestamp, robot_reply])
+        handle.write("\n")
 
 
 def print_robot_turn(result):
@@ -265,29 +412,76 @@ def print_robot_turn(result):
 
 def run_session(session_payload):
     print(f"# Session {session_payload.get('session_id', 'S01')} / group {session_payload.get('group_id', 'G01')}")
-    for turn in session_payload.get("turns", []):
+    history = list(session_payload.get("conversation_history", []))
+    pending_participant_turns = []
+    if "intervene_every_n_participant_turns" in session_payload:
+        raw_value = session_payload.get("intervene_every_n_participant_turns")
+        intervene_every = int(raw_value) if raw_value else None
+    else:
+        intervene_every = 1
+
+    for turn_index, turn in enumerate(session_payload.get("turns", []), start=1):
         speaker = turn.get("speaker", "Participant")
         text = turn.get("text", "")
         phase = turn.get("phase", session_payload.get("phase", "divergence"))
+        turn_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
 
         print(f"[{speaker}] {text}")
+
+        history.append({
+            "speaker": speaker,
+            "text": text,
+            "timestamp": turn_timestamp,
+        })
 
         if speaker.lower() in {"robot", "pepper"}:
             continue
 
+        pending_participant_turns.append({
+            "speaker": speaker,
+            "text": text,
+            "timestamp": turn_timestamp,
+        })
+
+        should_intervene = bool(turn.get("force_robot", False))
+        if intervene_every is not None:
+            should_intervene = should_intervene or len(pending_participant_turns) >= intervene_every
+        if not should_intervene:
+            continue
+
+        participant_timestamp = pending_participant_turns[0]["timestamp"]
+        recent_turn_lines = [f"{item['speaker']}: {item['text']}" for item in pending_participant_turns]
+        participant_log_text = " || ".join(recent_turn_lines)
+
         request = dict(session_payload)
         request.update({
+            "conversation_id": session_payload.get("conversation_id", session_payload.get("session_id", "S01")),
+            "turn_index": turn_index,
+            "turn_timestamp": turn_timestamp,
             "phase": phase,
-            "last_user_utterance": text,
+            "last_user_utterance": pending_participant_turns[-1]["text"],
+            "recent_participant_turns": list(pending_participant_turns),
+            "conversation_history": history,
             "mode_combo": turn.get("mode_combo", session_payload.get("mode_combo", {})),
             "prompt_id": turn.get("prompt_id", session_payload.get("prompt_id")),
             "fallback_prompt": turn.get("fallback_prompt", session_payload.get("fallback_prompt")),
             "transition_reason": turn.get("transition_reason", session_payload.get("transition_reason", "phase-matched prompt")),
             "notes": turn.get("notes", session_payload.get("notes", "")),
         })
-        result = process(request)
+
+        use_context_only = bool(turn.get("use_context_only", False))
+        result = process_context_only(request) if use_context_only else process(request)
+        robot_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+        history.append({
+            "speaker": "Robot",
+            "text": result["reply"],
+            "timestamp": robot_timestamp,
+        })
+
         print_robot_turn(result)
-        append_log_row(session_payload.get("log_path"), request, result)
+        append_log_turn_block(session_payload.get("log_path"), request, result, pending_participant_turns, robot_timestamp)
+        pending_participant_turns = []
 
 
 def console_receive():
@@ -308,39 +502,16 @@ def console_send(text):
 #     ...
 
 
-def interactive_loop(payload):
-    current_phase = payload.get("phase", "divergence")
-    print(f"--- Starting phase: {current_phase} ---")
-    
-    while True:
-        line = console_receive()
-        if not line:
-            continue
-        
-        if line.upper() in {"CHANGE", "SWITCH", "NEXT PHASE"}:
-            current_phase = "convergence" if current_phase == "divergence" else "divergence"
-            print(f"--- Switched to phase: {current_phase} ---")
-            continue
-        
-        if line.lower() in {"quit", "exit"}:
-            break
-        
-        payload["phase"] = current_phase
-        payload["last_user_utterance"] = line
-        result = process(payload)
-        print_robot_turn(result)
-        append_log_row(payload.get("log_path"), payload, result)
-
 
 def main():
     parser = argparse.ArgumentParser(description="Minimal LM Studio bridge for scripted elicitation prompts")
     parser.add_argument("--request", help="Path to a one-turn JSON request")
     parser.add_argument("--simulate", help="Path to a multi-turn session JSON file")
-    parser.add_argument("--interactive", action="store_true", help="Read participant turns from the console")
+    parser.add_argument("--intervene", action="store_true", help="Manual intervention mode with counterbalancing schedule")
     args = parser.parse_args()
 
-    if not any([args.request, args.simulate, args.interactive]):
-        parser.error("Choose --request, --simulate, or --interactive")
+    if not any([args.request, args.simulate, args.intervene]):
+        parser.error("Choose --request, --simulate, or --intervene")
 
     if args.request:
         payload = load_json(pathlib.Path(args.request))
@@ -353,27 +524,139 @@ def main():
         run_session(session_payload)
         return
 
-    if args.interactive:
+    if args.intervene:
+        group_id = input("Group ID (e.g. G01): ").strip().upper()
+        theme_id = input("Theme ID (e.g. T1 or T2): ").strip().upper()
+
+        themes = load_themes()
+        theme_text = ""
+        if theme_id in themes:
+            theme_text = themes[theme_id].get("description", "")
+            print(f"[Using predefined theme {theme_id}]")
+        else:
+            theme_text = input("Theme text: ").strip()
+            if not theme_text:
+                print("Error: Theme not recognized and no text provided.")
+                return
+
         payload = {
             "server_url": "http://127.0.0.1:1234/v1/chat/completions",
             "model": "google/gemma-4-e4b",
-            "session_id": "S01",
-            "group_id": "G01",
-            "theme": "How might TU Delft improve first-year transition and belonging?",
+            "session_id": f"S_{group_id}_{theme_id}",
+            "group_id": group_id,
+            "conversation_id": f"{group_id}_{theme_id}_{int(time.time())}",
+            "theme": theme_text,
+            "theme_id": theme_id,
             "phase": "divergence",
-            "log_path": "data/prompt_log.csv",
+            "log_path": DEFAULT_LOG_PATH,
             "mode_combo": {
                 "elicitation": "perspective_shift",
                 "style": "passive",
-                "initiative": "reactive"
+                "initiative": "reactive",
             },
             "seed_ideas": [],
+            "conversation_history": [],
+            "history_window_turns": 12,
             "temperature": 0.35,
-            "max_tokens": 60,
-            "timeout_seconds": 8.0,
-            "fallback_prompt": "What would this look like for a commuter student on their busiest week?"
+            "max_tokens": 600,
+            "timeout_seconds": 30.0,
+            "fallback_prompt": "Could you expand on that from a different angle?",
+            "context_fallback": "Could you expand on that a bit more?",
         }
-        interactive_loop(payload)
+
+        prompt_bank = load_prompt_bank()
+        strategy_sequences = {
+            "divergence": get_strategy_sequence(group_id, theme_id, "divergence"),
+            "convergence": get_strategy_sequence(group_id, theme_id, "convergence"),
+        }
+        used_strategies = {"divergence": [], "convergence": []}
+        phase_reply_count = {"divergence": 0, "convergence": 0}
+        pending_participant_turns = []
+        turn_index = 0
+        current_phase = "divergence"
+
+        print("--- Intervene mode started ---")
+        print("Commands: CHANGE (phase switch), ROBOT (robot intervention), exit (stop)")
+
+        while True:
+            line = console_receive()
+            if not line:
+                continue
+
+            upper = line.upper()
+            if line.lower() in {"quit", "exit"}:
+                break
+
+            if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
+                current_phase = "convergence" if current_phase == "divergence" else "divergence"
+                print(f"--- Switched to phase: {current_phase} ---")
+                continue
+
+            if upper in {"ROBOT"}:
+                if not pending_participant_turns:
+                    print("Robot: No participant turns buffered yet.")
+                    continue
+
+                turn_index += 1
+                participant_timestamp = pending_participant_turns[0]["timestamp"]
+                recent_turn_lines = [f"{item['speaker']}: {item['text']}" for item in pending_participant_turns]
+                participant_log_text = " || ".join(recent_turn_lines)
+
+                payload["phase"] = current_phase
+                payload["turn_index"] = turn_index
+                payload["turn_timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                payload["last_user_utterance"] = pending_participant_turns[-1]["text"]
+                payload["recent_participant_turns"] = list(pending_participant_turns)
+                payload["conversation_history"] = payload.get("conversation_history", [])
+
+                next_reply_index = phase_reply_count[current_phase] + 1
+                schedule_slot = (next_reply_index % 4 == 0)
+                result = None
+
+                if schedule_slot:
+                    planned = strategy_sequences[current_phase]
+                    next_strategy = None
+                    for strategy in planned:
+                        if strategy and strategy not in used_strategies[current_phase]:
+                            next_strategy = strategy
+                            break
+
+                    if next_strategy:
+                        prompt_row = select_first_prompt_for_strategy(prompt_bank, next_strategy, current_phase)
+                        if prompt_row:
+                            payload["mode_combo"] = dict(payload.get("mode_combo", {}))
+                            payload["mode_combo"]["elicitation"] = next_strategy
+                            payload["prompt_id"] = prompt_row["prompt_id"]
+                            result = process(payload)
+                            used_strategies[current_phase].append(next_strategy)
+
+                if result is None:
+                    payload["prompt_id"] = ""
+                    result = process_context_only(payload)
+
+                robot_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+                payload.setdefault("conversation_history", []).append(
+                    {"speaker": "Robot", "text": result["reply"], "timestamp": robot_timestamp}
+                )
+                print_robot_turn(result)
+                append_log_turn_block(payload.get("log_path"), payload, result, list(pending_participant_turns), robot_timestamp)
+                phase_reply_count[current_phase] += 1
+                pending_participant_turns = []
+                continue
+
+            participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+            speaker = "Participant"
+            text = line
+            if ":" in line:
+                left, right = line.split(":", 1)
+                if left.strip() and right.strip():
+                    speaker = left.strip()
+                    text = right.strip()
+
+            payload.setdefault("conversation_history", []).append(
+                {"speaker": speaker, "text": text, "timestamp": participant_timestamp}
+            )
+            pending_participant_turns.append({"speaker": speaker, "text": text, "timestamp": participant_timestamp})
 
 
 if __name__ == "__main__":

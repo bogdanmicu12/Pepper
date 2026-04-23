@@ -4,7 +4,7 @@
   "server_url": "http://127.0.0.1:1234/v1/chat/completions",
   "model": "google/gemma-4-e4b",
   "theme": "How might TU Delft improve first-year transition and belonging?",
-  "log_path": "data/prompt_log.csv",
+  "log_path": "data/logs.csv",
   "seed_ideas": [
     "improve community",
     "better support systems",
@@ -15,45 +15,47 @@
     "style": "assertive",
     "initiative": "reactive"
   },
+  "history_window_turns": 12,
+  "intervene_every_n_participant_turns": null,
   "temperature": 0.35,
-  "max_tokens": 60,
-  "timeout_seconds": 3.0,
+  "max_tokens": 600,
+  "timeout_seconds": 30.0,
   "turns": [
     {
       "speaker": "P1",
       "text": "We should make the culture more inclusive for everyone.",
-      "phase": "divergence",
-      "prompt_id": "P-D-07"
+      "phase": "divergence"
     },
     {
       "speaker": "P2",
       "text": "Yeah, that would help. Maybe some kind of community activity?",
       "phase": "divergence",
-      "prompt_id": "P-D-08"
+      "force_robot": true,
+      "use_context_only": true
     },
     {
       "speaker": "P1",
       "text": "Exactly, like networking or something social.",
-      "phase": "divergence",
-      "prompt_id": "P-D-09"
+      "phase": "divergence"
     },
     {
       "speaker": "P2",
       "text": "But I'm not sure how to make it actually work in practice.",
       "phase": "convergence",
-      "prompt_id": "P-C-07"
+      "force_robot": true,
+      "prompt_id": "P-C-10"
     },
     {
       "speaker": "P1",
       "text": "We could start with a small pilot group, maybe 20 students?",
-      "phase": "convergence",
-      "prompt_id": "P-C-08"
+      "phase": "convergence"
     },
     {
       "speaker": "P2",
       "text": "How would we select them and what format would the activities take?",
       "phase": "convergence",
-      "prompt_id": "P-C-09"
+      "force_robot": true,
+      "use_context_only": true
     }
   ]
 }
