@@ -2,7 +2,7 @@
   "session_id": "S_WELLBEING",
   "group_id": "G_WELLBEING",
   "server_url": "http://127.0.0.1:1234/v1/chat/completions",
-  "model": "google/gemma-3-1b-it",
+  "model": "phi-3.5-mini-3.8b-instruct",
   "theme": "How might TU Delft better support student wellbeing and academic engagement?",
   "log_path": "data/logs.csv",
   "seed_ideas": [

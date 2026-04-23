@@ -5,8 +5,15 @@ import json
 import pathlib
 import re
 import time
+import threading
+import queue
 import urllib.error
 import urllib.request
+import sys
+try:
+    import msvcrt
+except Exception:
+    msvcrt = None
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -14,6 +21,7 @@ PROMPT_BANK = ROOT / "prompts" / "prompt_bank.csv"
 COUNTERBALANCING = ROOT / "design" / "counterbalancing_elicitation.csv"
 THEMES_FILE = ROOT / "design" / "themes.json"
 DEFAULT_LOG_PATH = "logs/logs.csv"
+PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
 
 MODE_REGISTRY = {
     "elicitation": ["perspective_shift", "generative", "elaboration_evidence"],
@@ -227,7 +235,7 @@ def build_messages_context_only(payload):
 
 def call_lmstudio(payload, messages):
     body = {
-        "model": payload.get("model", "google/gemma-3-1b-it"),
+        "model": payload.get("model", "phi-3.5-mini-3.8b-instruct"),
         "messages": messages,
         "temperature": payload.get("temperature", 0.35),
         "max_tokens": payload.get("max_tokens", 600),
@@ -443,9 +451,41 @@ def run_session(session_payload):
             "timestamp": turn_timestamp,
         })
 
+        # Determine initiative-driven intervention behavior
         should_intervene = bool(turn.get("force_robot", False))
+        # honor the existing intervene_every setting
         if intervene_every is not None:
             should_intervene = should_intervene or len(pending_participant_turns) >= intervene_every
+
+        # Initiative mode from session payload (default reactive)
+        initiative_mode = session_payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"])
+
+        if initiative_mode == "reactive":
+            # Reactive: only intervene if the robot's name is called in the latest participant text
+            last_text = pending_participant_turns[-1]["text"].lower() if pending_participant_turns else ""
+            if "pepper" in last_text or "robot" in last_text:
+                should_intervene = should_intervene or True
+            else:
+                # If not explicitly called, skip intervention unless forced
+                if not should_intervene:
+                    continue
+
+        elif initiative_mode == "proactive":
+            # Proactive: trigger if silence exceeded threshold since last participant turn
+            # pending_participant_turns contains the buffered turns. We'll check the timestamp of last turn.
+            try:
+                last_ts = pending_participant_turns[-1]["timestamp"] if pending_participant_turns else None
+                if last_ts:
+                    last_struct = time.strptime(last_ts, "%Y-%m-%dT%H:%M:%S")
+                    last_epoch = time.mktime(last_struct)
+                    elapsed = time.time() - last_epoch
+                    if elapsed >= PROACTIVE_SILENCE_THRESHOLD:
+                        should_intervene = True
+            except Exception:
+                # If parsing fails, fall back to existing should_intervene
+                pass
+
+        # If still not flagged for intervention, continue
         if not should_intervene:
             continue
 
@@ -508,6 +548,7 @@ def main():
     parser.add_argument("--request", help="Path to a one-turn JSON request")
     parser.add_argument("--simulate", help="Path to a multi-turn session JSON file")
     parser.add_argument("--intervene", action="store_true", help="Manual intervention mode with counterbalancing schedule")
+    parser.add_argument("--initiative", choices=["reactive", "proactive"], help="Default initiative mode for intervene (reactive|proactive)")
     args = parser.parse_args()
 
     if not any([args.request, args.simulate, args.intervene]):
@@ -539,9 +580,11 @@ def main():
                 print("Error: Theme not recognized and no text provided.")
                 return
 
+        chosen_initiative = args.initiative or "reactive"
+
         payload = {
             "server_url": "http://127.0.0.1:1234/v1/chat/completions",
-    "model": "google/gemma-3-1b-it",
+    "model": "phi-3.5-mini-3.8b-instruct",
             "session_id": f"S_{group_id}_{theme_id}",
             "group_id": group_id,
             "conversation_id": f"{group_id}_{theme_id}_{int(time.time())}",
@@ -552,7 +595,7 @@ def main():
             "mode_combo": {
                 "elicitation": "perspective_shift",
                 "style": "passive",
-                "initiative": "reactive",
+                "initiative": chosen_initiative,
             },
             "seed_ideas": [],
             "conversation_history": [],
@@ -576,15 +619,204 @@ def main():
         current_phase = "divergence"
 
         print("--- Intervene mode started ---")
-        print("Commands: CHANGE (phase switch), ROBOT (robot intervention), exit (stop)")
+        print("Commands: CHANGE (phase switch), ROBOT (robot intervention), PROACTIVE/REACTIVE (switch initiative), exit (stop)")
+
+        # Event queue and monitor thread for proactive silence detection
+        event_queue = queue.Queue()
+        input_queue = queue.Queue()
+        stop_event = threading.Event()
+        last_triggered_last_epoch = 0
+        input_lock = threading.Lock()
+        current_input_line = [""]  # list so it's mutable in nested scope
+
+        def monitor_silence():
+            nonlocal last_triggered_last_epoch
+            while not stop_event.is_set():
+                try:
+                    initiative = payload.get("mode_combo", {}).get("initiative", "reactive")
+                    if initiative == "proactive" and pending_participant_turns:
+                        last_ts = pending_participant_turns[-1].get("timestamp")
+                        if last_ts:
+                            try:
+                                last_struct = time.strptime(last_ts, "%Y-%m-%dT%H:%M:%S")
+                                last_epoch = time.mktime(last_struct)
+                                elapsed = time.time() - last_epoch
+                                if elapsed >= PROACTIVE_SILENCE_THRESHOLD and last_epoch != last_triggered_last_epoch:
+                                    event_queue.put("AUTO_ROBOT")
+                                    last_triggered_last_epoch = last_epoch
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+                time.sleep(1)
+
+        monitor_thread = threading.Thread(target=monitor_silence, daemon=True)
+        monitor_thread.start()
+
+        # Background input reader so main loop isn't blocked on input(); lets AUTO_ROBOT be handled immediately
+        def input_reader():
+            # If msvcrt is available (Windows), use character-based input to avoid needing to press Enter after prints.
+            if msvcrt:
+                sys.stdout.write("Participant: ")
+                sys.stdout.flush()
+                line = ""
+                while not stop_event.is_set():
+                    if msvcrt.kbhit():
+                        ch = msvcrt.getwch()
+                        if ch == "\r":
+                            # Enter pressed
+                            print("")
+                            with input_lock:
+                                current_input_line[0] = ""
+                            input_queue.put(line)
+                            line = ""
+                            sys.stdout.write("Participant: ")
+                            sys.stdout.flush()
+                        elif ch == "\x08":
+                            # Backspace
+                            if len(line) > 0:
+                                line = line[:-1]
+                                with input_lock:
+                                    current_input_line[0] = line
+                                sys.stdout.write('\b \b')
+                                sys.stdout.flush()
+                        elif ch in ('\x00', '\xe0'):
+                            # special key, consume next
+                            msvcrt.getwch()
+                        else:
+                            line += ch
+                            with input_lock:
+                                current_input_line[0] = line
+                            sys.stdout.write(ch)
+                            sys.stdout.flush()
+                    else:
+                        time.sleep(0.05)
+            else:
+                # Fallback for non-Windows: blocking input
+                while not stop_event.is_set():
+                    try:
+                        line = input("Participant: ").strip()
+                    except EOFError:
+                        stop_event.set()
+                        break
+                    input_queue.put(line)
+
+        input_thread = threading.Thread(target=input_reader, daemon=True)
+        input_thread.start()
+
+        # Helper to perform the robot intervention; extracted to reuse for manual, auto, and reactive triggers
+        def trigger_robot():
+            nonlocal turn_index, pending_participant_turns
+            if not pending_participant_turns:
+                print("Robot: No participant turns buffered yet.")
+                return
+
+            nonlocal_vars = None
+            turn_index += 1
+            participant_timestamp = pending_participant_turns[0]["timestamp"]
+            recent_turn_lines = [f"{item['speaker']}: {item['text']}" for item in pending_participant_turns]
+            participant_log_text = " || ".join(recent_turn_lines)
+
+            payload["phase"] = current_phase
+            payload["turn_index"] = turn_index
+            payload["turn_timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+            payload["last_user_utterance"] = pending_participant_turns[-1]["text"]
+            payload["recent_participant_turns"] = list(pending_participant_turns)
+            payload["conversation_history"] = payload.get("conversation_history", [])
+
+            next_reply_index = phase_reply_count[current_phase] + 1
+            schedule_slot = (next_reply_index % 4 == 0)
+            result = None
+
+            if schedule_slot:
+                planned = strategy_sequences[current_phase]
+                next_strategy = None
+                for strategy in planned:
+                    if strategy and strategy not in used_strategies[current_phase]:
+                        next_strategy = strategy
+                        break
+
+                if next_strategy:
+                    prompt_row = select_first_prompt_for_strategy(prompt_bank, next_strategy, current_phase)
+                    if prompt_row:
+                        payload["mode_combo"] = dict(payload.get("mode_combo", {}))
+                        payload["mode_combo"]["elicitation"] = next_strategy
+                        payload["prompt_id"] = prompt_row["prompt_id"]
+                        result = process(payload)
+                        used_strategies[current_phase].append(next_strategy)
+
+            if result is None:
+                payload["prompt_id"] = ""
+                result = process_context_only(payload)
+
+            robot_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+            payload.setdefault("conversation_history", []).append(
+                {"speaker": "Robot", "text": result["reply"], "timestamp": robot_timestamp}
+            )
+            print_robot_turn(result)
+            append_log_turn_block(payload.get("log_path"), payload, result, list(pending_participant_turns), robot_timestamp)
+            phase_reply_count[current_phase] += 1
+            pending_participant_turns = []
+
+            # After robot output, redraw the prompt and restore current input buffer (Windows msvcrt path)
+            try:
+                with input_lock:
+                    buf = current_input_line[0]
+                if msvcrt:
+                    # Clear current line and rewrite prompt + buffer
+                    sys.stdout.write('\r')
+                    sys.stdout.write(' ' * (len('Participant: ') + len(buf) + 2))
+                    sys.stdout.write('\r')
+                    sys.stdout.write('Participant: ' + buf)
+                    sys.stdout.flush()
+                else:
+                    # On non-Windows, just print the prompt so user sees it
+                    sys.stdout.write('\nParticipant: ')
+                    sys.stdout.flush()
+            except Exception:
+                pass
 
         while True:
-            line = console_receive()
-            if not line:
-                continue
+            # Handle any queued auto-trigger events first
+            try:
+                ev = event_queue.get_nowait()
+            except queue.Empty:
+                ev = None
 
-            upper = line.upper()
-            if line.lower() in {"quit", "exit"}:
+            if ev == "AUTO_ROBOT":
+                # Auto-trigger from proactive monitor
+                trigger_robot()
+                # After robot prints, redraw prompt and current input buffer so user can continue typing without pressing Enter
+                try:
+                    with input_lock:
+                        buf = current_input_line[0]
+                    # Carriage return and clear line
+                    sys.stdout.write('\r')
+                    sys.stdout.write(' ' * (len('Participant: ') + len(buf) + 2))
+                    sys.stdout.write('\r')
+                    sys.stdout.write('Participant: ' + buf)
+                    sys.stdout.flush()
+                except Exception:
+                    pass
+                continue
+            else:
+                # Non-blocking check for user input
+                try:
+                    line = input_queue.get_nowait()
+                except queue.Empty:
+                    line = None
+
+                if line is None:
+                    # Nothing to do right now, yield briefly
+                    time.sleep(0.1)
+                    continue
+                upper = line.upper()
+
+            if line and line.lower() in {"quit", "exit"}:
+                stop_event.set()
+                # allow background threads to exit
+                monitor_thread.join(timeout=1)
+                # input_thread is daemon; it will exit on program termination
                 break
 
             if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
@@ -592,56 +824,15 @@ def main():
                 print(f"--- Switched to phase: {current_phase} ---")
                 continue
 
-            if upper in {"ROBOT"}:
-                if not pending_participant_turns:
-                    print("Robot: No participant turns buffered yet.")
-                    continue
+            # Allow switching initiative during the session
+            if upper in {"PROACTIVE", "REACTIVE"}:
+                new_mode = upper.lower()
+                payload.setdefault("mode_combo", {})["initiative"] = new_mode
+                print(f"--- Initiative switched to: {new_mode} ---")
+                continue
 
-                turn_index += 1
-                participant_timestamp = pending_participant_turns[0]["timestamp"]
-                recent_turn_lines = [f"{item['speaker']}: {item['text']}" for item in pending_participant_turns]
-                participant_log_text = " || ".join(recent_turn_lines)
-
-                payload["phase"] = current_phase
-                payload["turn_index"] = turn_index
-                payload["turn_timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-                payload["last_user_utterance"] = pending_participant_turns[-1]["text"]
-                payload["recent_participant_turns"] = list(pending_participant_turns)
-                payload["conversation_history"] = payload.get("conversation_history", [])
-
-                next_reply_index = phase_reply_count[current_phase] + 1
-                schedule_slot = (next_reply_index % 4 == 0)
-                result = None
-
-                if schedule_slot:
-                    planned = strategy_sequences[current_phase]
-                    next_strategy = None
-                    for strategy in planned:
-                        if strategy and strategy not in used_strategies[current_phase]:
-                            next_strategy = strategy
-                            break
-
-                    if next_strategy:
-                        prompt_row = select_first_prompt_for_strategy(prompt_bank, next_strategy, current_phase)
-                        if prompt_row:
-                            payload["mode_combo"] = dict(payload.get("mode_combo", {}))
-                            payload["mode_combo"]["elicitation"] = next_strategy
-                            payload["prompt_id"] = prompt_row["prompt_id"]
-                            result = process(payload)
-                            used_strategies[current_phase].append(next_strategy)
-
-                if result is None:
-                    payload["prompt_id"] = ""
-                    result = process_context_only(payload)
-
-                robot_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
-                payload.setdefault("conversation_history", []).append(
-                    {"speaker": "Robot", "text": result["reply"], "timestamp": robot_timestamp}
-                )
-                print_robot_turn(result)
-                append_log_turn_block(payload.get("log_path"), payload, result, list(pending_participant_turns), robot_timestamp)
-                phase_reply_count[current_phase] += 1
-                pending_participant_turns = []
+            if upper == "ROBOT":
+                trigger_robot()
                 continue
 
             participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -657,6 +848,17 @@ def main():
                 {"speaker": speaker, "text": text, "timestamp": participant_timestamp}
             )
             pending_participant_turns.append({"speaker": speaker, "text": text, "timestamp": participant_timestamp})
+
+            # Reactive immediate trigger: if initiative is reactive and the participant called the robot's name, intervene now
+            try:
+                initiative_now = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"])
+                if initiative_now == "reactive":
+                    last_text = text.lower()
+                    if "pepper" in last_text or "robot" in last_text:
+                        trigger_robot()
+                        continue
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

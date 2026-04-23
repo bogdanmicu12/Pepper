@@ -46,4 +46,6 @@ python infra/lmstudio_minimal_bridge.py --intervene
 # CHANGE switches phase
 # every 4th robot reply uses the next unused counterbalanced strategy for that group/theme/phase
 # all other replies are context-only (no prompt shaping)
+# --initiative proactive/reactive sets the behaviour of the robot
+# PROACTIVE makes the robot be proactive, REACTIVE makes the robot be reactive 
 ```
