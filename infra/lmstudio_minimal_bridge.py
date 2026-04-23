@@ -227,7 +227,7 @@ def build_messages_context_only(payload):
 
 def call_lmstudio(payload, messages):
     body = {
-        "model": payload.get("model", "google/gemma-4-e4b"),
+        "model": payload.get("model", "google/gemma-3-1b-it"),
         "messages": messages,
         "temperature": payload.get("temperature", 0.35),
         "max_tokens": payload.get("max_tokens", 600),
@@ -541,7 +541,7 @@ def main():
 
         payload = {
             "server_url": "http://127.0.0.1:1234/v1/chat/completions",
-            "model": "google/gemma-4-e4b",
+    "model": "google/gemma-3-1b-it",
             "session_id": f"S_{group_id}_{theme_id}",
             "group_id": group_id,
             "conversation_id": f"{group_id}_{theme_id}_{int(time.time())}",

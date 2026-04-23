@@ -47,13 +47,13 @@ Check `fallback_reason` in the JSON output.
 - `TimeoutError`: increase `timeout_seconds` in the request/session file.
 - `Unusable LM Studio reply`: the model returned reasoning text instead of a facilitator line.
 
-For `google/gemma-4-e4b`, this can happen if reasoning/thinking is enabled in LM Studio.
+For `google/gemma-3-1b-it`, this can happen if reasoning/thinking is enabled in LM Studio.
 Disable thinking/reasoning mode in the LM Studio model settings, then run the same command again.
 
 ## LM Studio settings
 
 - Endpoint: `http://127.0.0.1:1234/v1/chat/completions`
-- Model: `google/gemma-4-e4b`
+- Model: `google/gemma-3-1b-it`
 - Temperature: `0.30-0.40`
 - Timeout in request/session files: start with `30.0`, then lower until acceptable latency/fallback tradeoff.
 
