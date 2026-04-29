@@ -10,10 +10,15 @@ import queue
 import urllib.error
 import urllib.request
 import sys
+import subprocess
 try:
     import msvcrt
 except Exception:
     msvcrt = None
+try:
+    from naoqi import ALProxy
+except Exception:
+    ALProxy = None
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -22,6 +27,19 @@ COUNTERBALANCING = ROOT / "design" / "counterbalancing_elicitation.csv"
 THEMES_FILE = ROOT / "design" / "themes.json"
 DEFAULT_LOG_PATH = "logs/logs.csv"
 PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
+ASR_MEMORY_KEY = "WordRecognized"
+LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
+
+DEFAULT_PEPPER_VOCABULARY = [
+    "pepper",
+    "robot",
+    "hello",
+    "continue",
+    "next",
+    "change",
+    "idea",
+    "budget",
+]
 
 MODE_REGISTRY = {
     "elicitation": ["perspective_shift", "generative", "elaboration_evidence"],
@@ -67,6 +85,153 @@ BASE_SETUP = (
     "Respond naturally and conversationally, as if speaking aloud. "
     "Keep responses brief (1-3 sentences) and focused on one key idea or question."
 )
+
+
+def parse_phrase_list(value):
+    if not value:
+        return []
+    parts = re.split(r"[,;\n]+", value)
+    return [item.strip() for item in parts if item.strip()]
+
+
+class PepperIO:
+    def __init__(self, ip, port=9559, language="English", vocabulary=None):
+        self.ip = ip
+        self.port = int(port)
+        self.language = language
+        self.vocabulary = vocabulary or []
+        self.tts = None
+        self.asr = None
+        self.memory = None
+        self.subscriber_name = f"lmstudio_bridge_{int(time.time())}"
+        self._last_word = ""
+        self._last_word_time = 0.0
+
+    def connect(self):
+        if ALProxy is None:
+            raise RuntimeError(
+                "naoqi Python SDK not found. Install NAOqi Python bindings on the interpreter used to run this script."
+            )
+
+        self.tts = ALProxy("ALTextToSpeech", self.ip, self.port)
+        self.memory = ALProxy("ALMemory", self.ip, self.port)
+        self.asr = ALProxy("ALSpeechRecognition", self.ip, self.port)
+        self.asr.setLanguage(self.language)
+
+        if self.vocabulary:
+            self.asr.pause(True)
+            self.asr.setVocabulary(self.vocabulary, False)
+            self.asr.pause(False)
+
+        self.asr.subscribe(self.subscriber_name)
+
+    def close(self):
+        if self.asr:
+            try:
+                self.asr.unsubscribe(self.subscriber_name)
+            except Exception:
+                pass
+
+    def say(self, text):
+        if not text:
+            return
+        if self.tts:
+            self.tts.say(text)
+
+    def listen(self, timeout_seconds=12.0, min_confidence=0.45):
+        if not self.memory:
+            return ""
+
+        deadline = time.time() + float(timeout_seconds)
+        while time.time() < deadline:
+            try:
+                data = self.memory.getData(ASR_MEMORY_KEY)
+            except Exception:
+                data = None
+
+            # ALMemory WordRecognized format: [word1, conf1, word2, conf2, ...]
+            if isinstance(data, list) and len(data) >= 2:
+                for idx in range(0, len(data) - 1, 2):
+                    word = data[idx]
+                    confidence = data[idx + 1]
+                    if not isinstance(word, str):
+                        continue
+                    try:
+                        confidence_value = float(confidence)
+                    except Exception:
+                        continue
+                    cleaned = word.strip()
+                    if cleaned and confidence_value >= float(min_confidence):
+                        now = time.time()
+                        # WordRecognized may keep the same value for a short time; ignore immediate duplicates.
+                        if cleaned == self._last_word and (now - self._last_word_time) < 1.0:
+                            continue
+                        self._last_word = cleaned
+                        self._last_word_time = now
+                        return cleaned
+
+            time.sleep(0.1)
+
+        return ""
+
+
+def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
+    if not text:
+        return
+
+    command = list(python_cmd) + [
+        str(script_path),
+        "--ip",
+        str(ip),
+        "--port",
+        str(port),
+        "--say",
+        text,
+    ]
+    completed = subprocess.run(command, capture_output=True, text=True)
+    if completed.returncode != 0:
+        stderr_text = (completed.stderr or "").strip()
+        stdout_text = (completed.stdout or "").strip()
+        details = stderr_text or stdout_text or "unknown error"
+        raise RuntimeError(f"Python 2.7 Pepper TTS bridge failed: {details}")
+
+
+def build_pepper_tts_sender(args):
+    if ALProxy is None:
+        legacy_python_cmd = args.pepper_legacy_python.strip().split()
+        legacy_script = pathlib.Path(args.pepper_legacy_tts_script)
+        if not legacy_script.is_absolute():
+            legacy_script = (ROOT.parent / legacy_script).resolve()
+
+        if not legacy_script.exists():
+            raise RuntimeError(f"Legacy TTS script not found: {legacy_script}")
+
+        print("naoqi SDK unavailable in Python 3; using Python 2.7 Pepper TTS bridge.")
+
+        def sender(text):
+            send_to_pepper_via_py27(
+                text=text,
+                ip=args.pepper_ip,
+                port=args.pepper_port,
+                script_path=legacy_script,
+                python_cmd=legacy_python_cmd,
+            )
+
+        return sender, None
+
+    pepper = PepperIO(
+        ip=args.pepper_ip,
+        port=args.pepper_port,
+        language=args.pepper_language,
+        vocabulary=parse_phrase_list(args.pepper_vocabulary) or DEFAULT_PEPPER_VOCABULARY,
+    )
+    pepper.connect()
+    print(f"Connected to Pepper at {args.pepper_ip}:{args.pepper_port}")
+
+    def sender(text):
+        pepper.say(text)
+
+    return sender, pepper
 
 
 def format_history_window(history, window_turns):
@@ -542,17 +707,82 @@ def console_send(text):
 #     ...
 
 
+def run_live_dialog(base_payload, receive_fn, send_fn):
+    print("--- Live dialog mode started ---")
+    print("Say/type one participant turn at a time. Type quit/exit/stop to end.")
+
+    conversation_history = base_payload.setdefault("conversation_history", [])
+    turn_index = 0
+
+    while True:
+        participant_text = (receive_fn() or "").strip()
+        if not participant_text:
+            continue
+
+        if participant_text.lower() in LIVE_EXIT_WORDS:
+            print("--- Live dialog stopped ---")
+            break
+
+        participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+        participant_turn = {
+            "speaker": "Participant",
+            "text": participant_text,
+            "timestamp": participant_timestamp,
+        }
+        conversation_history.append(participant_turn)
+
+        turn_index += 1
+        request = dict(base_payload)
+        request.update({
+            "turn_index": turn_index,
+            "turn_timestamp": participant_timestamp,
+            "last_user_utterance": participant_text,
+            "recent_participant_turns": [participant_turn],
+            "conversation_history": conversation_history,
+        })
+
+        result = process_context_only(request)
+        robot_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+        conversation_history.append({
+            "speaker": "Robot",
+            "text": result["reply"],
+            "timestamp": robot_timestamp,
+        })
+
+        print_robot_turn(result)
+        send_fn(result["reply"])
+        append_log_turn_block(
+            base_payload.get("log_path"),
+            request,
+            result,
+            [participant_turn],
+            robot_timestamp,
+        )
+
+
 
 def main():
     parser = argparse.ArgumentParser(description="Minimal LM Studio bridge for scripted elicitation prompts")
     parser.add_argument("--request", help="Path to a one-turn JSON request")
     parser.add_argument("--simulate", help="Path to a multi-turn session JSON file")
     parser.add_argument("--intervene", action="store_true", help="Manual intervention mode with counterbalancing schedule")
+    parser.add_argument("--live", action="store_true", help="Live conversation mode (console or Pepper I/O)")
     parser.add_argument("--initiative", choices=["reactive", "proactive"], help="Default initiative mode for intervene (reactive|proactive)")
+    parser.add_argument("--theme", default="Open brainstorming conversation", help="Theme text used in live mode")
+    parser.add_argument("--pepper", action="store_true", help="Use Pepper NAOqi I/O in live mode")
+    parser.add_argument("--pepper-ip", default="192.168.1.35", help="Pepper robot IP")
+    parser.add_argument("--pepper-port", type=int, default=9559, help="Pepper NAOqi port")
+    parser.add_argument("--pepper-language", default="English", help="Pepper ASR language")
+    parser.add_argument("--pepper-vocabulary", help="Comma-separated vocabulary for Pepper ASR")
+    parser.add_argument("--asr-timeout", type=float, default=12.0, help="Seconds to wait for one Pepper ASR result")
+    parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
+    parser.add_argument("--pepper-legacy-python", default="py -2.7", help="Python launcher command for Python 2.7 Pepper helper")
+    parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
     args = parser.parse_args()
 
-    if not any([args.request, args.simulate, args.intervene]):
-        parser.error("Choose --request, --simulate, or --intervene")
+    if not any([args.request, args.simulate, args.intervene, args.live]):
+        parser.error("Choose --request, --simulate, --intervene, or --live")
 
     if args.request:
         payload = load_json(pathlib.Path(args.request))
@@ -563,6 +793,44 @@ def main():
     if args.simulate:
         session_payload = load_json(pathlib.Path(args.simulate))
         run_session(session_payload)
+        return
+
+    if args.live:
+        payload = {
+            "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+            "model": "phi-3.5-mini-3.8b-instruct",
+            "session_id": f"LIVE_{int(time.time())}",
+            "group_id": "G_LIVE",
+            "conversation_id": f"LIVE_{int(time.time())}",
+            "theme": args.theme,
+            "phase": "divergence",
+            "log_path": DEFAULT_LOG_PATH,
+            "mode_combo": {
+                "elicitation": "perspective_shift",
+                "style": "passive",
+                "initiative": "reactive",
+            },
+            "seed_ideas": [],
+            "conversation_history": [],
+            "history_window_turns": 12,
+            "temperature": 0.35,
+            "max_tokens": 600,
+            "timeout_seconds": 30.0,
+            "context_fallback": "Could you tell me a little more?",
+        }
+
+        if not args.pepper:
+            run_live_dialog(payload, console_receive, console_send)
+            return
+
+        send_to_pepper, pepper = build_pepper_tts_sender(args)
+        print("Input remains in console; Pepper will speak each LLM reply.")
+
+        try:
+            run_live_dialog(payload, console_receive, send_to_pepper)
+        finally:
+            if pepper:
+                pepper.close()
         return
 
     if args.intervene:
@@ -620,6 +888,12 @@ def main():
 
         print("--- Intervene mode started ---")
         print("Commands: CHANGE (phase switch), ROBOT (robot intervention), PROACTIVE/REACTIVE (switch initiative), exit (stop)")
+
+        say_from_intervene = None
+        pepper_tts_client = None
+        if args.pepper:
+            say_from_intervene, pepper_tts_client = build_pepper_tts_sender(args)
+            print("Pepper TTS enabled for intervene mode.")
 
         # Event queue and monitor thread for proactive silence detection
         event_queue = queue.Queue()
@@ -754,6 +1028,11 @@ def main():
                 {"speaker": "Robot", "text": result["reply"], "timestamp": robot_timestamp}
             )
             print_robot_turn(result)
+            if say_from_intervene:
+                try:
+                    say_from_intervene(result["reply"])
+                except Exception as error:
+                    print(f"Warning: Pepper TTS failed: {error}")
             append_log_turn_block(payload.get("log_path"), payload, result, list(pending_participant_turns), robot_timestamp)
             phase_reply_count[current_phase] += 1
             pending_participant_turns = []
@@ -817,6 +1096,8 @@ def main():
                 # allow background threads to exit
                 monitor_thread.join(timeout=1)
                 # input_thread is daemon; it will exit on program termination
+                if pepper_tts_client:
+                    pepper_tts_client.close()
                 break
 
             if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:

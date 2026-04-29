@@ -41,3 +41,26 @@ S_G01_T1,G01,G01_T1_1777455947
 2026-04-29T11:45:50,Participant,something
 2026-04-29T11:46:03,Could you expand on that a bit more?
 
+
+LIVE_1777460246,G_LIVE,LIVE_1777460246
+
+2026-04-29T12:57:53,divergence,context_only,,,
+2026-04-29T12:57:53,Participant,What do you think of Delft's campus?
+2026-04-29T12:57:56,Could you tell me a little more?
+
+
+S_G01_T1,G01,G01_T1_1777460758
+
+2026-04-29T13:06:20,divergence,context_only,,,
+2026-04-29T13:06:10,Participant,What do you think of the campus in Delft
+2026-04-29T13:06:27,"It's great to hear your thoughts about TU Delft! To better support student wellbeing, perhaps we could explore more community events or initiatives that bring students together? What are some specific areas where you feel engagement might be enhanced?"
+
+2026-04-29T13:07:44,divergence,context_only,,,
+2026-04-29T13:07:34,Participant,What do you think about the building Echo?
+2026-04-29T13:07:46,"That's an interesting point! Buildings like Echo could be focal points for student gatherings or events, fostering a sense of community. Maybe we can think about how these spaces are utilized to enhance engagement? What activities do you envision taking place there that would benefit both wellbeing and academic involvement?"
+
+2026-04-29T13:09:31,divergence,context_only,,,
+2026-04-29T13:08:24,Participant,a
+2026-04-29T13:09:31,Participant,"Pepper , do you think students from a computer science background still know how to code or do you think AI is now doing all the work for them while they just give it prompts to do their work?"
+2026-04-29T13:09:33,"That's an insightful question! It might be beneficial to encourage a balance between AI assistance in computer science courses and hands-on coding experiences, ensuring students retain their practical skills while also leveraging technology for efficiency. How do you think we could achieve this blend at TU Delft?"
+
