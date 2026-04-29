@@ -49,3 +49,32 @@ python infra/lmstudio_minimal_bridge.py --intervene
 # --initiative proactive/reactive sets the behaviour of the robot
 # PROACTIVE makes the robot be proactive, REACTIVE makes the robot be reactive 
 ```
+
+#### --intervene with Pepper speech output
+```bash
+python infra/lmstudio_minimal_bridge.py --intervene --initiative reactive --pepper --pepper-ip 192.168.1.35 --pepper-port 9559
+```
+
+This keeps the same intervention logic as above:
+
+- reactive mode still triggers when the participant says Pepper or robot
+- proactive mode still triggers after silence is detected
+- CHANGE still switches between divergence and convergence
+- the only difference is that Pepper speaks each LLM reply
+
+If Python 3 does not have NAOqi installed, the bridge falls back to the Python 2.7 helper in `pepper/tts.py` so Pepper can still speak the response.
+
+#### --live (simple back-and-forth conversation)
+```bash
+python infra/lmstudio_minimal_bridge.py --live
+python infra/lmstudio_minimal_bridge.py --live --pepper
+```
+
+Use this when you want a straightforward participant/robot dialogue without the intervention schedule.
+
+## Pepper integration notes
+
+- The LM Studio bridge runs in Python 3.
+- Pepper NAOqi TTS is available through the Python 2.7 helper at `pepper/tts.py`.
+- The bridge can speak to Pepper directly if NAOqi is installed in the Python 3 environment, or it can call the Python 2.7 relay automatically.
+- For now, Pepper input in live mode is console-based unless you add a separate ASR relay.
