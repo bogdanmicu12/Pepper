@@ -43,8 +43,9 @@ DEFAULT_PEPPER_VOCABULARY = [
 
 MODE_REGISTRY = {
     "elicitation": ["perspective_shift", "generative", "elaboration_evidence"],
-    "style": ["passive", "assertive"],
+    "style": ["passive", "assertive", "supportive"],
     "initiative": ["reactive", "proactive"],
+    "role": ["facilitator", "solutionist"],
 }
 
 ELICITATION_ALIASES = {
@@ -55,16 +56,41 @@ MODE_DEFAULTS = {
     "elicitation": "perspective_shift",
     "style": "passive",
     "initiative": "reactive",
+    "role": "facilitator",
 }
 
 STYLE_SETUP = {
     "passive": "Use a gentle, low-pressure, non-directive tone.",
     "assertive": "Use a concise and direct facilitation tone while staying neutral.",
+    "supportive": "Use a warm, encouraging, and empathetic tone.",
+}
+
+VOCAL_DELIVERY = {
+    "passive": {
+        "speed": 0.9,          # Normal to slightly slower speech rate (0.5-1.5, 1.0 is default)
+        "volume": 0.75,        # Reduced volume for gentleness (0.0-1.0, 0.7 is default)
+        "pitch": 0.95,         # Slightly lower pitch (0.5-1.5, 1.0 is default)
+    },
+    "assertive": {
+        "speed": 1.2,          # Faster speech rate
+        "volume": 1.0,         # Elevated/full volume
+        "pitch": 0.9,          # Flatter pitch (lower)
+    },
+    "supportive": {
+        "speed": 0.85,         # Slower speech rate
+        "volume": 0.65,        # Reduced volume
+        "pitch": 1.1,          # Dynamic pitch (higher/more varied)
+    },
 }
 
 INITIATIVE_SETUP = {
     "reactive": "Intervene only after a pause or a direct prompt from participants.",
     "proactive": "Intervene when momentum drops or when phase goals are drifting.",
+}
+
+ROLE_SETUP = {
+    "facilitator": "Act as a neutral facilitator guiding group discussions and brainstorming.",
+    "solutionist": "Act as an active solutionist providing direct solutions and ideas instead of facilitating discussions.",
 }
 
 ELICITATION_SETUP = {
@@ -80,8 +106,7 @@ ELICITATION_SETUP = {
 }
 
 BASE_SETUP = (
-    "You are Pepper, a neutral facilitator in a two-person brainstorming session. "
-    "Never generate solutions or judge participants. "
+    "You are Pepper in a two-person brainstorming session. "
     "Respond naturally and conversationally, as if speaking aloud. "
     "Keep responses brief (1-3 sentences) and focused on one key idea or question."
 )
@@ -132,11 +157,38 @@ class PepperIO:
             except Exception:
                 pass
 
-    def say(self, text):
+    def set_vocal_params(self, speed=1.0, volume=0.7, pitch=1.0):
+        """Set vocal delivery parameters for speech.
+        
+        Args:
+            speed: Speech rate (0.5-1.5, default 1.0)
+            volume: Volume level (0.0-1.0, default 0.7)
+            pitch: Pitch level (0.5-1.5, default 1.0)
+        """
+        if not self.tts:
+            return
+        try:
+            # Set speech speed (parameter name varies by NAOqi version)
+            self.tts.setParameter("speed", speed)
+            # Set volume
+            self.tts.setVolume(volume)
+            # Set pitch
+            self.tts.setParameter("pitch", pitch)
+        except Exception as e:
+            # Silently fail if parameters not supported in this NAOqi version
+            pass
+
+    def say(self, text, style="passive"):
         if not text:
             return
         if self.tts:
+            # Apply vocal parameters based on style
+            if style in VOCAL_DELIVERY:
+                params = VOCAL_DELIVERY[style]
+                self.set_vocal_params(**params)
             self.tts.say(text)
+            # Reset to default after speaking
+            self.set_vocal_params()
 
     def listen(self, timeout_seconds=12.0, min_confidence=0.45):
         if not self.memory:
@@ -208,7 +260,7 @@ def build_pepper_tts_sender(args):
 
         print("naoqi SDK unavailable in Python 3; using Python 2.7 Pepper TTS bridge.")
 
-        def sender(text):
+        def sender(text, style="passive"):
             send_to_pepper_via_py27(
                 text=text,
                 ip=args.pepper_ip,
@@ -228,8 +280,8 @@ def build_pepper_tts_sender(args):
     pepper.connect()
     print(f"Connected to Pepper at {args.pepper_ip}:{args.pepper_port}")
 
-    def sender(text):
-        pepper.say(text)
+    def sender(text, style="passive"):
+        pepper.say(text, style=style)
 
     return sender, pepper
 
@@ -328,6 +380,7 @@ def select_prompt(payload, prompt_bank):
 def build_messages(payload, prompt_row, elicitation_key):
     style_key = get_mode_value(payload, "style")
     initiative_key = get_mode_value(payload, "initiative")
+    role_key = get_mode_value(payload, "role")
     seed_ideas = payload.get("seed_ideas", [])
     seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
     history_window_turns = int(payload.get("history_window_turns", 10))
@@ -342,7 +395,8 @@ def build_messages(payload, prompt_row, elicitation_key):
         f"{BASE_SETUP} "
         f"Elicitation mode guidance: {ELICITATION_SETUP[elicitation_key]} "
         f"Style guidance: {STYLE_SETUP[style_key]} "
-        f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]}"
+        f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]} "
+        f"Role guidance: {ROLE_SETUP[role_key]}"
     )
 
     user_text = (
@@ -365,6 +419,7 @@ def build_messages(payload, prompt_row, elicitation_key):
 def build_messages_context_only(payload):
     style_key = get_mode_value(payload, "style")
     initiative_key = get_mode_value(payload, "initiative")
+    role_key = get_mode_value(payload, "role")
     seed_ideas = payload.get("seed_ideas", [])
     seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
     history_window_turns = int(payload.get("history_window_turns", 10))
@@ -379,6 +434,7 @@ def build_messages_context_only(payload):
         f"{BASE_SETUP} "
         f"Style guidance: {STYLE_SETUP[style_key]} "
         f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]} "
+        f"Role guidance: {ROLE_SETUP[role_key]} "
         "No predefined intervention prompt is active. Respond only based on conversation context."
     )
 
@@ -498,6 +554,7 @@ def process(payload):
         reply = fallback_reply(payload, prompt_row)
         source = "fallback"
 
+    style = get_mode_value(payload, "style")
     return {
         "ok": True,
         "source": source,
@@ -507,6 +564,7 @@ def process(payload):
         "phase": prompt_row["phase"],
         "prompt_text": prompt_row["text"],
         "fallback_reason": fallback_reason,
+        "style": style,
     }
 
 
@@ -525,6 +583,7 @@ def process_context_only(payload):
         reply = fallback_text
         source = "fallback"
 
+    style = get_mode_value(payload, "style")
     return {
         "ok": True,
         "source": source,
@@ -534,6 +593,7 @@ def process_context_only(payload):
         "phase": payload.get("phase", "divergence"),
         "prompt_text": "",
         "fallback_reason": fallback_reason,
+        "style": style,
     }
 
 
@@ -693,7 +753,7 @@ def console_receive():
     return input("Participant: ").strip()
 
 
-def console_send(text):
+def console_send(text, style="passive"):
     print(f"Robot: {text}")
 
 
@@ -751,7 +811,7 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
         })
 
         print_robot_turn(result)
-        send_fn(result["reply"])
+        send_fn(result["reply"], style=result.get("style", "passive"))
         append_log_turn_block(
             base_payload.get("log_path"),
             request,
@@ -809,6 +869,7 @@ def main():
                 "elicitation": "perspective_shift",
                 "style": "passive",
                 "initiative": "reactive",
+                "role": "facilitator",
             },
             "seed_ideas": [],
             "conversation_history": [],
@@ -864,6 +925,7 @@ def main():
                 "elicitation": "perspective_shift",
                 "style": "passive",
                 "initiative": chosen_initiative,
+                "role": "facilitator",
             },
             "seed_ideas": [],
             "conversation_history": [],
@@ -1030,7 +1092,8 @@ def main():
             print_robot_turn(result)
             if say_from_intervene:
                 try:
-                    say_from_intervene(result["reply"])
+                    style = result.get("style", "passive")
+                    say_from_intervene(result["reply"], style=style)
                 except Exception as error:
                     print(f"Warning: Pepper TTS failed: {error}")
             append_log_turn_block(payload.get("log_path"), payload, result, list(pending_participant_turns), robot_timestamp)
