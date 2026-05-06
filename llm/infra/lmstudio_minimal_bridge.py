@@ -2,6 +2,7 @@
 import argparse
 import csv
 import json
+import os
 import pathlib
 import re
 import time
@@ -29,6 +30,11 @@ DEFAULT_LOG_PATH = "logs/logs.csv"
 PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
 LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
+DEFAULT_NAOQI_SDK_ROOT = (
+    r"C:\Users\Hrsem\Downloads"
+    r"\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649"
+    r"\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649"
+)
 
 DEFAULT_PEPPER_VOCABULARY = [
     "pepper",
@@ -188,12 +194,68 @@ def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
         "--say",
         text,
     ]
-    completed = subprocess.run(command, capture_output=True, text=True)
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        env=build_naoqi_subprocess_env(),
+    )
     if completed.returncode != 0:
         stderr_text = (completed.stderr or "").strip()
         stdout_text = (completed.stdout or "").strip()
         details = stderr_text or stdout_text or "unknown error"
         raise RuntimeError(f"Python 2.7 Pepper TTS bridge failed: {details}")
+
+
+def receive_from_pepper_via_py27(ip, port, language, vocabulary, timeout_seconds, min_confidence, script_path, python_cmd):
+    command = list(python_cmd) + [
+        str(script_path),
+        "--ip",
+        str(ip),
+        "--port",
+        str(port),
+        "--language",
+        str(language),
+        "--timeout",
+        str(timeout_seconds),
+        "--min-confidence",
+        str(min_confidence),
+    ]
+    if vocabulary:
+        command.extend(["--vocabulary", ",".join(vocabulary)])
+
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        env=build_naoqi_subprocess_env(),
+    )
+    if completed.returncode != 0:
+        stderr_text = (completed.stderr or "").strip()
+        stdout_text = (completed.stdout or "").strip()
+        details = stderr_text or stdout_text or "unknown error"
+        raise RuntimeError(f"Python 2.7 Pepper ASR bridge failed: {details}")
+
+    return (completed.stdout or "").strip()
+
+
+def build_naoqi_subprocess_env():
+    env = os.environ.copy()
+    sdk_root = env.get("NAOQI_SDK_ROOT", DEFAULT_NAOQI_SDK_ROOT)
+    sdk_lib = pathlib.Path(sdk_root) / "lib"
+    sdk_bin = pathlib.Path(sdk_root) / "bin"
+
+    if (sdk_lib / "naoqi.py").exists():
+        existing_pythonpath = env.get("PYTHONPATH", "")
+        pythonpath_parts = [str(sdk_lib)]
+        if existing_pythonpath:
+            pythonpath_parts.append(existing_pythonpath)
+        env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
+
+        existing_path = env.get("PATH", "")
+        env["PATH"] = os.pathsep.join([str(sdk_bin), str(sdk_lib), existing_path])
+
+    return env
 
 
 def build_pepper_tts_sender(args):
@@ -223,7 +285,7 @@ def build_pepper_tts_sender(args):
         ip=args.pepper_ip,
         port=args.pepper_port,
         language=args.pepper_language,
-        vocabulary=parse_phrase_list(args.pepper_vocabulary) or DEFAULT_PEPPER_VOCABULARY,
+        vocabulary=parse_phrase_list(args.pepper_vocabulary),
     )
     pepper.connect()
     print(f"Connected to Pepper at {args.pepper_ip}:{args.pepper_port}")
@@ -232,6 +294,49 @@ def build_pepper_tts_sender(args):
         pepper.say(text)
 
     return sender, pepper
+
+
+def build_pepper_receiver(args, pepper):
+    if pepper is not None:
+        def receiver():
+            print("Listening via Pepper...")
+            text = pepper.listen(
+                timeout_seconds=args.asr_timeout,
+                min_confidence=args.asr_min_confidence,
+            )
+            if text:
+                print(f"Participant: {text}")
+            return text
+
+        return receiver
+
+    legacy_python_cmd = args.pepper_legacy_python.strip().split()
+    legacy_script = pathlib.Path(args.pepper_legacy_asr_script)
+    if not legacy_script.is_absolute():
+        legacy_script = (ROOT.parent / legacy_script).resolve()
+
+    if not legacy_script.exists():
+        raise RuntimeError(f"Legacy ASR script not found: {legacy_script}")
+
+    vocabulary = parse_phrase_list(args.pepper_vocabulary)
+
+    def receiver():
+        print("Listening via Pepper...")
+        text = receive_from_pepper_via_py27(
+            ip=args.pepper_ip,
+            port=args.pepper_port,
+            language=args.pepper_language,
+            vocabulary=vocabulary,
+            timeout_seconds=args.asr_timeout,
+            min_confidence=args.asr_min_confidence,
+            script_path=legacy_script,
+            python_cmd=legacy_python_cmd,
+        )
+        if text:
+            print(f"Participant: {text}")
+        return text
+
+    return receiver
 
 
 def format_history_window(history, window_turns):
@@ -777,8 +882,9 @@ def main():
     parser.add_argument("--pepper-vocabulary", help="Comma-separated vocabulary for Pepper ASR")
     parser.add_argument("--asr-timeout", type=float, default=12.0, help="Seconds to wait for one Pepper ASR result")
     parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
-    parser.add_argument("--pepper-legacy-python", default="py -2.7", help="Python launcher command for Python 2.7 Pepper helper")
+    parser.add_argument("--pepper-legacy-python", default="py -2.7-64", help="Python launcher command for Python 2.7 Pepper helper")
     parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
+    parser.add_argument("--pepper-legacy-asr-script", default=str(ROOT.parent / "pepper" / "asr.py"), help="Path to Python 2.7 Pepper ASR helper script")
     args = parser.parse_args()
 
     if not any([args.request, args.simulate, args.intervene, args.live]):
@@ -824,10 +930,11 @@ def main():
             return
 
         send_to_pepper, pepper = build_pepper_tts_sender(args)
-        print("Input remains in console; Pepper will speak each LLM reply.")
+        receive_from_pepper = build_pepper_receiver(args, pepper)
+        print("Pepper will listen for participant speech and speak each LLM reply.")
 
         try:
-            run_live_dialog(payload, console_receive, send_to_pepper)
+            run_live_dialog(payload, receive_from_pepper, send_to_pepper)
         finally:
             if pepper:
                 pepper.close()
