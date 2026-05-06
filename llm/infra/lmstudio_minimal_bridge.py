@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import io
 import json
 import os
 import pathlib
@@ -10,8 +11,13 @@ import threading
 import queue
 import urllib.error
 import urllib.request
+import wave
 import sys
 import subprocess
+try:
+    import httpx
+except Exception:
+    httpx = None
 try:
     import msvcrt
 except Exception:
@@ -47,10 +53,20 @@ DEFAULT_PEPPER_VOCABULARY = [
     "budget",
 ]
 
+CONTENT_TYPE_BY_EXT = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/m4a",
+    ".flac": "audio/flac",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/opus",
+}
+
 MODE_REGISTRY = {
     "elicitation": ["perspective_shift", "generative", "elaboration_evidence"],
-    "style": ["passive", "assertive"],
+    "style": ["passive", "assertive", "supportive"],
     "initiative": ["reactive", "proactive"],
+    "role": ["facilitator", "solutionist"],
 }
 
 ELICITATION_ALIASES = {
@@ -61,16 +77,41 @@ MODE_DEFAULTS = {
     "elicitation": "perspective_shift",
     "style": "passive",
     "initiative": "reactive",
+    "role": "facilitator",
 }
 
 STYLE_SETUP = {
     "passive": "Use a gentle, low-pressure, non-directive tone.",
     "assertive": "Use a concise and direct facilitation tone while staying neutral.",
+    "supportive": "Use a warm, encouraging, and empathetic tone.",
+}
+
+VOCAL_DELIVERY = {
+    "passive": {
+        "speed": 0.9,          # Normal to slightly slower speech rate (0.5-1.5, 1.0 is default)
+        "volume": 0.75,        # Reduced volume for gentleness (0.0-1.0, 0.7 is default)
+        "pitch": 0.95,         # Slightly lower pitch (0.5-1.5, 1.0 is default)
+    },
+    "assertive": {
+        "speed": 1.2,          # Faster speech rate
+        "volume": 1.0,         # Elevated/full volume
+        "pitch": 0.9,          # Flatter pitch (lower)
+    },
+    "supportive": {
+        "speed": 0.85,         # Slower speech rate
+        "volume": 0.65,        # Reduced volume
+        "pitch": 1.1,          # Dynamic pitch (higher/more varied)
+    },
 }
 
 INITIATIVE_SETUP = {
     "reactive": "Intervene only after a pause or a direct prompt from participants.",
     "proactive": "Intervene when momentum drops or when phase goals are drifting.",
+}
+
+ROLE_SETUP = {
+    "facilitator": "Act as a neutral facilitator guiding group discussions and brainstorming.",
+    "solutionist": "Act as an active solutionist providing direct solutions and ideas instead of facilitating discussions.",
 }
 
 ELICITATION_SETUP = {
@@ -86,8 +127,7 @@ ELICITATION_SETUP = {
 }
 
 BASE_SETUP = (
-    "You are Pepper, a neutral facilitator in a two-person brainstorming session. "
-    "Never generate solutions or judge participants. "
+    "You are Pepper in a two-person brainstorming session. "
     "Respond naturally and conversationally, as if speaking aloud. "
     "Keep responses brief (1-3 sentences) and focused on one key idea or question."
 )
@@ -98,6 +138,117 @@ def parse_phrase_list(value):
         return []
     parts = re.split(r"[,;\n]+", value)
     return [item.strip() for item in parts if item.strip()]
+
+
+def infer_audio_content_type(path):
+    suffix = pathlib.Path(path).suffix.lower()
+    return CONTENT_TYPE_BY_EXT.get(suffix, "application/octet-stream")
+
+
+def parse_deepgram_transcript(response):
+    # Deepgram returns transcript data under results.channels[0].alternatives[0].transcript
+    if not isinstance(response, dict):
+        return ""
+    results = response.get("results", {})
+    channels = results.get("channels") or []
+    if channels:
+        alternatives = channels[0].get("alternatives") or []
+        if alternatives:
+            return (alternatives[0].get("transcript") or "").strip()
+    return (response.get("transcript") or "").strip()
+
+
+def deepgram_transcribe_bytes(audio_data, content_type, api_key, endpoint="https://api.eu.deepgram.com/v1/listen", timeout=60.0):
+    endpoint = endpoint.rstrip("/")
+    headers = {
+        "Authorization": f"Token {api_key}",
+        "Content-Type": content_type,
+    }
+
+    if httpx is not None:
+        response = httpx.post(endpoint, headers=headers, content=audio_data, timeout=timeout)
+        response.raise_for_status()
+        return parse_deepgram_transcript(response.json())
+
+    request = urllib.request.Request(endpoint, data=audio_data, method="POST")
+    for key, value in headers.items():
+        request.add_header(key, value)
+
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return parse_deepgram_transcript(payload)
+
+
+def deepgram_transcribe_file(audio_path, api_key, endpoint="https://api.eu.deepgram.com/v1/listen", timeout=60.0):
+    audio_path = pathlib.Path(audio_path)
+    if not audio_path.exists():
+        raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+    with audio_path.open("rb") as handle:
+        audio_data = handle.read()
+
+    return deepgram_transcribe_bytes(
+        audio_data=audio_data,
+        content_type=infer_audio_content_type(audio_path),
+        api_key=api_key,
+        endpoint=endpoint,
+        timeout=timeout,
+    )
+
+
+def record_audio_from_mic(duration=6.0, samplerate=16000, channels=1):
+    try:
+        import sounddevice as sd
+    except Exception as error:
+        raise RuntimeError(
+            "sounddevice is required for live microphone capture. Install it with `pip install sounddevice`."
+        ) from error
+
+    print(f"Recording microphone audio for up to {duration:.1f} seconds...")
+    recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=channels, dtype="int16")
+    sd.wait()
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as wf:
+        wf.setnchannels(channels)
+        wf.setsampwidth(2)
+        wf.setframerate(samplerate)
+        wf.writeframes(recording.tobytes())
+    return buffer.getvalue(), samplerate, channels
+
+
+def build_deepgram_live_receiver(api_key, endpoint, record_seconds=6.0):
+    def receive():
+        input("Press Enter to record your next response, then speak clearly: ")
+        audio_bytes, samplerate, channels = record_audio_from_mic(duration=record_seconds)
+        print("Sending audio to Deepgram for transcription...")
+        content_type = "audio/wav"
+        transcript = deepgram_transcribe_bytes(
+            audio_data=audio_bytes,
+            content_type=content_type,
+            api_key=api_key,
+            endpoint=endpoint,
+        )
+        print(f"[Deepgram] Recognized speech: {transcript}")
+        return transcript
+
+    return receive
+
+
+def build_audio_turn_request(payload, transcript):
+    participant_turn = {
+        "speaker": "Participant",
+        "text": transcript,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    request = dict(payload)
+    request.update({
+        "turn_index": request.get("turn_index", 1),
+        "turn_timestamp": participant_turn["timestamp"],
+        "last_user_utterance": transcript,
+        "recent_participant_turns": [participant_turn],
+        "conversation_history": list(request.get("conversation_history", [])) + [participant_turn],
+    })
+    return request
 
 
 class PepperIO:
@@ -138,11 +289,38 @@ class PepperIO:
             except Exception:
                 pass
 
-    def say(self, text):
+    def set_vocal_params(self, speed=1.0, volume=0.7, pitch=1.0):
+        """Set vocal delivery parameters for speech.
+        
+        Args:
+            speed: Speech rate (0.5-1.5, default 1.0)
+            volume: Volume level (0.0-1.0, default 0.7)
+            pitch: Pitch level (0.5-1.5, default 1.0)
+        """
+        if not self.tts:
+            return
+        try:
+            # Set speech speed (parameter name varies by NAOqi version)
+            self.tts.setParameter("speed", speed)
+            # Set volume
+            self.tts.setVolume(volume)
+            # Set pitch
+            self.tts.setParameter("pitch", pitch)
+        except Exception as e:
+            # Silently fail if parameters not supported in this NAOqi version
+            pass
+
+    def say(self, text, style="passive"):
         if not text:
             return
         if self.tts:
+            # Apply vocal parameters based on style
+            if style in VOCAL_DELIVERY:
+                params = VOCAL_DELIVERY[style]
+                self.set_vocal_params(**params)
             self.tts.say(text)
+            # Reset to default after speaking
+            self.set_vocal_params()
 
     def listen(self, timeout_seconds=12.0, min_confidence=0.45):
         if not self.memory:
@@ -270,7 +448,7 @@ def build_pepper_tts_sender(args):
 
         print("naoqi SDK unavailable in Python 3; using Python 2.7 Pepper TTS bridge.")
 
-        def sender(text):
+        def sender(text, style="passive"):
             send_to_pepper_via_py27(
                 text=text,
                 ip=args.pepper_ip,
@@ -290,8 +468,8 @@ def build_pepper_tts_sender(args):
     pepper.connect()
     print(f"Connected to Pepper at {args.pepper_ip}:{args.pepper_port}")
 
-    def sender(text):
-        pepper.say(text)
+    def sender(text, style="passive"):
+        pepper.say(text, style=style)
 
     return sender, pepper
 
@@ -433,6 +611,7 @@ def select_prompt(payload, prompt_bank):
 def build_messages(payload, prompt_row, elicitation_key):
     style_key = get_mode_value(payload, "style")
     initiative_key = get_mode_value(payload, "initiative")
+    role_key = get_mode_value(payload, "role")
     seed_ideas = payload.get("seed_ideas", [])
     seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
     history_window_turns = int(payload.get("history_window_turns", 10))
@@ -447,7 +626,8 @@ def build_messages(payload, prompt_row, elicitation_key):
         f"{BASE_SETUP} "
         f"Elicitation mode guidance: {ELICITATION_SETUP[elicitation_key]} "
         f"Style guidance: {STYLE_SETUP[style_key]} "
-        f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]}"
+        f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]} "
+        f"Role guidance: {ROLE_SETUP[role_key]}"
     )
 
     user_text = (
@@ -470,6 +650,7 @@ def build_messages(payload, prompt_row, elicitation_key):
 def build_messages_context_only(payload):
     style_key = get_mode_value(payload, "style")
     initiative_key = get_mode_value(payload, "initiative")
+    role_key = get_mode_value(payload, "role")
     seed_ideas = payload.get("seed_ideas", [])
     seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
     history_window_turns = int(payload.get("history_window_turns", 10))
@@ -484,6 +665,7 @@ def build_messages_context_only(payload):
         f"{BASE_SETUP} "
         f"Style guidance: {STYLE_SETUP[style_key]} "
         f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]} "
+        f"Role guidance: {ROLE_SETUP[role_key]} "
         "No predefined intervention prompt is active. Respond only based on conversation context."
     )
 
@@ -603,6 +785,7 @@ def process(payload):
         reply = fallback_reply(payload, prompt_row)
         source = "fallback"
 
+    style = get_mode_value(payload, "style")
     return {
         "ok": True,
         "source": source,
@@ -612,6 +795,7 @@ def process(payload):
         "phase": prompt_row["phase"],
         "prompt_text": prompt_row["text"],
         "fallback_reason": fallback_reason,
+        "style": style,
     }
 
 
@@ -630,6 +814,7 @@ def process_context_only(payload):
         reply = fallback_text
         source = "fallback"
 
+    style = get_mode_value(payload, "style")
     return {
         "ok": True,
         "source": source,
@@ -639,6 +824,7 @@ def process_context_only(payload):
         "phase": payload.get("phase", "divergence"),
         "prompt_text": "",
         "fallback_reason": fallback_reason,
+        "style": style,
     }
 
 
@@ -685,7 +871,9 @@ def append_log_turn_block(log_path, payload, result, participant_turns, robot_ti
 
 
 def print_robot_turn(result):
-    print(f"[Robot:{result['source']}/{result['prompt_id']}] {result['reply']}")
+    print(f"[Robot:{result['source']}/{result.get('prompt_id', '')}] {result['reply']}")
+    if result.get('source') == 'fallback' and result.get('fallback_reason'):
+        print(f"[Fallback reason] {result['fallback_reason']}")
 
 
 def run_session(session_payload):
@@ -798,7 +986,7 @@ def console_receive():
     return input("Participant: ").strip()
 
 
-def console_send(text):
+def console_send(text, style="passive"):
     print(f"Robot: {text}")
 
 
@@ -856,7 +1044,7 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
         })
 
         print_robot_turn(result)
-        send_fn(result["reply"])
+        send_fn(result["reply"], style=result.get("style", "passive"))
         append_log_turn_block(
             base_payload.get("log_path"),
             request,
@@ -884,11 +1072,61 @@ def main():
     parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
     parser.add_argument("--pepper-legacy-python", default="py -2.7-64", help="Python launcher command for Python 2.7 Pepper helper")
     parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
-    parser.add_argument("--pepper-legacy-asr-script", default=str(ROOT.parent / "pepper" / "asr.py"), help="Path to Python 2.7 Pepper ASR helper script")
+    parser.add_argument("--deepgram-api-key", help="Deepgram API key for speech-to-text audio transcription")
+    parser.add_argument("--deepgram-audio", help="Path to an audio file for Deepgram transcription")
+    parser.add_argument("--deepgram-live", action="store_true", help="Use microphone + Deepgram for live participant speech recognition")
+    parser.add_argument("--deepgram-record-seconds", type=float, default=20.0, help="Maximum seconds to record from the microphone for each live speech turn")
+    parser.add_argument("--deepgram-endpoint", default="https://api.eu.deepgram.com/v1/listen", help="Deepgram STT endpoint URL")
     args = parser.parse_args()
 
-    if not any([args.request, args.simulate, args.intervene, args.live]):
-        parser.error("Choose --request, --simulate, --intervene, or --live")
+    if not any([args.request, args.simulate, args.intervene, args.live, args.deepgram_audio, args.deepgram_live]):
+        parser.error("Choose --request, --simulate, --intervene, --live, --deepgram-audio, or --deepgram-live")
+
+    if args.deepgram_live and not args.live:
+        parser.error("--deepgram-live requires --live")
+
+    if args.deepgram_audio:
+        if not args.deepgram_api_key:
+            parser.error("--deepgram-api-key is required when using --deepgram-audio")
+
+        transcript = deepgram_transcribe_file(
+            audio_path=args.deepgram_audio,
+            api_key=args.deepgram_api_key,
+            endpoint=args.deepgram_endpoint,
+        )
+        print(f"[Deepgram] Recognized speech: {transcript}")
+
+        if args.request:
+            payload = load_json(pathlib.Path(args.request))
+        else:
+            payload = {
+                "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+                "model": "phi-3.5-mini-3.8b-instruct",
+                "session_id": f"AUDIO_{int(time.time())}",
+                "group_id": "G_AUDIO",
+                "conversation_id": f"AUDIO_{int(time.time())}",
+                "theme": args.theme,
+                "phase": "divergence",
+                "log_path": DEFAULT_LOG_PATH,
+                "mode_combo": {
+                    "elicitation": "perspective_shift",
+                    "style": "passive",
+                    "initiative": "reactive",
+                    "role": "facilitator",
+                },
+                "seed_ideas": [],
+                "conversation_history": [],
+                "history_window_turns": 12,
+                "temperature": 0.35,
+                "max_tokens": 600,
+                "timeout_seconds": 30.0,
+                "context_fallback": "Could you tell me a little more?",
+            }
+
+        request = build_audio_turn_request(payload, transcript)
+        result = process_context_only(request)
+        print(json.dumps(result, ensure_ascii=True))
+        return
 
     if args.request:
         payload = load_json(pathlib.Path(args.request))
@@ -902,6 +1140,9 @@ def main():
         return
 
     if args.live:
+        if args.deepgram_live and not args.deepgram_api_key:
+            parser.error("--deepgram-api-key is required when using --deepgram-live")
+
         payload = {
             "server_url": "http://127.0.0.1:1234/v1/chat/completions",
             "model": "phi-3.5-mini-3.8b-instruct",
@@ -915,6 +1156,7 @@ def main():
                 "elicitation": "perspective_shift",
                 "style": "passive",
                 "initiative": "reactive",
+                "role": "facilitator",
             },
             "seed_ideas": [],
             "conversation_history": [],
@@ -925,16 +1167,23 @@ def main():
             "context_fallback": "Could you tell me a little more?",
         }
 
+        receive_fn = console_receive
+        if args.deepgram_live:
+            receive_fn = build_deepgram_live_receiver(
+                api_key=args.deepgram_api_key,
+                endpoint=args.deepgram_endpoint,
+                record_seconds=args.deepgram_record_seconds,
+            )
+
         if not args.pepper:
-            run_live_dialog(payload, console_receive, console_send)
+            run_live_dialog(payload, receive_fn, console_send)
             return
 
         send_to_pepper, pepper = build_pepper_tts_sender(args)
-        receive_from_pepper = build_pepper_receiver(args, pepper)
-        print("Pepper will listen for participant speech and speak each LLM reply.")
+        print("Input uses microphone/Deepgram; Pepper will speak each LLM reply.")
 
         try:
-            run_live_dialog(payload, receive_from_pepper, send_to_pepper)
+            run_live_dialog(payload, receive_fn, send_to_pepper)
         finally:
             if pepper:
                 pepper.close()
@@ -971,6 +1220,7 @@ def main():
                 "elicitation": "perspective_shift",
                 "style": "passive",
                 "initiative": chosen_initiative,
+                "role": "facilitator",
             },
             "seed_ideas": [],
             "conversation_history": [],
@@ -1137,7 +1387,8 @@ def main():
             print_robot_turn(result)
             if say_from_intervene:
                 try:
-                    say_from_intervene(result["reply"])
+                    style = result.get("style", "passive")
+                    say_from_intervene(result["reply"], style=style)
                 except Exception as error:
                     print(f"Warning: Pepper TTS failed: {error}")
             append_log_turn_block(payload.get("log_path"), payload, result, list(pending_participant_turns), robot_timestamp)
