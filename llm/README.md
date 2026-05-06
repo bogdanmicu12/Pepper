@@ -74,14 +74,45 @@ Use this when you want a straightforward participant/robot dialogue without the 
 
 #### --live with Deepgram microphone input
 ```bash
-python infra/lmstudio_minimal_bridge.py --live --deepgram-live --deepgram-api-key YOUR_API_KEY
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live
 ```
 
-This records a short microphone segment each turn, transcribes it with Deepgram, and sends the recognized speech to LM Studio.
+This now runs in continuous microphone mode by default. The microphones stay live, completed speech segments are transcribed in the background, and the robot only responds when a participant says `Pepper`.
+
+By default, live Deepgram input uses Focusrite mode: input channel 1 is logged and passed to the model as `Participant 1`, and input channel 2 is logged and passed as `Participant 2`.
+
+The Deepgram API key is configured as the script default, so you only need `--deepgram-api-key` if you want to override it.
+
+To inspect audio devices:
+```bash
+python infra/lmstudio_minimal_bridge.py --list-audio-devices
+```
+
+To force the built-in/default laptop microphone instead of the Focusrite:
+```bash
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --audio-input-mode laptop
+```
+
+If device autodetection misses the Scarlett 4i4, pass an index or name substring:
+```bash
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --audio-device Focusrite
+```
 
 If you also want Pepper to speak the robot output:
 ```bash
-python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --deepgram-api-key YOUR_API_KEY
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper
+```
+
+For experiment-controlled intervention mode, continuous microphone input can replace typed participant lines while keeping the same `ROBOT` intervention behavior:
+```bash
+python infra/lmstudio_minimal_bridge.py --intervene --deepgram-live --pepper
+```
+
+Transcripts are written to `logs/transcript.csv` by default. Each participant utterance and robot reply gets its own row with session/group/conversation IDs, speaker, text, timestamps, Focusrite channel/source metadata, trigger status, and model/fallback metadata. The older readable intervention blocks still go to `logs/logs.csv`.
+
+Useful tuning flags:
+```bash
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --vad-start-rms 350 --vad-stop-rms 180 --vad-end-silence-seconds 0.9
 ```
 
 #### --deepgram-audio (speech recognition to LM Studio)
