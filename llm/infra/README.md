@@ -8,6 +8,27 @@ From workspace root:
 C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --request infra/test_request.json
 ```
 
+List audio input devices:
+
+```powershell
+C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --list-audio-devices
+```
+
+Run continuous Focusrite speech input:
+
+```powershell
+C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --intervene --deepgram-live --pepper
+```
+
+In continuous Focusrite mode:
+
+- Input 1 is `Participant 1`.
+- Input 2 is `Participant 2`.
+- The microphones stay live and speech is segmented automatically.
+- Saying `Pepper` triggers the same robot intervention as the console `ROBOT` command.
+- Full event transcripts are written to `logs/transcript.csv`.
+- The Deepgram API key is configured as the script default and can still be overridden with `--deepgram-api-key`.
+
 Expected result:
 
 - `"source": "lmstudio"` when the model replies before timeout.
@@ -76,3 +97,5 @@ robot_reply_timestamp,robot_reply
 ```
 
 Blank lines separate turns and conversations.
+
+Continuous microphone runs also write `logs/transcript.csv`, with one row per participant utterance, robot reply, warning, or error. It includes session/group/conversation IDs, speaker, text, start/end timestamps, Focusrite channel metadata, trigger status, prompt/model metadata, and fallback reasons.

@@ -14,6 +14,7 @@ import urllib.request
 import wave
 import sys
 import subprocess
+import socket
 try:
     import httpx
 except Exception:
@@ -33,6 +34,9 @@ PROMPT_BANK = ROOT / "prompts" / "prompt_bank.csv"
 COUNTERBALANCING = ROOT / "design" / "counterbalancing_elicitation.csv"
 THEMES_FILE = ROOT / "design" / "themes.json"
 DEFAULT_LOG_PATH = "logs/logs.csv"
+DEFAULT_TRANSCRIPT_LOG_PATH = "logs/transcript.csv"
+DEFAULT_DEEPGRAM_API_KEY = "1e2c44170806023c9a41217044208e89b466a040"
+DEFAULT_PEPPER_LEGACY_PYTHON = r"C:\Python27\python.exe"
 PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
 LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
@@ -41,6 +45,46 @@ DEFAULT_NAOQI_SDK_ROOT = (
     r"\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649"
     r"\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649"
 )
+DEFAULT_AUDIO_INPUT_MODE = "focusrite"
+DEFAULT_AUDIO_CAPTURE_MODE = "continuous"
+FOCUSRITE_DEVICE_PATTERNS = ("focusrite", "scarlett")
+LAPTOP_DEVICE_PATTERNS = (
+    "microphone array",
+    "internal microphone",
+    "realtek",
+    "intel smart sound",
+    "laptop",
+)
+DEFAULT_FOCUSRITE_PARTICIPANTS = (
+    (1, "Participant 1"),
+    (2, "Participant 2"),
+)
+DEFAULT_TRIGGER_WORDS = ("pepper",)
+TRANSCRIPT_LOG_COLUMNS = [
+    "session_id",
+    "group_id",
+    "conversation_id",
+    "sequence_index",
+    "robot_turn_index",
+    "event_type",
+    "timestamp",
+    "start_timestamp",
+    "end_timestamp",
+    "speaker",
+    "text",
+    "phase",
+    "strategy",
+    "prompt_id",
+    "source",
+    "audio_input_mode",
+    "audio_device",
+    "audio_source",
+    "audio_channel",
+    "audio_rms",
+    "triggered_robot",
+    "trigger_words",
+    "fallback_reason",
+]
 
 DEFAULT_PEPPER_VOCABULARY = [
     "pepper",
@@ -196,31 +240,435 @@ def deepgram_transcribe_file(audio_path, api_key, endpoint="https://api.eu.deepg
     )
 
 
-def record_audio_from_mic(duration=6.0, samplerate=16000, channels=1):
+def timestamp_from_epoch(epoch_seconds=None):
+    if epoch_seconds is None:
+        epoch_seconds = time.time()
+    whole_seconds = int(epoch_seconds)
+    milliseconds = int(round((float(epoch_seconds) - whole_seconds) * 1000))
+    if milliseconds >= 1000:
+        whole_seconds += 1
+        milliseconds = 0
+    return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(whole_seconds)) + f".{milliseconds:03d}"
+
+
+def epoch_from_timestamp(timestamp):
+    if not timestamp:
+        return None
+    base_timestamp = str(timestamp).split(".", 1)[0]
+    parsed = time.strptime(base_timestamp, "%Y-%m-%dT%H:%M:%S")
+    return time.mktime(parsed)
+
+
+def resolve_log_path(log_path):
+    if not log_path:
+        return None
+    path = pathlib.Path(log_path)
+    if path.is_absolute():
+        return path
+    return ROOT / path
+
+
+def load_sounddevice():
     try:
         import sounddevice as sd
     except Exception as error:
         raise RuntimeError(
             "sounddevice is required for live microphone capture. Install it with `pip install sounddevice`."
         ) from error
+    return sd
 
-    print(f"Recording microphone audio for up to {duration:.1f} seconds...")
-    recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=channels, dtype="int16")
-    sd.wait()
+
+def parse_audio_device_identifier(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return text
+
+
+def get_default_input_device_index(sd):
+    try:
+        default_device = sd.default.device
+    except Exception:
+        return None
+
+    if isinstance(default_device, (list, tuple)):
+        default_device = default_device[0] if default_device else None
+
+    try:
+        default_device = int(default_device)
+    except Exception:
+        return None
+
+    return default_device if default_device >= 0 else None
+
+
+def format_input_device_list(sd):
+    default_input = get_default_input_device_index(sd)
+    lines = []
+    for index, device in enumerate(sd.query_devices()):
+        max_inputs = int(device.get("max_input_channels", 0) or 0)
+        if max_inputs <= 0:
+            continue
+        name = device.get("name", "Unknown input")
+        samplerate = device.get("default_samplerate", "unknown")
+        marker = " [default input]" if index == default_input else ""
+        lines.append(f"{index}: {name} ({max_inputs} input channel(s), default {samplerate} Hz){marker}")
+    return lines or ["No input devices found."]
+
+
+def print_audio_devices():
+    sd = load_sounddevice()
+    print("Available input devices:")
+    for line in format_input_device_list(sd):
+        print(f"  {line}")
+
+
+def resolve_input_device(sd, preferred_device=None, patterns=(), min_input_channels=1, mode_name="audio", allow_default=False):
+    devices = sd.query_devices()
+    preferred = parse_audio_device_identifier(preferred_device)
+
+    def usable_device(index):
+        try:
+            device = devices[int(index)]
+        except Exception:
+            return None
+        max_inputs = int(device.get("max_input_channels", 0) or 0)
+        return device if max_inputs >= int(min_input_channels) else None
+
+    if isinstance(preferred, int):
+        device = usable_device(preferred)
+        if device is None:
+            raise RuntimeError(
+                f"Audio device {preferred} is not available or does not have "
+                f"{min_input_channels} input channel(s)."
+            )
+        return preferred, device
+
+    if isinstance(preferred, str):
+        needle = preferred.lower()
+        for index, device in enumerate(devices):
+            name = str(device.get("name", ""))
+            if needle in name.lower() and usable_device(index) is not None:
+                return index, device
+
+        available = "\n".join(f"  {line}" for line in format_input_device_list(sd))
+        raise RuntimeError(
+            f"Could not find requested {mode_name} input device matching {preferred!r}.\n"
+            f"Available input devices:\n{available}"
+        )
+
+    for pattern in patterns:
+        needle = pattern.lower()
+        for index, device in enumerate(devices):
+            name = str(device.get("name", ""))
+            if needle in name.lower() and usable_device(index) is not None:
+                return index, device
+
+    if allow_default:
+        default_index = get_default_input_device_index(sd)
+        if default_index is not None:
+            device = usable_device(default_index)
+            if device is not None:
+                return default_index, device
+
+    available = "\n".join(f"  {line}" for line in format_input_device_list(sd))
+    raise RuntimeError(
+        f"Could not find a {mode_name} input device with {min_input_channels} input channel(s).\n"
+        f"Available input devices:\n{available}\n"
+        "Use --list-audio-devices to inspect names, then pass --audio-device with an index or name."
+    )
+
+
+def select_samplerate(device_info=None, requested_samplerate=None):
+    if requested_samplerate:
+        return int(requested_samplerate)
+    if device_info:
+        try:
+            return int(float(device_info.get("default_samplerate") or 48000))
+        except Exception:
+            pass
+    return 48000
+
+
+def encode_wav_bytes(recording, samplerate, channels):
     buffer = io.BytesIO()
     with wave.open(buffer, "wb") as wf:
-        wf.setnchannels(channels)
+        wf.setnchannels(int(channels))
         wf.setsampwidth(2)
-        wf.setframerate(samplerate)
+        wf.setframerate(int(samplerate))
         wf.writeframes(recording.tobytes())
-    return buffer.getvalue(), samplerate, channels
+    return buffer.getvalue()
 
 
-def build_deepgram_live_receiver(api_key, endpoint, record_seconds=6.0):
+def record_audio_array(duration=6.0, samplerate=None, channels=1, device=None, device_info=None):
+    sd = load_sounddevice()
+    if device_info is None and device is not None:
+        device_info = sd.query_devices(device)
+
+    selected_samplerate = select_samplerate(device_info, samplerate)
+    device_label = ""
+    if device_info:
+        device_label = f" on {device_info.get('name', 'selected device')}"
+
+    print(
+        f"Recording {channels} channel(s){device_label} "
+        f"for up to {duration:.1f} seconds at {selected_samplerate} Hz..."
+    )
+    recording = sd.rec(
+        int(duration * selected_samplerate),
+        samplerate=selected_samplerate,
+        channels=int(channels),
+        dtype="int16",
+        device=device,
+    )
+    sd.wait()
+    return recording, selected_samplerate
+
+
+def record_audio_from_mic(duration=6.0, samplerate=None, channels=1, device=None, device_info=None):
+    recording, selected_samplerate = record_audio_array(
+        duration=duration,
+        samplerate=samplerate,
+        channels=channels,
+        device=device,
+        device_info=device_info,
+    )
+    return encode_wav_bytes(recording, selected_samplerate, channels), selected_samplerate, channels
+
+
+def extract_audio_channel(recording, channel_number):
+    if int(channel_number) < 1:
+        raise ValueError("Audio channel numbers are 1-based; use 1 for the first input.")
+
+    shape = getattr(recording, "shape", ())
+    if len(shape) == 1:
+        channel_count = 1
+    else:
+        channel_count = int(shape[1])
+
+    if int(channel_number) > channel_count:
+        raise ValueError(f"Recorded audio only has {channel_count} channel(s); channel {channel_number} is unavailable.")
+
+    if len(shape) == 1:
+        return recording.reshape((-1, 1))
+
+    channel_index = int(channel_number) - 1
+    return recording[:, channel_index:channel_index + 1]
+
+
+def calculate_audio_rms(recording):
+    if getattr(recording, "size", 0) == 0:
+        return 0.0
+    samples = recording.reshape(-1).astype("float32")
+    return float((samples * samples).mean() ** 0.5)
+
+
+def parse_speaker_prefixed_text(text, default_speaker="Participant"):
+    if ":" not in text:
+        return default_speaker, text
+    left, right = text.split(":", 1)
+    if left.strip() and right.strip():
+        return left.strip(), right.strip()
+    return default_speaker, text
+
+
+def make_participant_turn(speaker, text, timestamp=None, **metadata):
+    turn = {
+        "speaker": speaker or "Participant",
+        "text": (text or "").strip(),
+        "timestamp": timestamp or time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    for key, value in metadata.items():
+        if value is not None:
+            turn[key] = value
+    return turn
+
+
+def coerce_participant_turns(received, timestamp=None):
+    if received is None:
+        return []
+
+    if isinstance(received, str):
+        text = received.strip()
+        if not text:
+            return []
+        speaker, clean_text = parse_speaker_prefixed_text(text)
+        return [make_participant_turn(speaker, clean_text, timestamp=timestamp)]
+
+    if isinstance(received, dict):
+        text = str(received.get("text", "")).strip()
+        if not text:
+            return []
+        return [make_participant_turn(
+            received.get("speaker", "Participant"),
+            text,
+            timestamp=received.get("timestamp") or timestamp,
+            audio_source=received.get("audio_source"),
+            audio_channel=received.get("audio_channel"),
+            audio_rms=received.get("audio_rms"),
+        )]
+
+    turns = []
+    if isinstance(received, (list, tuple)):
+        for item in received:
+            turns.extend(coerce_participant_turns(item, timestamp=timestamp))
+    return turns
+
+
+def format_participant_turns_text(turns):
+    pieces = []
+    for turn in turns:
+        speaker = turn.get("speaker", "Participant")
+        text = turn.get("text", "")
+        pieces.append(f"{speaker}: {text}" if speaker else text)
+    return " || ".join(piece for piece in pieces if piece.strip())
+
+
+def parse_trigger_words(value):
+    words = parse_phrase_list(value) if isinstance(value, str) else list(value or [])
+    cleaned = []
+    for word in words:
+        text = str(word).strip().lower()
+        if text:
+            cleaned.append(text)
+    return cleaned or list(DEFAULT_TRIGGER_WORDS)
+
+
+def text_contains_trigger_word(text, trigger_words=DEFAULT_TRIGGER_WORDS):
+    lower_text = (text or "").lower()
+    for word in parse_trigger_words(trigger_words):
+        pattern = r"(?<![a-z0-9_])" + re.escape(word.lower()) + r"(?![a-z0-9_])"
+        if re.search(pattern, lower_text):
+            return True
+    return False
+
+
+def resolve_live_audio_input(
+    input_mode=DEFAULT_AUDIO_INPUT_MODE,
+    audio_device=None,
+    participant_channel_map=DEFAULT_FOCUSRITE_PARTICIPANTS,
+):
+    sd = load_sounddevice()
+    selected_mode = (input_mode or DEFAULT_AUDIO_INPUT_MODE).strip().lower()
+
+    if selected_mode == "focusrite":
+        required_channels = max(int(channel) for channel, _speaker in participant_channel_map)
+        device_index, device_info = resolve_input_device(
+            sd,
+            preferred_device=audio_device,
+            patterns=FOCUSRITE_DEVICE_PATTERNS,
+            min_input_channels=required_channels,
+            mode_name="Focusrite",
+            allow_default=False,
+        )
+        channel_map = tuple((int(channel), speaker) for channel, speaker in participant_channel_map)
+    elif selected_mode == "laptop":
+        device_index, device_info = resolve_input_device(
+            sd,
+            preferred_device=audio_device,
+            patterns=LAPTOP_DEVICE_PATTERNS,
+            min_input_channels=1,
+            mode_name="laptop microphone",
+            allow_default=True,
+        )
+        required_channels = 1
+        channel_map = ((1, "Participant"),)
+    else:
+        raise RuntimeError(f"Unknown audio input mode: {input_mode}. Use focusrite or laptop.")
+
+    return {
+        "sounddevice": sd,
+        "input_mode": selected_mode,
+        "device_index": device_index,
+        "device_info": device_info,
+        "required_channels": required_channels,
+        "channel_map": channel_map,
+    }
+
+
+def build_deepgram_live_receiver(
+    api_key,
+    endpoint,
+    record_seconds=6.0,
+    input_mode=DEFAULT_AUDIO_INPUT_MODE,
+    audio_device=None,
+    samplerate=None,
+    silence_rms=120.0,
+    participant_channel_map=DEFAULT_FOCUSRITE_PARTICIPANTS,
+):
+    audio_input = resolve_live_audio_input(
+        input_mode=input_mode,
+        audio_device=audio_device,
+        participant_channel_map=participant_channel_map,
+    )
+    selected_mode = audio_input["input_mode"]
+    device_index = audio_input["device_index"]
+    device_info = audio_input["device_info"]
+    required_channels = audio_input["required_channels"]
+    channel_map = audio_input["channel_map"]
+
+    if selected_mode == "focusrite":
+        channel_map_text = ", ".join(f"input {channel} -> {speaker}" for channel, speaker in channel_map)
+        print(f"Focusrite mode enabled: device {device_index}: {device_info.get('name', 'Focusrite')}")
+        print(f"Focusrite participant map: {channel_map_text}")
+    else:
+        print(f"Laptop microphone mode enabled: device {device_index}: {device_info.get('name', 'default input')}")
+
     def receive():
-        input("Press Enter to record your next response, then speak clearly: ")
-        audio_bytes, samplerate, channels = record_audio_from_mic(duration=record_seconds)
-        print("Sending audio to Deepgram for transcription...")
+        command = input("Press Enter to record the next participant segment, or type quit to stop: ").strip()
+        if command.lower() in LIVE_EXIT_WORDS:
+            return command
+
+        if selected_mode == "focusrite":
+            segment_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+            recording, selected_samplerate = record_audio_array(
+                duration=record_seconds,
+                samplerate=samplerate,
+                channels=required_channels,
+                device=device_index,
+                device_info=device_info,
+            )
+            participant_turns = []
+            for channel_number, speaker in channel_map:
+                channel_audio = extract_audio_channel(recording, channel_number)
+                rms = calculate_audio_rms(channel_audio)
+                if silence_rms and rms < float(silence_rms):
+                    print(f"[Focusrite input {channel_number} / {speaker}] skipped as silence (RMS {rms:.1f})")
+                    continue
+
+                audio_bytes = encode_wav_bytes(channel_audio, selected_samplerate, 1)
+                print(f"Sending Focusrite input {channel_number} ({speaker}) to Deepgram...")
+                transcript = deepgram_transcribe_bytes(
+                    audio_data=audio_bytes,
+                    content_type="audio/wav",
+                    api_key=api_key,
+                    endpoint=endpoint,
+                )
+                print(f"[Deepgram:{speaker}:input {channel_number}] {transcript or '(no speech recognized)'}")
+                if transcript:
+                    participant_turns.append(make_participant_turn(
+                        speaker,
+                        transcript,
+                        timestamp=segment_timestamp,
+                        audio_source="focusrite",
+                        audio_channel=int(channel_number),
+                        audio_rms=round(rms, 2),
+                    ))
+            return participant_turns
+
+        audio_bytes, selected_samplerate, channels = record_audio_from_mic(
+            duration=record_seconds,
+            samplerate=samplerate,
+            channels=1,
+            device=device_index,
+            device_info=device_info,
+        )
+        print("Sending laptop microphone audio to Deepgram for transcription...")
         content_type = "audio/wav"
         transcript = deepgram_transcribe_bytes(
             audio_data=audio_bytes,
@@ -234,21 +682,322 @@ def build_deepgram_live_receiver(api_key, endpoint, record_seconds=6.0):
     return receive
 
 
-def build_audio_turn_request(payload, transcript):
-    participant_turn = {
-        "speaker": "Participant",
-        "text": transcript,
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
-    }
+def build_audio_turn_request(payload, transcript, speaker="Participant"):
+    participant_turn = make_participant_turn(speaker, transcript)
     request = dict(payload)
     request.update({
         "turn_index": request.get("turn_index", 1),
         "turn_timestamp": participant_turn["timestamp"],
-        "last_user_utterance": transcript,
+        "last_user_utterance": format_participant_turns_text([participant_turn]),
         "recent_participant_turns": [participant_turn],
         "conversation_history": list(request.get("conversation_history", [])) + [participant_turn],
     })
     return request
+
+
+class ContinuousSpeechSegmenter:
+    def __init__(
+        self,
+        speaker,
+        channel_number,
+        samplerate,
+        start_rms=400.0,
+        stop_rms=220.0,
+        end_silence_seconds=0.8,
+        pre_roll_seconds=0.25,
+        min_speech_seconds=0.35,
+        max_segment_seconds=18.0,
+    ):
+        self.speaker = speaker
+        self.channel_number = int(channel_number)
+        self.samplerate = int(samplerate)
+        self.start_rms = float(start_rms)
+        self.stop_rms = float(stop_rms)
+        self.end_silence_frames = int(float(end_silence_seconds) * self.samplerate)
+        self.pre_roll_frames_limit = int(float(pre_roll_seconds) * self.samplerate)
+        self.min_speech_frames = int(float(min_speech_seconds) * self.samplerate)
+        self.max_segment_frames = int(float(max_segment_seconds) * self.samplerate)
+        self.pre_roll = []
+        self.pre_roll_frame_count = 0
+        self.active = False
+        self.frames = []
+        self.frame_count = 0
+        self.silence_frames = 0
+        self.start_epoch = None
+        self.peak_rms = 0.0
+
+    def _append_pre_roll(self, chunk):
+        self.pre_roll.append(chunk.copy())
+        self.pre_roll_frame_count += len(chunk)
+        while self.pre_roll and self.pre_roll_frame_count > self.pre_roll_frames_limit:
+            removed = self.pre_roll.pop(0)
+            self.pre_roll_frame_count -= len(removed)
+
+    def _finish(self, end_epoch):
+        if not self.active:
+            return None
+
+        frames = list(self.frames)
+        frame_count = self.frame_count
+        start_epoch = self.start_epoch
+        peak_rms = self.peak_rms
+
+        self.active = False
+        self.frames = []
+        self.frame_count = 0
+        self.silence_frames = 0
+        self.start_epoch = None
+        self.peak_rms = 0.0
+
+        if frame_count < self.min_speech_frames or not frames:
+            return None
+
+        import numpy as np
+        audio = np.concatenate(frames, axis=0)
+        return {
+            "speaker": self.speaker,
+            "audio_channel": self.channel_number,
+            "start_epoch": start_epoch,
+            "end_epoch": end_epoch,
+            "start_timestamp": timestamp_from_epoch(start_epoch),
+            "end_timestamp": timestamp_from_epoch(end_epoch),
+            "duration_seconds": round(max(0.0, float(end_epoch) - float(start_epoch)), 3),
+            "audio_rms": round(peak_rms, 2),
+            "audio": audio,
+        }
+
+    def process(self, chunk, chunk_start_epoch):
+        chunk = chunk.copy()
+        chunk_frames = len(chunk)
+        chunk_end_epoch = float(chunk_start_epoch) + (chunk_frames / self.samplerate)
+        rms = calculate_audio_rms(chunk)
+
+        if not self.active:
+            self._append_pre_roll(chunk)
+            if rms < self.start_rms:
+                return None
+
+            self.active = True
+            self.frames = list(self.pre_roll)
+            self.frame_count = self.pre_roll_frame_count
+            pre_roll_seconds = max(0.0, (self.pre_roll_frame_count - chunk_frames) / self.samplerate)
+            self.start_epoch = max(0.0, float(chunk_start_epoch) - pre_roll_seconds)
+            self.silence_frames = 0
+            self.peak_rms = rms
+            self.pre_roll = []
+            self.pre_roll_frame_count = 0
+            return None
+
+        self.frames.append(chunk)
+        self.frame_count += chunk_frames
+        self.peak_rms = max(self.peak_rms, rms)
+
+        if rms >= self.stop_rms:
+            self.silence_frames = 0
+        else:
+            self.silence_frames += chunk_frames
+
+        if self.silence_frames >= self.end_silence_frames or self.frame_count >= self.max_segment_frames:
+            return self._finish(chunk_end_epoch)
+
+        return None
+
+    def flush(self):
+        if not self.active:
+            return None
+        end_epoch = time.time()
+        return self._finish(end_epoch)
+
+
+class ContinuousAudioTranscriber:
+    def __init__(
+        self,
+        api_key,
+        endpoint,
+        input_mode=DEFAULT_AUDIO_INPUT_MODE,
+        audio_device=None,
+        samplerate=None,
+        participant_channel_map=DEFAULT_FOCUSRITE_PARTICIPANTS,
+        vad_start_rms=400.0,
+        vad_stop_rms=220.0,
+        vad_end_silence_seconds=0.8,
+        vad_pre_roll_seconds=0.25,
+        vad_min_speech_seconds=0.35,
+        vad_max_segment_seconds=18.0,
+        blocksize=1024,
+        transcribe_workers=2,
+    ):
+        audio_input = resolve_live_audio_input(
+            input_mode=input_mode,
+            audio_device=audio_device,
+            participant_channel_map=participant_channel_map,
+        )
+        self.sd = audio_input["sounddevice"]
+        self.api_key = api_key
+        self.endpoint = endpoint
+        self.input_mode = audio_input["input_mode"]
+        self.device_index = audio_input["device_index"]
+        self.device_info = audio_input["device_info"]
+        self.required_channels = audio_input["required_channels"]
+        self.channel_map = audio_input["channel_map"]
+        self.samplerate = select_samplerate(self.device_info, samplerate)
+        self.blocksize = int(blocksize)
+        self.segment_queue = queue.Queue()
+        self.transcript_queue = queue.Queue()
+        self.stop_event = threading.Event()
+        self.stream = None
+        self.worker_threads = []
+        self.transcribe_workers = max(1, int(transcribe_workers))
+        self.segmenters = [
+            ContinuousSpeechSegmenter(
+                speaker=speaker,
+                channel_number=channel_number,
+                samplerate=self.samplerate,
+                start_rms=vad_start_rms,
+                stop_rms=vad_stop_rms,
+                end_silence_seconds=vad_end_silence_seconds,
+                pre_roll_seconds=vad_pre_roll_seconds,
+                min_speech_seconds=vad_min_speech_seconds,
+                max_segment_seconds=vad_max_segment_seconds,
+            )
+            for channel_number, speaker in self.channel_map
+        ]
+
+    @property
+    def device_name(self):
+        return self.device_info.get("name", "selected input")
+
+    def start(self):
+        if self.stream:
+            return
+
+        self.stop_event.clear()
+        for index in range(self.transcribe_workers):
+            thread = threading.Thread(target=self._transcribe_worker, name=f"deepgram_worker_{index + 1}", daemon=True)
+            thread.start()
+            self.worker_threads.append(thread)
+
+        self.stream = self.sd.InputStream(
+            samplerate=self.samplerate,
+            channels=self.required_channels,
+            dtype="int16",
+            device=self.device_index,
+            blocksize=self.blocksize,
+            callback=self._audio_callback,
+        )
+        self.stream.start()
+
+        if self.input_mode == "focusrite":
+            channel_map_text = ", ".join(f"input {channel} -> {speaker}" for channel, speaker in self.channel_map)
+            print(f"Continuous Focusrite input: device {self.device_index}: {self.device_name}")
+            print(f"Focusrite participant map: {channel_map_text}")
+        else:
+            print(f"Continuous laptop microphone input: device {self.device_index}: {self.device_name}")
+
+    def stop(self):
+        self.stop_event.set()
+        if self.stream:
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception:
+                pass
+            self.stream = None
+
+        for segmenter in self.segmenters:
+            segment = segmenter.flush()
+            if segment:
+                self.segment_queue.put(segment)
+
+        for _index in range(self.transcribe_workers):
+            self.segment_queue.put(None)
+
+        for thread in self.worker_threads:
+            thread.join(timeout=2)
+        self.worker_threads = []
+
+    def get_event(self, timeout=0.1):
+        try:
+            return self.transcript_queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+
+    def _audio_callback(self, indata, frames, time_info, status):
+        if status:
+            self.transcript_queue.put({
+                "type": "warning",
+                "message": str(status),
+                "timestamp": timestamp_from_epoch(),
+            })
+
+        chunk_start_epoch = time.time() - (float(frames) / self.samplerate)
+        audio_chunk = indata.copy()
+        for segmenter in self.segmenters:
+            try:
+                channel_audio = extract_audio_channel(audio_chunk, segmenter.channel_number)
+                segment = segmenter.process(channel_audio, chunk_start_epoch)
+                if segment:
+                    segment["audio_source"] = self.input_mode
+                    segment["audio_device"] = self.device_name
+                    self.segment_queue.put(segment)
+            except Exception as error:
+                self.transcript_queue.put({
+                    "type": "error",
+                    "message": f"Audio segmentation failed on channel {segmenter.channel_number}: {error}",
+                    "timestamp": timestamp_from_epoch(),
+                })
+
+    def _transcribe_worker(self):
+        while True:
+            segment = self.segment_queue.get()
+            if segment is None:
+                break
+
+            try:
+                audio_bytes = encode_wav_bytes(segment["audio"], self.samplerate, 1)
+                transcript = deepgram_transcribe_bytes(
+                    audio_data=audio_bytes,
+                    content_type="audio/wav",
+                    api_key=self.api_key,
+                    endpoint=self.endpoint,
+                )
+            except Exception as error:
+                self.transcript_queue.put({
+                    "type": "error",
+                    "message": f"Deepgram transcription failed for {segment['speaker']}: {error}",
+                    "timestamp": timestamp_from_epoch(),
+                    "speaker": segment.get("speaker"),
+                    "start_timestamp": segment.get("start_timestamp"),
+                    "end_timestamp": segment.get("end_timestamp"),
+                })
+                continue
+
+            transcript = (transcript or "").strip()
+            if not transcript:
+                self.transcript_queue.put({
+                    "type": "empty",
+                    "speaker": segment["speaker"],
+                    "timestamp": timestamp_from_epoch(),
+                    "start_timestamp": segment["start_timestamp"],
+                    "end_timestamp": segment["end_timestamp"],
+                    "audio_channel": segment["audio_channel"],
+                    "audio_rms": segment["audio_rms"],
+                })
+                continue
+
+            turn = make_participant_turn(
+                segment["speaker"],
+                transcript,
+                timestamp=segment["end_timestamp"],
+                start_timestamp=segment["start_timestamp"],
+                end_timestamp=segment["end_timestamp"],
+                duration_seconds=segment["duration_seconds"],
+                audio_source=segment["audio_source"],
+                audio_device=segment["audio_device"],
+                audio_channel=segment["audio_channel"],
+                audio_rms=segment["audio_rms"],
+            )
+            self.transcript_queue.put({"type": "turn", "turn": turn})
 
 
 class PepperIO:
@@ -385,58 +1134,37 @@ def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
         raise RuntimeError(f"Python 2.7 Pepper TTS bridge failed: {details}")
 
 
-def receive_from_pepper_via_py27(ip, port, language, vocabulary, timeout_seconds, min_confidence, script_path, python_cmd):
-    command = list(python_cmd) + [
-        str(script_path),
-        "--ip",
-        str(ip),
-        "--port",
-        str(port),
-        "--language",
-        str(language),
-        "--timeout",
-        str(timeout_seconds),
-        "--min-confidence",
-        str(min_confidence),
-    ]
-    if vocabulary:
-        command.extend(["--vocabulary", ",".join(vocabulary)])
-
-    completed = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        env=build_naoqi_subprocess_env(),
-    )
-    if completed.returncode != 0:
-        stderr_text = (completed.stderr or "").strip()
-        stdout_text = (completed.stdout or "").strip()
-        details = stderr_text or stdout_text or "unknown error"
-        raise RuntimeError(f"Python 2.7 Pepper ASR bridge failed: {details}")
-
-    return (completed.stdout or "").strip()
+def check_tcp_port(host, port, timeout=1.5):
+    try:
+        with socket.create_connection((str(host), int(port)), timeout=float(timeout)):
+            return True
+    except OSError:
+        return False
 
 
-def build_naoqi_subprocess_env():
-    env = os.environ.copy()
-    sdk_root = env.get("NAOQI_SDK_ROOT", DEFAULT_NAOQI_SDK_ROOT)
-    sdk_lib = pathlib.Path(sdk_root) / "lib"
-    sdk_bin = pathlib.Path(sdk_root) / "bin"
+def make_resilient_sender(sender, label="Pepper TTS"):
+    failed_once = {"value": False}
 
-    if (sdk_lib / "naoqi.py").exists():
-        existing_pythonpath = env.get("PYTHONPATH", "")
-        pythonpath_parts = [str(sdk_lib)]
-        if existing_pythonpath:
-            pythonpath_parts.append(existing_pythonpath)
-        env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
+    def resilient_sender(text, style="passive"):
+        try:
+            sender(text, style=style)
+        except Exception as error:
+            if not failed_once["value"]:
+                print(f"Warning: {label} failed; continuing without stopping the live listener: {error}")
+                failed_once["value"] = True
+            else:
+                print(f"Warning: {label} failed again; continuing.")
 
-        existing_path = env.get("PATH", "")
-        env["PATH"] = os.pathsep.join([str(sdk_bin), str(sdk_lib), existing_path])
-
-    return env
+    return resilient_sender
 
 
 def build_pepper_tts_sender(args):
+    if not check_tcp_port(args.pepper_ip, args.pepper_port):
+        print(
+            f"Warning: Pepper is not reachable at {args.pepper_ip}:{args.pepper_port}. "
+            "The live listener will keep running; use --pepper-ip if Pepper has a different address."
+        )
+
     if ALProxy is None:
         legacy_python_cmd = args.pepper_legacy_python.strip().split()
         legacy_script = pathlib.Path(args.pepper_legacy_tts_script)
@@ -457,7 +1185,7 @@ def build_pepper_tts_sender(args):
                 python_cmd=legacy_python_cmd,
             )
 
-        return sender, None
+        return make_resilient_sender(sender), None
 
     pepper = PepperIO(
         ip=args.pepper_ip,
@@ -471,7 +1199,7 @@ def build_pepper_tts_sender(args):
     def sender(text, style="passive"):
         pepper.say(text, style=style)
 
-    return sender, pepper
+    return make_resilient_sender(sender), pepper
 
 
 def build_pepper_receiver(args, pepper):
@@ -828,6 +1556,94 @@ def process_context_only(payload):
     }
 
 
+def append_transcript_event(transcript_log_path, payload, event):
+    if not transcript_log_path:
+        return
+
+    path = resolve_log_path(transcript_log_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    needs_header = (not path.exists()) or path.stat().st_size == 0
+
+    row = {
+        "session_id": payload.get("session_id", "S01"),
+        "group_id": payload.get("group_id", "G01"),
+        "conversation_id": payload.get("conversation_id", payload.get("session_id", "S01")),
+        "sequence_index": event.get("sequence_index", ""),
+        "robot_turn_index": event.get("robot_turn_index", ""),
+        "event_type": event.get("event_type", ""),
+        "timestamp": event.get("timestamp") or event.get("end_timestamp") or timestamp_from_epoch(),
+        "start_timestamp": event.get("start_timestamp", ""),
+        "end_timestamp": event.get("end_timestamp", ""),
+        "speaker": event.get("speaker", ""),
+        "text": event.get("text", ""),
+        "phase": event.get("phase", payload.get("phase", "")),
+        "strategy": event.get("strategy", ""),
+        "prompt_id": event.get("prompt_id", ""),
+        "source": event.get("source", ""),
+        "audio_input_mode": event.get("audio_input_mode", payload.get("audio_input_mode", "")),
+        "audio_device": event.get("audio_device", payload.get("audio_device", "")),
+        "audio_source": event.get("audio_source", ""),
+        "audio_channel": event.get("audio_channel", ""),
+        "audio_rms": event.get("audio_rms", ""),
+        "triggered_robot": event.get("triggered_robot", ""),
+        "trigger_words": event.get("trigger_words", ""),
+        "fallback_reason": event.get("fallback_reason", ""),
+    }
+
+    with path.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=TRANSCRIPT_LOG_COLUMNS)
+        if needs_header:
+            writer.writeheader()
+        writer.writerow(row)
+
+
+def append_participant_transcript_event(transcript_log_path, payload, turn, sequence_index, triggered_robot=False, trigger_words=DEFAULT_TRIGGER_WORDS, robot_turn_index=""):
+    append_transcript_event(
+        transcript_log_path,
+        payload,
+        {
+            "sequence_index": sequence_index,
+            "robot_turn_index": robot_turn_index,
+            "event_type": "participant",
+            "timestamp": turn.get("timestamp", ""),
+            "start_timestamp": turn.get("start_timestamp", turn.get("timestamp", "")),
+            "end_timestamp": turn.get("end_timestamp", turn.get("timestamp", "")),
+            "speaker": turn.get("speaker", "Participant"),
+            "text": turn.get("text", ""),
+            "audio_input_mode": payload.get("audio_input_mode", ""),
+            "audio_device": turn.get("audio_device", payload.get("audio_device", "")),
+            "audio_source": turn.get("audio_source", ""),
+            "audio_channel": turn.get("audio_channel", ""),
+            "audio_rms": turn.get("audio_rms", ""),
+            "triggered_robot": "true" if triggered_robot else "false",
+            "trigger_words": ",".join(parse_trigger_words(trigger_words)),
+        },
+    )
+
+
+def append_robot_transcript_event(transcript_log_path, payload, result, sequence_index, robot_turn_index, robot_timestamp):
+    append_transcript_event(
+        transcript_log_path,
+        payload,
+        {
+            "sequence_index": sequence_index,
+            "robot_turn_index": robot_turn_index,
+            "event_type": "robot",
+            "timestamp": robot_timestamp,
+            "start_timestamp": robot_timestamp,
+            "end_timestamp": robot_timestamp,
+            "speaker": "Robot",
+            "text": result.get("reply", ""),
+            "phase": result.get("phase", payload.get("phase", "")),
+            "strategy": result.get("strategy", ""),
+            "prompt_id": result.get("prompt_id", ""),
+            "source": result.get("source", ""),
+            "triggered_robot": "true",
+            "fallback_reason": result.get("fallback_reason", ""),
+        },
+    )
+
+
 def append_log_conversation_header(handle, session_id, group_id, conversation_id):
     handle.write(f"{session_id},{group_id},{conversation_id}\n")
     handle.write("\n")
@@ -837,7 +1653,7 @@ def append_log_turn_block(log_path, payload, result, participant_turns, robot_ti
     if not log_path:
         return
 
-    path = ROOT / log_path
+    path = resolve_log_path(log_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     session_id = payload.get("session_id", "S01")
     group_id = payload.get("group_id", "G01")
@@ -934,8 +1750,7 @@ def run_session(session_payload):
             try:
                 last_ts = pending_participant_turns[-1]["timestamp"] if pending_participant_turns else None
                 if last_ts:
-                    last_struct = time.strptime(last_ts, "%Y-%m-%dT%H:%M:%S")
-                    last_epoch = time.mktime(last_struct)
+                    last_epoch = epoch_from_timestamp(last_ts)
                     elapsed = time.time() - last_epoch
                     if elapsed >= PROACTIVE_SILENCE_THRESHOLD:
                         should_intervene = True
@@ -1005,32 +1820,44 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
     print("Say/type one participant turn at a time. Type quit/exit/stop to end.")
 
     conversation_history = base_payload.setdefault("conversation_history", [])
+    transcript_log_path = base_payload.get("transcript_log_path", DEFAULT_TRANSCRIPT_LOG_PATH)
+    sequence_index = 0
     turn_index = 0
 
     while True:
-        participant_text = (receive_fn() or "").strip()
-        if not participant_text:
-            continue
-
-        if participant_text.lower() in LIVE_EXIT_WORDS:
+        received = receive_fn()
+        if isinstance(received, str) and received.strip().lower() in LIVE_EXIT_WORDS:
             print("--- Live dialog stopped ---")
             break
 
         participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
-        participant_turn = {
-            "speaker": "Participant",
-            "text": participant_text,
-            "timestamp": participant_timestamp,
-        }
-        conversation_history.append(participant_turn)
+        participant_turns = coerce_participant_turns(received, timestamp=participant_timestamp)
+        if not participant_turns:
+            continue
+
+        if len(participant_turns) == 1 and participant_turns[0]["text"].lower() in LIVE_EXIT_WORDS:
+            print("--- Live dialog stopped ---")
+            break
+
+        for participant_turn in participant_turns:
+            sequence_index += 1
+            conversation_history.append(participant_turn)
+            print(f"[{participant_turn['speaker']}] {participant_turn['text']}")
+            append_participant_transcript_event(
+                transcript_log_path,
+                base_payload,
+                participant_turn,
+                sequence_index=sequence_index,
+                triggered_robot=True,
+            )
 
         turn_index += 1
         request = dict(base_payload)
         request.update({
             "turn_index": turn_index,
-            "turn_timestamp": participant_timestamp,
-            "last_user_utterance": participant_text,
-            "recent_participant_turns": [participant_turn],
+            "turn_timestamp": participant_turns[0].get("timestamp", participant_timestamp),
+            "last_user_utterance": format_participant_turns_text(participant_turns),
+            "recent_participant_turns": participant_turns,
             "conversation_history": conversation_history,
         })
 
@@ -1045,13 +1872,163 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
 
         print_robot_turn(result)
         send_fn(result["reply"], style=result.get("style", "passive"))
+        sequence_index += 1
+        append_robot_transcript_event(
+            transcript_log_path,
+            request,
+            result,
+            sequence_index=sequence_index,
+            robot_turn_index=turn_index,
+            robot_timestamp=robot_timestamp,
+        )
         append_log_turn_block(
             base_payload.get("log_path"),
             request,
             result,
-            [participant_turn],
+            participant_turns,
             robot_timestamp,
         )
+
+
+def run_continuous_live_dialog(base_payload, listener, send_fn, trigger_words=DEFAULT_TRIGGER_WORDS):
+    print("--- Continuous live dialog mode started ---")
+    print("Microphones are live. Say Pepper to trigger the robot. Press Ctrl+C to stop.")
+
+    conversation_history = base_payload.setdefault("conversation_history", [])
+    pending_participant_turns = []
+    transcript_log_path = base_payload.get("transcript_log_path", DEFAULT_TRANSCRIPT_LOG_PATH)
+    sequence_index = 0
+    robot_turn_index = 0
+    trigger_words = parse_trigger_words(trigger_words)
+
+    def trigger_robot(triggering_turn):
+        nonlocal sequence_index, robot_turn_index, pending_participant_turns
+        if not pending_participant_turns:
+            return
+
+        robot_turn_index += 1
+        request = dict(base_payload)
+        request.update({
+            "turn_index": robot_turn_index,
+            "turn_timestamp": triggering_turn.get("timestamp", timestamp_from_epoch()),
+            "last_user_utterance": format_participant_turns_text(pending_participant_turns),
+            "recent_participant_turns": list(pending_participant_turns),
+            "conversation_history": conversation_history,
+        })
+
+        result = process_context_only(request)
+        robot_timestamp = timestamp_from_epoch()
+
+        robot_turn = {
+            "speaker": "Robot",
+            "text": result["reply"],
+            "timestamp": robot_timestamp,
+        }
+        conversation_history.append(robot_turn)
+
+        print_robot_turn(result)
+        sequence_index += 1
+        append_robot_transcript_event(
+            transcript_log_path,
+            request,
+            result,
+            sequence_index=sequence_index,
+            robot_turn_index=robot_turn_index,
+            robot_timestamp=robot_timestamp,
+        )
+        send_fn(result["reply"], style=result.get("style", "passive"))
+        append_log_turn_block(
+            base_payload.get("log_path"),
+            request,
+            result,
+            list(pending_participant_turns),
+            robot_timestamp,
+        )
+        pending_participant_turns = []
+
+    listener.start()
+    try:
+        while True:
+            event = listener.get_event(timeout=0.2)
+            if event is None:
+                continue
+
+            event_type = event.get("type")
+            if event_type == "turn":
+                turn = event["turn"]
+                triggered = text_contains_trigger_word(turn.get("text", ""), trigger_words)
+                conversation_history.append(turn)
+                pending_participant_turns.append(turn)
+                sequence_index += 1
+                print(f"[{turn.get('timestamp', '')} {turn.get('speaker', 'Participant')}] {turn.get('text', '')}")
+                append_participant_transcript_event(
+                    transcript_log_path,
+                    base_payload,
+                    turn,
+                    sequence_index=sequence_index,
+                    triggered_robot=triggered,
+                    trigger_words=trigger_words,
+                    robot_turn_index=robot_turn_index + 1 if triggered else "",
+                )
+                if triggered:
+                    trigger_robot(turn)
+                continue
+
+            if event_type == "empty":
+                print(
+                    f"[{event.get('end_timestamp', '')} {event.get('speaker', 'Participant')}] "
+                    "No speech recognized."
+                )
+                continue
+
+            if event_type in {"warning", "error"}:
+                message = event.get("message", "")
+                print(f"[Audio {event_type}] {message}")
+                sequence_index += 1
+                append_transcript_event(
+                    transcript_log_path,
+                    base_payload,
+                    {
+                        "sequence_index": sequence_index,
+                        "event_type": event_type,
+                        "timestamp": event.get("timestamp", timestamp_from_epoch()),
+                        "start_timestamp": event.get("start_timestamp", ""),
+                        "end_timestamp": event.get("end_timestamp", ""),
+                        "speaker": event.get("speaker", ""),
+                        "text": message,
+                        "source": "audio",
+                    },
+                )
+    except KeyboardInterrupt:
+        print("--- Continuous live dialog stopped ---")
+    finally:
+        listener.stop()
+
+
+def participant_channel_map_from_args(args):
+    return (
+        (args.participant_1_channel, args.participant_1_name),
+        (args.participant_2_channel, args.participant_2_name),
+    )
+
+
+def build_continuous_audio_transcriber_from_args(args, participant_channel_map):
+    return ContinuousAudioTranscriber(
+        api_key=args.deepgram_api_key,
+        endpoint=args.deepgram_endpoint,
+        input_mode=args.audio_input_mode,
+        audio_device=args.audio_device,
+        samplerate=args.audio_samplerate,
+        participant_channel_map=participant_channel_map,
+        vad_start_rms=args.vad_start_rms,
+        vad_stop_rms=args.vad_stop_rms,
+        vad_end_silence_seconds=args.vad_end_silence_seconds,
+        vad_pre_roll_seconds=args.vad_pre_roll_seconds,
+        vad_min_speech_seconds=args.vad_min_speech_seconds,
+        vad_max_segment_seconds=args.vad_max_segment_seconds,
+        blocksize=args.audio_blocksize,
+        transcribe_workers=args.deepgram_workers,
+    )
 
 
 
@@ -1064,26 +2041,63 @@ def main():
     parser.add_argument("--initiative", choices=["reactive", "proactive"], help="Default initiative mode for intervene (reactive|proactive)")
     parser.add_argument("--theme", default="Open brainstorming conversation", help="Theme text used in live mode")
     parser.add_argument("--pepper", action="store_true", help="Use Pepper NAOqi I/O in live mode")
-    parser.add_argument("--pepper-ip", default="192.168.1.35", help="Pepper robot IP")
+    parser.add_argument("--pepper-ip", default="192.168.1.116", help="Pepper robot IP")
     parser.add_argument("--pepper-port", type=int, default=9559, help="Pepper NAOqi port")
     parser.add_argument("--pepper-language", default="English", help="Pepper ASR language")
     parser.add_argument("--pepper-vocabulary", help="Comma-separated vocabulary for Pepper ASR")
     parser.add_argument("--asr-timeout", type=float, default=12.0, help="Seconds to wait for one Pepper ASR result")
     parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
-    parser.add_argument("--pepper-legacy-python", default="py -2.7-64", help="Python launcher command for Python 2.7 Pepper helper")
+    parser.add_argument("--pepper-legacy-python", default=DEFAULT_PEPPER_LEGACY_PYTHON, help="Python launcher command for Python 2.7 Pepper helper")
     parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
-    parser.add_argument("--deepgram-api-key", help="Deepgram API key for speech-to-text audio transcription")
+    parser.add_argument("--deepgram-api-key", default=DEFAULT_DEEPGRAM_API_KEY, help="Deepgram API key for speech-to-text audio transcription")
     parser.add_argument("--deepgram-audio", help="Path to an audio file for Deepgram transcription")
     parser.add_argument("--deepgram-live", action="store_true", help="Use microphone + Deepgram for live participant speech recognition")
     parser.add_argument("--deepgram-record-seconds", type=float, default=20.0, help="Maximum seconds to record from the microphone for each live speech turn")
     parser.add_argument("--deepgram-endpoint", default="https://api.eu.deepgram.com/v1/listen", help="Deepgram STT endpoint URL")
+    parser.add_argument("--transcript-log-path", default=DEFAULT_TRANSCRIPT_LOG_PATH, help="CSV transcript log path for live microphone runs")
+    parser.add_argument("--list-audio-devices", action="store_true", help="List available microphone/input devices and exit")
+    parser.add_argument(
+        "--audio-capture-mode",
+        choices=["continuous", "manual"],
+        default=DEFAULT_AUDIO_CAPTURE_MODE,
+        help="Continuous keeps microphones live and triggers on Pepper; manual records after Enter.",
+    )
+    parser.add_argument(
+        "--audio-input-mode",
+        choices=["focusrite", "laptop"],
+        default=DEFAULT_AUDIO_INPUT_MODE,
+        help="Live Deepgram microphone mode. Defaults to focusrite; use laptop for the built-in/default laptop microphone.",
+    )
+    parser.add_argument("--audio-device", help="Input device index or name substring. Use with --list-audio-devices if autodetect misses.")
+    parser.add_argument("--audio-samplerate", type=int, help="Override the input sample rate. Defaults to the selected device's default rate.")
+    parser.add_argument("--audio-silence-rms", type=float, default=120.0, help="Focusrite per-channel RMS below this is skipped as silence. Use 0 to transcribe every channel.")
+    parser.add_argument("--participant-1-channel", type=int, default=1, help="Focusrite input channel mapped to Participant 1")
+    parser.add_argument("--participant-2-channel", type=int, default=2, help="Focusrite input channel mapped to Participant 2")
+    parser.add_argument("--participant-1-name", default="Participant 1", help="Speaker label for Focusrite participant 1")
+    parser.add_argument("--participant-2-name", default="Participant 2", help="Speaker label for Focusrite participant 2")
+    parser.add_argument("--trigger-words", default="pepper", help="Comma-separated words that trigger the robot in continuous microphone mode")
+    parser.add_argument("--vad-start-rms", type=float, default=400.0, help="Continuous mode RMS threshold that starts a speech segment")
+    parser.add_argument("--vad-stop-rms", type=float, default=220.0, help="Continuous mode RMS threshold below which audio counts as silence")
+    parser.add_argument("--vad-end-silence-seconds", type=float, default=0.8, help="Continuous mode silence duration that ends a speech segment")
+    parser.add_argument("--vad-pre-roll-seconds", type=float, default=0.25, help="Continuous mode audio kept before speech starts")
+    parser.add_argument("--vad-min-speech-seconds", type=float, default=0.35, help="Continuous mode minimum segment length to transcribe")
+    parser.add_argument("--vad-max-segment-seconds", type=float, default=18.0, help="Continuous mode maximum segment length before forcing transcription")
+    parser.add_argument("--audio-blocksize", type=int, default=1024, help="Continuous mode sounddevice block size")
+    parser.add_argument("--deepgram-workers", type=int, default=2, help="Number of background Deepgram transcription workers")
     args = parser.parse_args()
+
+    if args.list_audio_devices:
+        print_audio_devices()
+        return
 
     if not any([args.request, args.simulate, args.intervene, args.live, args.deepgram_audio, args.deepgram_live]):
         parser.error("Choose --request, --simulate, --intervene, --live, --deepgram-audio, or --deepgram-live")
 
-    if args.deepgram_live and not args.live:
-        parser.error("--deepgram-live requires --live")
+    if args.deepgram_live and not (args.live or args.intervene):
+        parser.error("--deepgram-live requires --live or --intervene")
+
+    if args.deepgram_live and not args.deepgram_api_key:
+        parser.error("--deepgram-api-key is required when using --deepgram-live")
 
     if args.deepgram_audio:
         if not args.deepgram_api_key:
@@ -1152,6 +2166,9 @@ def main():
             "theme": args.theme,
             "phase": "divergence",
             "log_path": DEFAULT_LOG_PATH,
+            "transcript_log_path": args.transcript_log_path,
+            "audio_input_mode": args.audio_input_mode if args.deepgram_live else "",
+            "audio_device": args.audio_device or "",
             "mode_combo": {
                 "elicitation": "perspective_shift",
                 "style": "passive",
@@ -1167,23 +2184,40 @@ def main():
             "context_fallback": "Could you tell me a little more?",
         }
 
-        receive_fn = console_receive
-        if args.deepgram_live:
-            receive_fn = build_deepgram_live_receiver(
-                api_key=args.deepgram_api_key,
-                endpoint=args.deepgram_endpoint,
-                record_seconds=args.deepgram_record_seconds,
-            )
-
-        if not args.pepper:
-            run_live_dialog(payload, receive_fn, console_send)
-            return
-
-        send_to_pepper, pepper = build_pepper_tts_sender(args)
-        print("Input uses microphone/Deepgram; Pepper will speak each LLM reply.")
+        send_fn = console_send
+        pepper = None
+        if args.pepper:
+            send_fn, pepper = build_pepper_tts_sender(args)
+            print("Pepper TTS enabled for live mode.")
 
         try:
-            run_live_dialog(payload, receive_fn, send_to_pepper)
+            if args.deepgram_live and args.audio_capture_mode == "continuous":
+                participant_channel_map = participant_channel_map_from_args(args)
+                listener = build_continuous_audio_transcriber_from_args(args, participant_channel_map)
+                payload["audio_device"] = listener.device_name
+                run_continuous_live_dialog(
+                    payload,
+                    listener,
+                    send_fn,
+                    trigger_words=parse_trigger_words(args.trigger_words),
+                )
+                return
+
+            receive_fn = console_receive
+            if args.deepgram_live:
+                participant_channel_map = participant_channel_map_from_args(args)
+                receive_fn = build_deepgram_live_receiver(
+                    api_key=args.deepgram_api_key,
+                    endpoint=args.deepgram_endpoint,
+                    record_seconds=args.deepgram_record_seconds,
+                    input_mode=args.audio_input_mode,
+                    audio_device=args.audio_device,
+                    samplerate=args.audio_samplerate,
+                    silence_rms=args.audio_silence_rms,
+                    participant_channel_map=participant_channel_map,
+                )
+
+            run_live_dialog(payload, receive_fn, send_fn)
         finally:
             if pepper:
                 pepper.close()
@@ -1216,6 +2250,9 @@ def main():
             "theme_id": theme_id,
             "phase": "divergence",
             "log_path": DEFAULT_LOG_PATH,
+            "transcript_log_path": args.transcript_log_path,
+            "audio_input_mode": args.audio_input_mode if args.deepgram_live else "",
+            "audio_device": args.audio_device or "",
             "mode_combo": {
                 "elicitation": "perspective_shift",
                 "style": "passive",
@@ -1241,7 +2278,9 @@ def main():
         phase_reply_count = {"divergence": 0, "convergence": 0}
         pending_participant_turns = []
         turn_index = 0
+        sequence_index = 0
         current_phase = "divergence"
+        transcript_log_path = payload.get("transcript_log_path", DEFAULT_TRANSCRIPT_LOG_PATH)
 
         print("--- Intervene mode started ---")
         print("Commands: CHANGE (phase switch), ROBOT (robot intervention), PROACTIVE/REACTIVE (switch initiative), exit (stop)")
@@ -1251,6 +2290,17 @@ def main():
         if args.pepper:
             say_from_intervene, pepper_tts_client = build_pepper_tts_sender(args)
             print("Pepper TTS enabled for intervene mode.")
+
+        continuous_listener = None
+        trigger_words = parse_trigger_words(args.trigger_words)
+        if args.deepgram_live:
+            if args.audio_capture_mode != "continuous":
+                parser.error("--intervene --deepgram-live uses --audio-capture-mode continuous")
+            participant_channel_map = participant_channel_map_from_args(args)
+            continuous_listener = build_continuous_audio_transcriber_from_args(args, participant_channel_map)
+            payload["audio_device"] = continuous_listener.device_name
+            continuous_listener.start()
+            print("Continuous microphone input enabled. Say Pepper to trigger the same action as the ROBOT command.")
 
         # Event queue and monitor thread for proactive silence detection
         event_queue = queue.Queue()
@@ -1269,8 +2319,7 @@ def main():
                         last_ts = pending_participant_turns[-1].get("timestamp")
                         if last_ts:
                             try:
-                                last_struct = time.strptime(last_ts, "%Y-%m-%dT%H:%M:%S")
-                                last_epoch = time.mktime(last_struct)
+                                last_epoch = epoch_from_timestamp(last_ts)
                                 elapsed = time.time() - last_epoch
                                 if elapsed >= PROACTIVE_SILENCE_THRESHOLD and last_epoch != last_triggered_last_epoch:
                                     event_queue.put("AUTO_ROBOT")
@@ -1337,12 +2386,11 @@ def main():
 
         # Helper to perform the robot intervention; extracted to reuse for manual, auto, and reactive triggers
         def trigger_robot():
-            nonlocal turn_index, pending_participant_turns
+            nonlocal turn_index, pending_participant_turns, sequence_index
             if not pending_participant_turns:
                 print("Robot: No participant turns buffered yet.")
                 return
 
-            nonlocal_vars = None
             turn_index += 1
             participant_timestamp = pending_participant_turns[0]["timestamp"]
             recent_turn_lines = [f"{item['speaker']}: {item['text']}" for item in pending_participant_turns]
@@ -1351,7 +2399,7 @@ def main():
             payload["phase"] = current_phase
             payload["turn_index"] = turn_index
             payload["turn_timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-            payload["last_user_utterance"] = pending_participant_turns[-1]["text"]
+            payload["last_user_utterance"] = format_participant_turns_text(pending_participant_turns)
             payload["recent_participant_turns"] = list(pending_participant_turns)
             payload["conversation_history"] = payload.get("conversation_history", [])
 
@@ -1385,6 +2433,15 @@ def main():
                 {"speaker": "Robot", "text": result["reply"], "timestamp": robot_timestamp}
             )
             print_robot_turn(result)
+            sequence_index += 1
+            append_robot_transcript_event(
+                transcript_log_path,
+                payload,
+                result,
+                sequence_index=sequence_index,
+                robot_turn_index=turn_index,
+                robot_timestamp=robot_timestamp,
+            )
             if say_from_intervene:
                 try:
                     style = result.get("style", "passive")
@@ -1413,30 +2470,88 @@ def main():
             except Exception:
                 pass
 
-        while True:
-            # Handle any queued auto-trigger events first
-            try:
-                ev = event_queue.get_nowait()
-            except queue.Empty:
-                ev = None
+        def handle_audio_event(event):
+            nonlocal sequence_index
+            event_type = event.get("type")
 
-            if ev == "AUTO_ROBOT":
-                # Auto-trigger from proactive monitor
-                trigger_robot()
-                # After robot prints, redraw prompt and current input buffer so user can continue typing without pressing Enter
+            if event_type == "turn":
+                turn = event["turn"]
+                triggered = text_contains_trigger_word(turn.get("text", ""), trigger_words)
+                payload["phase"] = current_phase
+                payload.setdefault("conversation_history", []).append(turn)
+                pending_participant_turns.append(turn)
+                sequence_index += 1
+                print(f"[{turn.get('timestamp', '')} {turn.get('speaker', 'Participant')}] {turn.get('text', '')}")
+                append_participant_transcript_event(
+                    transcript_log_path,
+                    payload,
+                    turn,
+                    sequence_index=sequence_index,
+                    triggered_robot=triggered,
+                    trigger_words=trigger_words,
+                    robot_turn_index=turn_index + 1 if triggered else "",
+                )
+                if triggered:
+                    trigger_robot()
+                return
+
+            if event_type == "empty":
+                print(
+                    f"[{event.get('end_timestamp', '')} {event.get('speaker', 'Participant')}] "
+                    "No speech recognized."
+                )
+                return
+
+            if event_type in {"warning", "error"}:
+                message = event.get("message", "")
+                print(f"[Audio {event_type}] {message}")
+                sequence_index += 1
+                append_transcript_event(
+                    transcript_log_path,
+                    payload,
+                    {
+                        "sequence_index": sequence_index,
+                        "event_type": event_type,
+                        "timestamp": event.get("timestamp", timestamp_from_epoch()),
+                        "start_timestamp": event.get("start_timestamp", ""),
+                        "end_timestamp": event.get("end_timestamp", ""),
+                        "speaker": event.get("speaker", ""),
+                        "text": message,
+                        "source": "audio",
+                    },
+                )
+
+        try:
+            while True:
+                if continuous_listener:
+                    audio_event = continuous_listener.get_event(timeout=0.02)
+                    if audio_event is not None:
+                        handle_audio_event(audio_event)
+                        continue
+
+            # Handle any queued auto-trigger events first
                 try:
-                    with input_lock:
-                        buf = current_input_line[0]
+                    ev = event_queue.get_nowait()
+                except queue.Empty:
+                    ev = None
+
+                if ev == "AUTO_ROBOT":
+                # Auto-trigger from proactive monitor
+                    trigger_robot()
+                # After robot prints, redraw prompt and current input buffer so user can continue typing without pressing Enter
+                    try:
+                        with input_lock:
+                            buf = current_input_line[0]
                     # Carriage return and clear line
-                    sys.stdout.write('\r')
-                    sys.stdout.write(' ' * (len('Participant: ') + len(buf) + 2))
-                    sys.stdout.write('\r')
-                    sys.stdout.write('Participant: ' + buf)
-                    sys.stdout.flush()
-                except Exception:
-                    pass
-                continue
-            else:
+                        sys.stdout.write('\r')
+                        sys.stdout.write(' ' * (len('Participant: ') + len(buf) + 2))
+                        sys.stdout.write('\r')
+                        sys.stdout.write('Participant: ' + buf)
+                        sys.stdout.flush()
+                    except Exception:
+                        pass
+                    continue
+
                 # Non-blocking check for user input
                 try:
                     line = input_queue.get_nowait()
@@ -1449,55 +2564,61 @@ def main():
                     continue
                 upper = line.upper()
 
-            if line and line.lower() in {"quit", "exit"}:
-                stop_event.set()
-                # allow background threads to exit
-                monitor_thread.join(timeout=1)
-                # input_thread is daemon; it will exit on program termination
-                if pepper_tts_client:
-                    pepper_tts_client.close()
-                break
+                if line and line.lower() in {"quit", "exit"}:
+                    stop_event.set()
+                    break
 
-            if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
-                current_phase = "convergence" if current_phase == "divergence" else "divergence"
-                print(f"--- Switched to phase: {current_phase} ---")
-                continue
+                if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
+                    current_phase = "convergence" if current_phase == "divergence" else "divergence"
+                    print(f"--- Switched to phase: {current_phase} ---")
+                    continue
 
-            # Allow switching initiative during the session
-            if upper in {"PROACTIVE", "REACTIVE"}:
-                new_mode = upper.lower()
-                payload.setdefault("mode_combo", {})["initiative"] = new_mode
-                print(f"--- Initiative switched to: {new_mode} ---")
-                continue
+                # Allow switching initiative during the session
+                if upper in {"PROACTIVE", "REACTIVE"}:
+                    new_mode = upper.lower()
+                    payload.setdefault("mode_combo", {})["initiative"] = new_mode
+                    print(f"--- Initiative switched to: {new_mode} ---")
+                    continue
 
-            if upper == "ROBOT":
-                trigger_robot()
-                continue
+                if upper == "ROBOT":
+                    trigger_robot()
+                    continue
 
-            participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
-            speaker = "Participant"
-            text = line
-            if ":" in line:
-                left, right = line.split(":", 1)
-                if left.strip() and right.strip():
-                    speaker = left.strip()
-                    text = right.strip()
+                participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+                speaker, text = parse_speaker_prefixed_text(line)
+                participant_turn = make_participant_turn(speaker, text, timestamp=participant_timestamp)
+                triggered = text_contains_trigger_word(text, trigger_words)
 
-            payload.setdefault("conversation_history", []).append(
-                {"speaker": speaker, "text": text, "timestamp": participant_timestamp}
-            )
-            pending_participant_turns.append({"speaker": speaker, "text": text, "timestamp": participant_timestamp})
+                payload.setdefault("conversation_history", []).append(participant_turn)
+                pending_participant_turns.append(participant_turn)
+                sequence_index += 1
+                append_participant_transcript_event(
+                    transcript_log_path,
+                    payload,
+                    participant_turn,
+                    sequence_index=sequence_index,
+                    triggered_robot=triggered,
+                    trigger_words=trigger_words,
+                    robot_turn_index=turn_index + 1 if triggered else "",
+                )
 
-            # Reactive immediate trigger: if initiative is reactive and the participant called the robot's name, intervene now
-            try:
-                initiative_now = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"])
-                if initiative_now == "reactive":
-                    last_text = text.lower()
-                    if "pepper" in last_text or "robot" in last_text:
+                # Reactive immediate trigger: if initiative is reactive and the participant called the robot's name, intervene now
+                try:
+                    initiative_now = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"])
+                    if initiative_now == "reactive" and triggered:
                         trigger_robot()
                         continue
-            except Exception:
-                pass
+                except Exception:
+                    pass
+        except KeyboardInterrupt:
+            stop_event.set()
+        finally:
+            stop_event.set()
+            if continuous_listener:
+                continuous_listener.stop()
+            monitor_thread.join(timeout=1)
+            if pepper_tts_client:
+                pepper_tts_client.close()
 
 
 if __name__ == "__main__":
