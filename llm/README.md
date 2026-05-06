@@ -72,6 +72,30 @@ python infra/lmstudio_minimal_bridge.py --live --pepper
 
 Use this when you want a straightforward participant/robot dialogue without the intervention schedule.
 
+#### --live with Deepgram microphone input
+```bash
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --deepgram-api-key YOUR_API_KEY
+```
+
+This records a short microphone segment each turn, transcribes it with Deepgram, and sends the recognized speech to LM Studio.
+
+If you also want Pepper to speak the robot output:
+```bash
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --deepgram-api-key YOUR_API_KEY
+```
+
+#### --deepgram-audio (speech recognition to LM Studio)
+```bash
+python infra/lmstudio_minimal_bridge.py --deepgram-audio path/to/audio.wav --deepgram-api-key YOUR_API_KEY
+```
+
+This sends the audio file to Deepgram for transcription, then forwards the recognized text directly to LM Studio as a participant utterance. The bridge prints the transcript and the LM Studio response.
+
+If you want the Deepgram request to use a specific region or endpoint, add:
+```bash
+python infra/lmstudio_minimal_bridge.py --deepgram-audio path/to/audio.wav --deepgram-api-key YOUR_API_KEY --deepgram-endpoint https://api.eu.deepgram.com/v1/listen
+```
+
 ## Pepper integration notes
 
 - The LM Studio bridge runs in Python 3.

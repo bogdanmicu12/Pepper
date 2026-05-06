@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import io
 import json
 import pathlib
 import re
@@ -9,8 +10,13 @@ import threading
 import queue
 import urllib.error
 import urllib.request
+import wave
 import sys
 import subprocess
+try:
+    import httpx
+except Exception:
+    httpx = None
 try:
     import msvcrt
 except Exception:
@@ -40,6 +46,15 @@ DEFAULT_PEPPER_VOCABULARY = [
     "idea",
     "budget",
 ]
+
+CONTENT_TYPE_BY_EXT = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/m4a",
+    ".flac": "audio/flac",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/opus",
+}
 
 MODE_REGISTRY = {
     "elicitation": ["perspective_shift", "generative", "elaboration_evidence"],
@@ -117,6 +132,117 @@ def parse_phrase_list(value):
         return []
     parts = re.split(r"[,;\n]+", value)
     return [item.strip() for item in parts if item.strip()]
+
+
+def infer_audio_content_type(path):
+    suffix = pathlib.Path(path).suffix.lower()
+    return CONTENT_TYPE_BY_EXT.get(suffix, "application/octet-stream")
+
+
+def parse_deepgram_transcript(response):
+    # Deepgram returns transcript data under results.channels[0].alternatives[0].transcript
+    if not isinstance(response, dict):
+        return ""
+    results = response.get("results", {})
+    channels = results.get("channels") or []
+    if channels:
+        alternatives = channels[0].get("alternatives") or []
+        if alternatives:
+            return (alternatives[0].get("transcript") or "").strip()
+    return (response.get("transcript") or "").strip()
+
+
+def deepgram_transcribe_bytes(audio_data, content_type, api_key, endpoint="https://api.eu.deepgram.com/v1/listen", timeout=60.0):
+    endpoint = endpoint.rstrip("/")
+    headers = {
+        "Authorization": f"Token {api_key}",
+        "Content-Type": content_type,
+    }
+
+    if httpx is not None:
+        response = httpx.post(endpoint, headers=headers, content=audio_data, timeout=timeout)
+        response.raise_for_status()
+        return parse_deepgram_transcript(response.json())
+
+    request = urllib.request.Request(endpoint, data=audio_data, method="POST")
+    for key, value in headers.items():
+        request.add_header(key, value)
+
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return parse_deepgram_transcript(payload)
+
+
+def deepgram_transcribe_file(audio_path, api_key, endpoint="https://api.eu.deepgram.com/v1/listen", timeout=60.0):
+    audio_path = pathlib.Path(audio_path)
+    if not audio_path.exists():
+        raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+    with audio_path.open("rb") as handle:
+        audio_data = handle.read()
+
+    return deepgram_transcribe_bytes(
+        audio_data=audio_data,
+        content_type=infer_audio_content_type(audio_path),
+        api_key=api_key,
+        endpoint=endpoint,
+        timeout=timeout,
+    )
+
+
+def record_audio_from_mic(duration=6.0, samplerate=16000, channels=1):
+    try:
+        import sounddevice as sd
+    except Exception as error:
+        raise RuntimeError(
+            "sounddevice is required for live microphone capture. Install it with `pip install sounddevice`."
+        ) from error
+
+    print(f"Recording microphone audio for up to {duration:.1f} seconds...")
+    recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=channels, dtype="int16")
+    sd.wait()
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as wf:
+        wf.setnchannels(channels)
+        wf.setsampwidth(2)
+        wf.setframerate(samplerate)
+        wf.writeframes(recording.tobytes())
+    return buffer.getvalue(), samplerate, channels
+
+
+def build_deepgram_live_receiver(api_key, endpoint, record_seconds=6.0):
+    def receive():
+        input("Press Enter to record your next response, then speak clearly: ")
+        audio_bytes, samplerate, channels = record_audio_from_mic(duration=record_seconds)
+        print("Sending audio to Deepgram for transcription...")
+        content_type = "audio/wav"
+        transcript = deepgram_transcribe_bytes(
+            audio_data=audio_bytes,
+            content_type=content_type,
+            api_key=api_key,
+            endpoint=endpoint,
+        )
+        print(f"[Deepgram] Recognized speech: {transcript}")
+        return transcript
+
+    return receive
+
+
+def build_audio_turn_request(payload, transcript):
+    participant_turn = {
+        "speaker": "Participant",
+        "text": transcript,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    request = dict(payload)
+    request.update({
+        "turn_index": request.get("turn_index", 1),
+        "turn_timestamp": participant_turn["timestamp"],
+        "last_user_utterance": transcript,
+        "recent_participant_turns": [participant_turn],
+        "conversation_history": list(request.get("conversation_history", [])) + [participant_turn],
+    })
+    return request
 
 
 class PepperIO:
@@ -640,7 +766,9 @@ def append_log_turn_block(log_path, payload, result, participant_turns, robot_ti
 
 
 def print_robot_turn(result):
-    print(f"[Robot:{result['source']}/{result['prompt_id']}] {result['reply']}")
+    print(f"[Robot:{result['source']}/{result.get('prompt_id', '')}] {result['reply']}")
+    if result.get('source') == 'fallback' and result.get('fallback_reason'):
+        print(f"[Fallback reason] {result['fallback_reason']}")
 
 
 def run_session(session_payload):
@@ -839,10 +967,61 @@ def main():
     parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
     parser.add_argument("--pepper-legacy-python", default="py -2.7", help="Python launcher command for Python 2.7 Pepper helper")
     parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
+    parser.add_argument("--deepgram-api-key", help="Deepgram API key for speech-to-text audio transcription")
+    parser.add_argument("--deepgram-audio", help="Path to an audio file for Deepgram transcription")
+    parser.add_argument("--deepgram-live", action="store_true", help="Use microphone + Deepgram for live participant speech recognition")
+    parser.add_argument("--deepgram-record-seconds", type=float, default=20.0, help="Maximum seconds to record from the microphone for each live speech turn")
+    parser.add_argument("--deepgram-endpoint", default="https://api.eu.deepgram.com/v1/listen", help="Deepgram STT endpoint URL")
     args = parser.parse_args()
 
-    if not any([args.request, args.simulate, args.intervene, args.live]):
-        parser.error("Choose --request, --simulate, --intervene, or --live")
+    if not any([args.request, args.simulate, args.intervene, args.live, args.deepgram_audio, args.deepgram_live]):
+        parser.error("Choose --request, --simulate, --intervene, --live, --deepgram-audio, or --deepgram-live")
+
+    if args.deepgram_live and not args.live:
+        parser.error("--deepgram-live requires --live")
+
+    if args.deepgram_audio:
+        if not args.deepgram_api_key:
+            parser.error("--deepgram-api-key is required when using --deepgram-audio")
+
+        transcript = deepgram_transcribe_file(
+            audio_path=args.deepgram_audio,
+            api_key=args.deepgram_api_key,
+            endpoint=args.deepgram_endpoint,
+        )
+        print(f"[Deepgram] Recognized speech: {transcript}")
+
+        if args.request:
+            payload = load_json(pathlib.Path(args.request))
+        else:
+            payload = {
+                "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+                "model": "phi-3.5-mini-3.8b-instruct",
+                "session_id": f"AUDIO_{int(time.time())}",
+                "group_id": "G_AUDIO",
+                "conversation_id": f"AUDIO_{int(time.time())}",
+                "theme": args.theme,
+                "phase": "divergence",
+                "log_path": DEFAULT_LOG_PATH,
+                "mode_combo": {
+                    "elicitation": "perspective_shift",
+                    "style": "passive",
+                    "initiative": "reactive",
+                    "role": "facilitator",
+                },
+                "seed_ideas": [],
+                "conversation_history": [],
+                "history_window_turns": 12,
+                "temperature": 0.35,
+                "max_tokens": 600,
+                "timeout_seconds": 30.0,
+                "context_fallback": "Could you tell me a little more?",
+            }
+
+        request = build_audio_turn_request(payload, transcript)
+        result = process_context_only(request)
+        print(json.dumps(result, ensure_ascii=True))
+        return
 
     if args.request:
         payload = load_json(pathlib.Path(args.request))
@@ -856,6 +1035,9 @@ def main():
         return
 
     if args.live:
+        if args.deepgram_live and not args.deepgram_api_key:
+            parser.error("--deepgram-api-key is required when using --deepgram-live")
+
         payload = {
             "server_url": "http://127.0.0.1:1234/v1/chat/completions",
             "model": "phi-3.5-mini-3.8b-instruct",
@@ -880,15 +1062,23 @@ def main():
             "context_fallback": "Could you tell me a little more?",
         }
 
+        receive_fn = console_receive
+        if args.deepgram_live:
+            receive_fn = build_deepgram_live_receiver(
+                api_key=args.deepgram_api_key,
+                endpoint=args.deepgram_endpoint,
+                record_seconds=args.deepgram_record_seconds,
+            )
+
         if not args.pepper:
-            run_live_dialog(payload, console_receive, console_send)
+            run_live_dialog(payload, receive_fn, console_send)
             return
 
         send_to_pepper, pepper = build_pepper_tts_sender(args)
-        print("Input remains in console; Pepper will speak each LLM reply.")
+        print("Input uses microphone/Deepgram; Pepper will speak each LLM reply.")
 
         try:
-            run_live_dialog(payload, console_receive, send_to_pepper)
+            run_live_dialog(payload, receive_fn, send_to_pepper)
         finally:
             if pepper:
                 pepper.close()
