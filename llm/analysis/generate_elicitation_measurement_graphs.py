@@ -16,28 +16,20 @@ from PIL import Image, ImageDraw, ImageFont
 PARTICIPANT_DEFAULTS = ("P1", "P2", "Participant", "participant", "Human")
 ROBOT_DEFAULTS = ("Robot", "Pepper", "Facilitator", "robot", "pepper")
 NON_ELICITATION_STRATEGIES = {"", "none", "nan", "context_only", "normal", "baseline"}
-
-UES_ITEM_ALIASES = {
-    "FA_S1": ("FA_S1", "FA-S.1", "FA-S1", "FAS1"),
-    "FA_S2": ("FA_S2", "FA-S.2", "FA-S2", "FAS2"),
-    "FA_S3": ("FA_S3", "FA-S.3", "FA-S3", "FAS3"),
-    "PU_S1": ("PU_S1", "PU-S.1", "PU-S1", "PUS1"),
-    "PU_S2": ("PU_S2", "PU-S.2", "PU-S2", "PUS2"),
-    "PU_S3": ("PU_S3", "PU-S.3", "PU-S3", "PUS3"),
-    "AE_S1": ("AE_S1", "AE-S.1", "AE-S1", "AES1"),
-    "AE_S2": ("AE_S2", "AE-S.2", "AE-S2", "AES2"),
-    "AE_S3": ("AE_S3", "AE-S.3", "AE-S3", "AES3"),
-    "RW_S1": ("RW_S1", "RW-S.1", "RW-S1", "RWS1"),
-    "RW_S2": ("RW_S2", "RW-S.2", "RW-S2", "RWS2"),
-    "RW_S3": ("RW_S3", "RW-S.3", "RW-S3", "RWS3"),
-}
-UES_REVERSE_ITEMS = ("PU_S1", "PU_S2", "PU_S3")
-UES_SUBSCALES = {
-    "focused_attention": ("FA_S1", "FA_S2", "FA_S3"),
-    "perceived_usability": ("PU_S1", "PU_S2", "PU_S3"),
-    "aesthetic_appeal": ("AE_S1", "AE_S2", "AE_S3"),
-    "reward": ("RW_S1", "RW_S2", "RW_S3"),
-}
+ENGAGEMENT_SCORE_ALIASES = (
+    "elicitation_engagement_score",
+    "evaluation_elicitation_score",
+    "engagement_score",
+    "engagement_1_100",
+)
+BACKCHANNEL_RE = re.compile(
+    r"\b(?:yeah|yep|yes|ja|mhm|mmhm|mm-hm|uh-huh|uh huh|right|okay|ok|exactly|true|sure|nice|cool|fair)\b",
+    re.IGNORECASE,
+)
+LAUGHTER_RE = re.compile(r"\b(?:ha+ha+|hehe+|lol|laughs?|laughing)\b", re.IGNORECASE)
+FILLER_RE = re.compile(r"\b(?:uh|um|erm|ehm|eh|like)\b", re.IGNORECASE)
+LONG_PAUSE_SECONDS = 3.0
+ADJACENCY_RESPONSE_SECONDS = 8.0
 
 
 @dataclass
@@ -106,38 +98,128 @@ def parse_time_column(series: pd.Series, column_name: str) -> pd.Series:
     )
 
 
-def normalize_ues_columns(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    rename_map: dict[str, str] = {}
-    lower_lookup = {c.lower().replace(" ", "").replace(".", "").replace("-", "_"): c for c in df.columns}
-    for canonical, aliases in UES_ITEM_ALIASES.items():
-        for alias in aliases:
-            key = alias.lower().replace(" ", "").replace(".", "").replace("-", "_")
-            if key in lower_lookup:
-                rename_map[lower_lookup[key]] = canonical
-                break
-    return df.rename(columns=rename_map)
-
-
 def is_truthy(value: object) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y", "elicitation"}
 
 
+def first_existing_column(df: pd.DataFrame, candidates: Sequence[str]) -> str | None:
+    lookup = {str(c).strip().lower(): c for c in df.columns}
+    for candidate in candidates:
+        key = candidate.strip().lower()
+        if key in lookup:
+            return lookup[key]
+    return None
+
+
+def normalize_intervention_columns(interventions: pd.DataFrame) -> pd.DataFrame:
+    df = interventions.copy()
+    if "prompt_start_time" not in df.columns and "start_timestamp" in df.columns:
+        df["prompt_start_time"] = df["start_timestamp"]
+    if "prompt_end_time" not in df.columns and "end_timestamp" in df.columns:
+        df["prompt_end_time"] = df["end_timestamp"]
+    return df
+
+
+def normalize_transcript_columns(transcript: pd.DataFrame) -> pd.DataFrame:
+    df = transcript.copy()
+    if "start_time" not in df.columns and "start_timestamp" in df.columns:
+        df["start_time"] = df["start_timestamp"]
+    if "end_time" not in df.columns and "end_timestamp" in df.columns:
+        df["end_time"] = df["end_timestamp"]
+    return df
+
+
+def normalize_engagement_score(value: object) -> float:
+    score = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+    if pd.isna(score) or float(score) < 1 or float(score) > 100:
+        return np.nan
+    return float(score)
+
+
+def count_words(text: object) -> int:
+    return len(re.findall(r"\b\w+\b", str(text)))
+
+
+def count_pattern(series: pd.Series, pattern: re.Pattern[str]) -> int:
+    return int(series.astype(str).map(lambda text: len(pattern.findall(text))).sum())
+
+
+def count_short_backchannels(series: pd.Series) -> int:
+    count = 0
+    for text in series.astype(str):
+        words = re.findall(r"\b\w+\b", text.lower())
+        if 1 <= len(words) <= 5 and BACKCHANNEL_RE.search(text):
+            count += 1
+    return count
+
+
+def compute_overlap_count(turns: pd.DataFrame) -> int:
+    if len(turns) < 2:
+        return 0
+    ordered = turns.sort_values(["start_s", "end_s"])
+    overlaps = 0
+    previous_end = -np.inf
+    previous_speaker = ""
+    for _, row in ordered.iterrows():
+        speaker = str(row.get("speaker", "")).strip().lower()
+        start = float(row["start_s"])
+        end = float(row["end_s"])
+        if start < previous_end and speaker and speaker != previous_speaker:
+            overlaps += 1
+        if end > previous_end:
+            previous_end = end
+            previous_speaker = speaker
+    return overlaps
+
+
+def compute_long_pause_seconds(turns: pd.DataFrame, window_start: float, window_end: float) -> float:
+    if window_end <= window_start:
+        return 0.0
+    if turns.empty:
+        return max(0.0, window_end - window_start - LONG_PAUSE_SECONDS)
+    ordered = turns.sort_values(["start_s", "end_s"])
+    pause_seconds = 0.0
+    previous_end = window_start
+    for _, row in ordered.iterrows():
+        start = max(float(row["start_s"]), window_start)
+        gap = max(0.0, start - previous_end)
+        if gap > LONG_PAUSE_SECONDS:
+            pause_seconds += gap - LONG_PAUSE_SECONDS
+        previous_end = max(previous_end, min(float(row["end_s"]), window_end))
+    return pause_seconds
+
+
+def zscore(series: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce")
+    std = numeric.std(ddof=0)
+    if pd.isna(std) or std == 0:
+        return pd.Series([0.0] * len(series), index=series.index)
+    return (numeric - numeric.mean()) / std
+
+
+def clipped_score(series: pd.Series) -> pd.Series:
+    return series.clip(lower=0.0, upper=100.0).round(2)
+
+
 def detect_elicitation_rows(interventions: pd.DataFrame) -> pd.Series:
+    event_filter = pd.Series([True] * len(interventions), index=interventions.index)
+    if "event_type" in interventions.columns:
+        event_filter = interventions["event_type"].astype(str).str.strip().str.lower().eq("robot")
+
     if "is_elicitation" in interventions.columns:
-        return interventions["is_elicitation"].map(is_truthy)
+        return interventions["is_elicitation"].map(is_truthy) & event_filter
     if "prompt_type" in interventions.columns:
         prompt_type = interventions["prompt_type"].astype(str).str.strip().str.lower()
         explicit = prompt_type.eq("elicitation")
         if explicit.any():
-            return explicit
+            return explicit & event_filter
     strategy = interventions["strategy"].astype(str).str.strip().str.lower()
-    return ~strategy.isin(NON_ELICITATION_STRATEGIES)
+    return ~strategy.isin(NON_ELICITATION_STRATEGIES) & event_filter
 
 
 def build_windows(interventions: pd.DataFrame, transcript: pd.DataFrame | None) -> pd.DataFrame:
-    require_columns(interventions, ["session_id", "prompt_id", "phase", "strategy", "prompt_start_time", "prompt_end_time"], "intervention log")
-    df = interventions.copy()
+    df = normalize_intervention_columns(interventions)
+    require_columns(df, ["session_id", "prompt_id", "phase", "strategy", "prompt_start_time", "prompt_end_time"], "intervention log")
     df["prompt_start_s"] = parse_time_column(df["prompt_start_time"], "prompt_start_time")
     df["prompt_end_s"] = parse_time_column(df["prompt_end_time"], "prompt_end_time")
     df["_is_elicitation"] = detect_elicitation_rows(df)
@@ -153,6 +235,27 @@ def build_windows(interventions: pd.DataFrame, transcript: pd.DataFrame | None) 
     transcript_end_by_session: dict[str, float] = {}
     if transcript is not None and not transcript.empty:
         transcript_end_by_session = transcript.groupby("session_id")["end_s"].max().to_dict()
+
+    score_col = first_existing_column(df, ENGAGEMENT_SCORE_ALIASES)
+    direct_scores: dict[tuple[str, str], float] = {}
+    previous_scores: dict[tuple[str, str], float] = {}
+    if score_col:
+        for _, score_row in df.iterrows():
+            score = normalize_engagement_score(score_row.get(score_col))
+            if pd.isna(score):
+                continue
+            session_key = str(score_row.get("session_id", ""))
+            previous_prompt = str(score_row.get("previous_elicitation_prompt_id", "")).strip()
+            if previous_prompt.lower() in {"nan", "none"}:
+                previous_prompt = ""
+            if previous_prompt:
+                previous_scores[(session_key, previous_prompt)] = score
+                continue
+            prompt_key = str(score_row.get("prompt_id", "")).strip()
+            if prompt_key.lower() in {"nan", "none"}:
+                prompt_key = ""
+            if prompt_key:
+                direct_scores[(session_key, prompt_key)] = score
 
     windows: list[dict[str, object]] = []
     for session_id, session_rows in elic.sort_values(["session_id", "prompt_start_s"]).groupby("session_id", sort=False):
@@ -180,12 +283,26 @@ def build_windows(interventions: pd.DataFrame, transcript: pd.DataFrame | None) 
                     "window_start_s": float(row["prompt_end_s"]),
                     "window_end_s": float(window_end),
                     "window_duration_seconds": max(0.0, float(window_end) - float(row["prompt_end_s"])),
+                    "elicitation_engagement_score": direct_scores.get(
+                        (str(session_id), str(row["prompt_id"]).strip()),
+                        np.nan,
+                    ),
                 }
             )
-    return pd.DataFrame(windows)
+    window_df = pd.DataFrame(windows)
+    if previous_scores and not window_df.empty:
+        for (session_key, prompt_key), score in previous_scores.items():
+            mask = (
+                window_df["session_id"].astype(str).eq(session_key)
+                & window_df["prompt_id"].astype(str).str.strip().eq(prompt_key)
+            )
+            needs_score = mask & window_df["elicitation_engagement_score"].isna()
+            window_df.loc[needs_score, "elicitation_engagement_score"] = score
+    return window_df
 
 
 def prepare_transcript(transcript: pd.DataFrame) -> pd.DataFrame:
+    transcript = normalize_transcript_columns(transcript)
     require_columns(transcript, ["session_id", "speaker", "start_time"], "transcript")
     df = transcript.copy()
     df["start_s"] = parse_time_column(df["start_time"], "start_time")
@@ -238,6 +355,19 @@ def compute_transcript_metrics(
             turn_count = 0
             word_count = 0
             mean_turn_duration = np.nan
+            mean_audio_rms = np.nan
+            words_per_second = np.nan
+            long_pause_seconds = max(0.0, float(window["window_duration_seconds"]) - LONG_PAUSE_SECONDS)
+            long_pause_seconds_per_minute = (
+                long_pause_seconds / max(float(window["window_duration_seconds"]) / 60.0, 1e-9)
+                if float(window["window_duration_seconds"]) > 0 else np.nan
+            )
+            backchannel_count = 0
+            laughter_count = 0
+            filler_count = 0
+            cooperative_overlap_count = 0
+            adjacency_response_success = 0
+            connection_cues_per_minute = 0.0
         else:
             clipped_start = in_window["start_s"].clip(lower=float(window["window_start_s"]))
             clipped_end = in_window["end_s"].clip(upper=float(window["window_end_s"]))
@@ -246,8 +376,25 @@ def compute_transcript_metrics(
             response_delay = max(0.0, first_start - float(window["window_start_s"]))
             speaking_time = float(durations.sum())
             turn_count = int(len(in_window))
-            word_count = int(in_window["text"].astype(str).map(lambda t: len(re.findall(r"\b\w+\b", t))).sum())
+            word_count = int(in_window["text"].astype(str).map(count_words).sum())
             mean_turn_duration = float(durations.mean()) if len(durations) else np.nan
+            audio_rms = pd.to_numeric(in_window.get("audio_rms", pd.Series([], dtype=float)), errors="coerce")
+            mean_audio_rms = float(audio_rms.mean()) if audio_rms.notna().any() else np.nan
+            words_per_second = word_count / speaking_time if speaking_time > 0 else np.nan
+            long_pause_seconds = compute_long_pause_seconds(
+                in_window,
+                float(window["window_start_s"]),
+                float(window["window_end_s"]),
+            )
+            window_minutes = max(float(window["window_duration_seconds"]) / 60.0, 1e-9)
+            long_pause_seconds_per_minute = long_pause_seconds / window_minutes
+            backchannel_count = count_short_backchannels(in_window["text"])
+            laughter_count = count_pattern(in_window["text"], LAUGHTER_RE)
+            filler_count = count_pattern(in_window["text"], FILLER_RE)
+            cooperative_overlap_count = compute_overlap_count(in_window)
+            adjacency_response_success = int(pd.notna(response_delay) and response_delay <= ADJACENCY_RESPONSE_SECONDS and word_count > 0)
+            connection_cue_count = backchannel_count + laughter_count + cooperative_overlap_count + adjacency_response_success
+            connection_cues_per_minute = connection_cue_count / window_minutes
         metric_rows.append(
             {
                 "window_id": window["window_id"],
@@ -260,9 +407,46 @@ def compute_transcript_metrics(
                 "participant_turn_count": turn_count,
                 "participant_word_count": word_count,
                 "mean_participant_turn_duration_seconds": mean_turn_duration,
+                "mean_audio_rms": mean_audio_rms,
+                "participant_words_per_second": words_per_second,
+                "long_pause_seconds": long_pause_seconds,
+                "long_pause_seconds_per_minute": long_pause_seconds_per_minute,
+                "backchannel_count": backchannel_count,
+                "laughter_count": laughter_count,
+                "filler_count": filler_count,
+                "cooperative_overlap_count": cooperative_overlap_count,
+                "adjacency_response_success": adjacency_response_success,
+                "connection_cues_per_minute": connection_cues_per_minute,
             }
         )
-    return pd.DataFrame(metric_rows)
+    metrics = pd.DataFrame(metric_rows)
+    if metrics.empty:
+        return metrics
+
+    log_rms = np.log1p(pd.to_numeric(metrics["mean_audio_rms"], errors="coerce"))
+    activation_raw = (
+        zscore(log_rms).fillna(0.0)
+        + zscore(metrics["participant_words_per_second"]).fillna(0.0)
+        - zscore(metrics["long_pause_seconds_per_minute"]).fillna(0.0)
+    ) / 3.0
+    metrics["vocal_activation_score"] = clipped_score(50.0 + 15.0 * activation_raw)
+
+    window_minutes = (pd.to_numeric(metrics["participant_speaking_time_seconds"], errors="coerce") / 60.0).replace(0, np.nan)
+    backchannels_per_speaking_minute = (
+        pd.to_numeric(metrics["backchannel_count"], errors="coerce") / window_minutes
+    ).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    laughter_per_speaking_minute = (
+        pd.to_numeric(metrics["laughter_count"], errors="coerce") / window_minutes
+    ).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    overlap_per_window = pd.to_numeric(metrics["cooperative_overlap_count"], errors="coerce").fillna(0.0)
+    metrics["connection_cue_score"] = clipped_score(
+        25.0 * pd.to_numeric(metrics["adjacency_response_success"], errors="coerce").fillna(0.0)
+        + 30.0 * np.minimum(backchannels_per_speaking_minute / 2.0, 1.0)
+        + 20.0 * np.minimum(laughter_per_speaking_minute / 1.0, 1.0)
+        + 15.0 * np.minimum(overlap_per_window / 2.0, 1.0)
+        + 10.0 * np.minimum(pd.to_numeric(metrics["connection_cues_per_minute"], errors="coerce").fillna(0.0) / 3.0, 1.0)
+    )
+    return metrics
 
 
 def summarize_numeric(df: pd.DataFrame, metrics: Sequence[str], group_cols: Sequence[str]) -> pd.DataFrame:
@@ -297,42 +481,6 @@ def load_manual_measures(path: str | Path) -> pd.DataFrame:
             np.nan,
         )
     return df
-
-
-def score_ues(path: str | Path) -> pd.DataFrame:
-    df = normalize_ues_columns(read_csv(path))
-    missing = [item for item in UES_ITEM_ALIASES if item not in df.columns]
-    if missing:
-        raise ValueError(
-            "UES-SF responses are missing item column(s): "
-            + ", ".join(missing)
-            + ". Use --write-templates to generate the accepted schema."
-        )
-    scored = df.copy()
-    for item in UES_ITEM_ALIASES:
-        scored[item] = pd.to_numeric(scored[item], errors="coerce")
-        if scored[item].isna().any():
-            raise ValueError(f"UES-SF item {item} contains missing or non-numeric values.")
-        if not scored[item].between(1, 5).all():
-            raise ValueError(f"UES-SF item {item} must use a 1-5 response scale.")
-    for item in UES_REVERSE_ITEMS:
-        scored[f"{item}_scored"] = 6 - scored[item]
-    for item in set(UES_ITEM_ALIASES) - set(UES_REVERSE_ITEMS):
-        scored[f"{item}_scored"] = scored[item]
-    for subscale, items in UES_SUBSCALES.items():
-        scored[subscale] = scored[[f"{item}_scored" for item in items]].mean(axis=1)
-    scored["ues_sf_total"] = scored[[f"{item}_scored" for item in UES_ITEM_ALIASES]].mean(axis=1)
-    return scored
-
-
-def feedback_theme_counts(path: str | Path) -> pd.DataFrame:
-    df = read_csv(path)
-    require_columns(df, ["theme"], "open feedback codes")
-    group_cols = [c for c in ["phase", "strategy", "question_id", "theme"] if c in df.columns]
-    if "theme" not in group_cols:
-        group_cols.append("theme")
-    counts = df.groupby(group_cols, dropna=False).size().reset_index(name="count")
-    return counts.sort_values("count", ascending=False)
 
 
 def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
@@ -465,6 +613,50 @@ def chart_group_means(df: pd.DataFrame, metric: str, title: str, y_label: str, o
     draw_bar_chart(ChartSeries(labels, values, title, y_label, output_path))
 
 
+def draw_dashboard(chart_dir: Path, output_path: Path) -> None:
+    preferred = [
+        "elicitation_engagement_by_phase_strategy.png",
+        "vocal_activation_by_phase_strategy.png",
+        "connection_cue_score_by_phase_strategy.png",
+        "response_delay_by_phase_strategy.png",
+        "speaking_time_by_phase_strategy.png",
+        "speech_rate_by_phase_strategy.png",
+        "long_pause_burden_by_phase_strategy.png",
+        "connection_cues_per_minute_by_phase_strategy.png",
+        "idea_fluency_by_phase_strategy.png",
+        "elaboration_units_by_phase_strategy.png",
+        "elaboration_units_per_idea_by_phase_strategy.png",
+        "consecutive_topic_turns_by_phase_strategy.png",
+    ]
+    chart_paths = [chart_dir / name for name in preferred if (chart_dir / name).exists()]
+    if not chart_paths:
+        return
+
+    thumb_w, thumb_h = 700, 450
+    cols = 2
+    rows = int(np.ceil(len(chart_paths) / cols))
+    title_h = 70
+    image = Image.new("RGB", (cols * thumb_w, title_h + rows * thumb_h), "white")
+    draw = ImageDraw.Draw(image)
+    title_font = _font(34, bold=True)
+    title = "Pepper Elicitation Measurement Dashboard"
+    tw, th = _text_size(draw, title, title_font)
+    draw.text(((image.width - tw) / 2, 20), title, fill="#111827", font=title_font)
+
+    for idx, path in enumerate(chart_paths):
+        with Image.open(path) as chart:
+            chart = chart.convert("RGB")
+            chart.thumbnail((thumb_w - 20, thumb_h - 20), Image.LANCZOS)
+            col = idx % cols
+            row = idx // cols
+            x = col * thumb_w + (thumb_w - chart.width) // 2
+            y = title_h + row * thumb_h + (thumb_h - chart.height) // 2
+            image.paste(chart, (x, y))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(output_path)
+
+
 def write_templates(output_dir: str | Path) -> None:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -474,22 +666,14 @@ def write_templates(output_dir: str | Path) -> None:
             ["S01", "P1", "2026-05-05T10:00:05", "2026-05-05T10:00:12", "Maybe we could use peer mentors."],
         ],
         "intervention_log_template.csv": [
-            ["session_id", "prompt_id", "phase", "strategy", "prompt_type", "prompt_start_time", "prompt_end_time", "window_end_time"],
-            ["S01", "E01", "divergence", "generative", "elicitation", "2026-05-05T10:00:00", "2026-05-05T10:00:04", ""],
-            ["S01", "N01", "divergence", "", "normal", "2026-05-05T10:02:00", "2026-05-05T10:02:05", ""],
-            ["S01", "E02", "divergence", "elaboration_evidence", "elicitation", "2026-05-05T10:04:00", "2026-05-05T10:04:07", ""],
+            ["session_id", "prompt_id", "phase", "strategy", "prompt_type", "prompt_start_time", "prompt_end_time", "window_end_time", "elicitation_engagement_score"],
+            ["S01", "E01", "divergence", "generative", "elicitation", "2026-05-05T10:00:00", "2026-05-05T10:00:04", "", "72"],
+            ["S01", "N01", "divergence", "", "normal", "2026-05-05T10:02:00", "2026-05-05T10:02:05", "", ""],
+            ["S01", "E02", "divergence", "elaboration_evidence", "elicitation", "2026-05-05T10:04:00", "2026-05-05T10:04:07", "", "81"],
         ],
         "manual_window_measures_template.csv": [
             ["window_id", "session_id", "prompt_id", "phase", "strategy", "idea_fluency", "elaboration_units", "elaborated_contribution_count", "consecutive_topic_turns", "coder_id", "notes"],
             ["S01__E01", "S01", "E01", "divergence", "generative", "3", "5", "2", "4", "coder_A", "Manual coding after transcript review"],
-        ],
-        "ues_sf_responses_template.csv": [
-            ["participant_id", "session_id", "phase", "strategy", *UES_ITEM_ALIASES.keys()],
-            ["P01", "S01", "post_session", "overall", "4", "3", "4", "2", "1", "2", "4", "5", "4", "5", "4", "5"],
-        ],
-        "open_feedback_coded_template.csv": [
-            ["participant_id", "session_id", "phase", "strategy", "question_id", "theme", "valence", "excerpt_or_note"],
-            ["P01", "S01", "post_session", "generative", "most_useful", "helped_generate_more_options", "positive", "Short paraphrase or coded note"],
         ],
     }
     for filename, rows in templates.items():
@@ -515,6 +699,21 @@ def save_outputs(args: argparse.Namespace) -> None:
     if args.interventions:
         windows = build_windows(read_csv(args.interventions), transcript)
         windows.to_csv(output_dir / "elicitation_windows.csv", index=False)
+        if "elicitation_engagement_score" in windows.columns and windows["elicitation_engagement_score"].notna().any():
+            engagement_summary = summarize_numeric(
+                windows,
+                ["elicitation_engagement_score"],
+                ["phase", "strategy"],
+            )
+            engagement_summary.to_csv(output_dir / "elicitation_engagement_summary_by_phase_strategy.csv", index=False)
+            summary_rows.append(engagement_summary)
+            chart_group_means(
+                windows,
+                "elicitation_engagement_score",
+                "Mean Elicitation Engagement Score",
+                "1-100 score",
+                chart_dir / "elicitation_engagement_by_phase_strategy.png",
+            )
 
     if transcript is not None and windows is not None:
         transcript_metrics = compute_transcript_metrics(
@@ -533,6 +732,16 @@ def save_outputs(args: argparse.Namespace) -> None:
                 "participant_turn_count",
                 "participant_word_count",
                 "mean_participant_turn_duration_seconds",
+                "mean_audio_rms",
+                "participant_words_per_second",
+                "long_pause_seconds_per_minute",
+                "backchannel_count",
+                "laughter_count",
+                "cooperative_overlap_count",
+                "adjacency_response_success",
+                "connection_cues_per_minute",
+                "vocal_activation_score",
+                "connection_cue_score",
             ],
             ["phase", "strategy"],
         )
@@ -551,6 +760,41 @@ def save_outputs(args: argparse.Namespace) -> None:
             "Mean Participant Speaking Time Until Next Elicitation",
             "Seconds",
             chart_dir / "speaking_time_by_phase_strategy.png",
+        )
+        chart_group_means(
+            transcript_metrics,
+            "vocal_activation_score",
+            "Mean Vocal Activation Score",
+            "0-100 index",
+            chart_dir / "vocal_activation_by_phase_strategy.png",
+        )
+        chart_group_means(
+            transcript_metrics,
+            "connection_cue_score",
+            "Mean Connection Cue Score",
+            "0-100 index",
+            chart_dir / "connection_cue_score_by_phase_strategy.png",
+        )
+        chart_group_means(
+            transcript_metrics,
+            "participant_words_per_second",
+            "Mean Participant Speech Rate",
+            "Words per second",
+            chart_dir / "speech_rate_by_phase_strategy.png",
+        )
+        chart_group_means(
+            transcript_metrics,
+            "long_pause_seconds_per_minute",
+            "Mean Long-Pause Burden",
+            "Seconds per minute",
+            chart_dir / "long_pause_burden_by_phase_strategy.png",
+        )
+        chart_group_means(
+            transcript_metrics,
+            "connection_cues_per_minute",
+            "Mean Connection Cues per Minute",
+            "Cues per minute",
+            chart_dir / "connection_cues_per_minute_by_phase_strategy.png",
         )
 
     if args.manual_measures:
@@ -586,33 +830,7 @@ def save_outputs(args: argparse.Namespace) -> None:
             chart_dir / "consecutive_topic_turns_by_phase_strategy.png",
         )
 
-    if args.ues_responses:
-        ues = score_ues(args.ues_responses)
-        ues.to_csv(output_dir / "ues_sf_scores.csv", index=False)
-        ues_summary = summarize_numeric(
-            ues,
-            ["focused_attention", "perceived_usability", "aesthetic_appeal", "reward", "ues_sf_total"],
-            [c for c in ["phase", "strategy"] if c in ues.columns] or ["session_id"],
-        )
-        ues_summary.to_csv(output_dir / "ues_sf_summary.csv", index=False)
-        chart_group_means(ues, "ues_sf_total", "Mean UES-SF Total Score", "1-5 scored average", chart_dir / "ues_sf_total.png")
-
-    if args.feedback_codes:
-        counts = feedback_theme_counts(args.feedback_codes)
-        counts.to_csv(output_dir / "open_feedback_theme_counts.csv", index=False)
-        top = counts.head(args.max_feedback_themes).copy()
-        if not top.empty:
-            label_cols = [c for c in ["phase", "strategy", "theme"] if c in top.columns]
-            labels = top[label_cols].astype(str).agg(" / ".join, axis=1).tolist()
-            draw_bar_chart(
-                ChartSeries(
-                    labels=labels,
-                    values=top["count"].astype(float).tolist(),
-                    title="Most Frequent Open Feedback Themes",
-                    y_label="Count",
-                    output_path=chart_dir / "open_feedback_theme_counts.png",
-                )
-            )
+    draw_dashboard(chart_dir, output_dir / "pepper_measurement_dashboard.png")
 
     manifest = {
         "output_dir": str(output_dir.resolve()),
@@ -627,13 +845,10 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--transcript", help="CSV transcript with session_id, speaker, start_time, end_time/duration_seconds, text.")
     parser.add_argument("--interventions", help="CSV robot/intervention log defining elicitation prompts.")
     parser.add_argument("--manual-measures", help="CSV with manually coded idea fluency, elaboration, and topic-chain measures.")
-    parser.add_argument("--ues-responses", help="CSV with UES-SF 1-5 item responses.")
-    parser.add_argument("--feedback-codes", help="CSV with manually coded open-feedback themes.")
     parser.add_argument("--output-dir", default="llm/analysis/outputs", help="Directory for CSV summaries and PNG charts.")
     parser.add_argument("--write-templates", help="Write input CSV templates to this directory and exit.")
     parser.add_argument("--participant-speakers", nargs="*", default=list(PARTICIPANT_DEFAULTS), help="Speaker labels treated as participants.")
     parser.add_argument("--robot-speakers", nargs="*", default=list(ROBOT_DEFAULTS), help="Speaker labels treated as robot/facilitator.")
-    parser.add_argument("--max-feedback-themes", type=int, default=12, help="Maximum feedback themes to show in chart.")
     return parser.parse_args(argv)
 
 
@@ -643,7 +858,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         write_templates(args.write_templates)
         print(f"Wrote templates to {Path(args.write_templates).resolve()}")
         return 0
-    if not any([args.transcript, args.interventions, args.manual_measures, args.ues_responses, args.feedback_codes]):
+    if not any([args.transcript, args.interventions, args.manual_measures]):
         raise SystemExit("No inputs provided. Use --write-templates to create CSV templates, or pass one or more input CSV files.")
     if args.transcript and not args.interventions:
         raise SystemExit("--transcript requires --interventions so elicitation windows can be constructed.")

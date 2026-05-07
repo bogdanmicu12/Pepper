@@ -78,6 +78,10 @@ TRANSCRIPT_LOG_COLUMNS = [
     "triggered_robot",
     "trigger_words",
     "fallback_reason",
+    "elicitation_engagement_score",
+    "previous_elicitation_prompt_id",
+    "previous_elicitation_strategy",
+    "previous_elicitation_phase",
 ]
 
 DEFAULT_PEPPER_VOCABULARY = [
@@ -1638,6 +1642,10 @@ def append_transcript_event(transcript_log_path, payload, event):
         "triggered_robot": event.get("triggered_robot", ""),
         "trigger_words": event.get("trigger_words", ""),
         "fallback_reason": event.get("fallback_reason", ""),
+        "elicitation_engagement_score": event.get("elicitation_engagement_score", ""),
+        "previous_elicitation_prompt_id": event.get("previous_elicitation_prompt_id", ""),
+        "previous_elicitation_strategy": event.get("previous_elicitation_strategy", ""),
+        "previous_elicitation_phase": event.get("previous_elicitation_phase", ""),
     }
 
     with path.open("a", encoding="utf-8", newline="") as handle:
@@ -1671,7 +1679,20 @@ def append_participant_transcript_event(transcript_log_path, payload, turn, sequ
     )
 
 
-def append_robot_transcript_event(transcript_log_path, payload, result, sequence_index, robot_turn_index, robot_timestamp):
+def append_robot_transcript_event(
+    transcript_log_path,
+    payload,
+    result,
+    sequence_index,
+    robot_turn_index,
+    robot_timestamp=None,
+    robot_start_timestamp=None,
+    robot_end_timestamp=None,
+):
+    if robot_start_timestamp is None:
+        robot_start_timestamp = robot_timestamp or timestamp_from_epoch()
+    if robot_end_timestamp is None:
+        robot_end_timestamp = robot_timestamp or robot_start_timestamp
     append_transcript_event(
         transcript_log_path,
         payload,
@@ -1679,9 +1700,9 @@ def append_robot_transcript_event(transcript_log_path, payload, result, sequence
             "sequence_index": sequence_index,
             "robot_turn_index": robot_turn_index,
             "event_type": "robot",
-            "timestamp": robot_timestamp,
-            "start_timestamp": robot_timestamp,
-            "end_timestamp": robot_timestamp,
+            "timestamp": robot_end_timestamp,
+            "start_timestamp": robot_start_timestamp,
+            "end_timestamp": robot_end_timestamp,
             "speaker": "Robot",
             "text": result.get("reply", ""),
             "phase": result.get("phase", payload.get("phase", "")),
@@ -1690,6 +1711,10 @@ def append_robot_transcript_event(transcript_log_path, payload, result, sequence
             "source": result.get("source", ""),
             "triggered_robot": "true",
             "fallback_reason": result.get("fallback_reason", ""),
+            "elicitation_engagement_score": result.get("elicitation_engagement_score", ""),
+            "previous_elicitation_prompt_id": result.get("previous_elicitation_prompt_id", ""),
+            "previous_elicitation_strategy": result.get("previous_elicitation_strategy", ""),
+            "previous_elicitation_phase": result.get("previous_elicitation_phase", ""),
         },
     )
 
@@ -1949,6 +1974,7 @@ def run_continuous_live_dialog(
     intervention_every=4,
     keyboard_controls=True,
     proactive_silence_threshold=PROACTIVE_SILENCE_THRESHOLD,
+    evaluation_elicitation=False,
 ):
     print("--- Continuous live dialog mode started ---")
     print("Microphones are live. Say Pepper to trigger the robot. Press Ctrl+C to stop.")
@@ -1969,6 +1995,7 @@ def run_continuous_live_dialog(
     command_queue = queue.Queue()
     stop_event = threading.Event()
     last_proactive_epoch = 0.0
+    last_elicitation_result = None
 
     base_payload["phase"] = current_phase
     print_live_control_summary(base_payload, elicitation_mode, intervention_every, keyboard_controls)
@@ -2027,7 +2054,7 @@ def run_continuous_live_dialog(
         return result
 
     def trigger_robot(triggering_turn):
-        nonlocal sequence_index, robot_turn_index, pending_participant_turns
+        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result
         if not pending_participant_turns:
             return
 
@@ -2043,16 +2070,29 @@ def run_continuous_live_dialog(
         })
 
         result = build_robot_result(request)
-        robot_timestamp = timestamp_from_epoch()
+        result_is_elicitation = is_elicitation_result(result)
+        if evaluation_elicitation and result_is_elicitation:
+            score = prompt_previous_elicitation_engagement(
+                last_elicitation_result,
+                input_queue=command_queue if keyboard_controls else None,
+                stop_event=stop_event,
+            )
+            attach_previous_elicitation_engagement(result, last_elicitation_result, score)
+            if stop_event.is_set():
+                return
+
+        robot_start_timestamp = timestamp_from_epoch()
 
         robot_turn = {
             "speaker": "Robot",
             "text": result["reply"],
-            "timestamp": robot_timestamp,
+            "timestamp": robot_start_timestamp,
         }
         conversation_history.append(robot_turn)
 
         print_robot_turn(result)
+        send_fn(result["reply"], style=result.get("style", "passive"))
+        robot_end_timestamp = timestamp_from_epoch()
         sequence_index += 1
         append_robot_transcript_event(
             transcript_log_path,
@@ -2060,18 +2100,53 @@ def run_continuous_live_dialog(
             result,
             sequence_index=sequence_index,
             robot_turn_index=robot_turn_index,
-            robot_timestamp=robot_timestamp,
+            robot_start_timestamp=robot_start_timestamp,
+            robot_end_timestamp=robot_end_timestamp,
         )
-        send_fn(result["reply"], style=result.get("style", "passive"))
         append_log_turn_block(
             base_payload.get("log_path"),
             request,
             result,
             list(pending_participant_turns),
-            robot_timestamp,
+            robot_end_timestamp,
         )
         phase_reply_count[current_phase] += 1
+        if result_is_elicitation:
+            last_elicitation_result = result
         pending_participant_turns = []
+
+    def record_final_elicitation_evaluation():
+        nonlocal sequence_index, last_elicitation_result
+        if not evaluation_elicitation or not last_elicitation_result:
+            return
+
+        score = prompt_previous_elicitation_engagement(
+            last_elicitation_result,
+            input_queue=command_queue if keyboard_controls else None,
+            stop_event=None,
+        )
+        if score == "":
+            return
+
+        sequence_index += 1
+        append_transcript_event(
+            transcript_log_path,
+            base_payload,
+            {
+                "sequence_index": sequence_index,
+                "robot_turn_index": robot_turn_index,
+                "event_type": "elicitation_evaluation",
+                "timestamp": timestamp_from_epoch(),
+                "speaker": "Researcher",
+                "text": "Final elicitation engagement score",
+                "phase": last_elicitation_result.get("phase", current_phase),
+                "strategy": last_elicitation_result.get("strategy", ""),
+                "prompt_id": last_elicitation_result.get("prompt_id", ""),
+                "source": "manual_evaluation",
+                "elicitation_engagement_score": score,
+            },
+        )
+        last_elicitation_result = None
 
     def handle_command(line):
         nonlocal current_phase, elicitation_mode
@@ -2085,6 +2160,7 @@ def run_continuous_live_dialog(
         value = " ".join(parts[1:]).strip()
 
         if text.lower() in {"quit", "exit", "stop"}:
+            record_final_elicitation_evaluation()
             stop_event.set()
             return False
 
@@ -2300,6 +2376,74 @@ def safe_strategy_sequences(group_id, theme_id):
     return sequences
 
 
+def is_elicitation_result(result):
+    if not result or not result.get("prompt_id"):
+        return False
+    strategy = normalize_elicitation(str(result.get("strategy", "")).strip())
+    return strategy in MODE_REGISTRY["elicitation"]
+
+
+def parse_engagement_score(value):
+    text = str(value or "").strip()
+    if not text or text.lower() in {"skip", "na", "n/a", "none"}:
+        return ""
+    score = float(text)
+    if score < 1 or score > 100:
+        raise ValueError("score must be between 1 and 100")
+    if score.is_integer():
+        return int(score)
+    return round(score, 2)
+
+
+def prompt_previous_elicitation_engagement(previous_result, input_queue=None, stop_event=None):
+    if not previous_result:
+        print("[Evaluation] First elicitation prompt; the first completed window can be scored at the next elicitation prompt.")
+        return ""
+
+    label = (
+        f"{previous_result.get('phase', '')}/{previous_result.get('strategy', '')} "
+        f"{previous_result.get('prompt_id', '')}"
+    ).strip()
+    prompt = f"[Evaluation] Engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
+
+    while True:
+        if input_queue is None:
+            try:
+                raw = input(prompt)
+            except EOFError:
+                return ""
+        else:
+            print(prompt, end="", flush=True)
+            while True:
+                if stop_event is not None and stop_event.is_set():
+                    print("")
+                    return ""
+                try:
+                    raw = input_queue.get(timeout=0.1)
+                    break
+                except queue.Empty:
+                    continue
+
+        text = str(raw or "").strip()
+        if text.lower() in LIVE_EXIT_WORDS:
+            if stop_event is not None:
+                stop_event.set()
+            return ""
+        try:
+            return parse_engagement_score(text)
+        except ValueError:
+            print("Please enter a number from 1 to 100, or press Enter to skip.")
+
+
+def attach_previous_elicitation_engagement(result, previous_result, score):
+    if not previous_result or score == "":
+        return
+    result["elicitation_engagement_score"] = score
+    result["previous_elicitation_prompt_id"] = previous_result.get("prompt_id", "")
+    result["previous_elicitation_strategy"] = previous_result.get("strategy", "")
+    result["previous_elicitation_phase"] = previous_result.get("phase", "")
+
+
 def start_live_command_reader(command_queue, stop_event):
     def reader():
         while not stop_event.is_set():
@@ -2392,6 +2536,13 @@ def main():
         help="Live robot strategy mode: off, scheduled counterbalancing, or a fixed elicitation strategy.",
     )
     parser.add_argument("--intervention-every", type=int, default=4, help="Scheduled elicitation fires every Nth robot reply")
+    parser.add_argument(
+        "--evaluation_elicitation",
+        "--evaluation-elicitation",
+        action="store_true",
+        dest="evaluation_elicitation",
+        help="In live scheduled/fixed elicitation mode, ask the researcher for a 1-100 engagement score before each new elicitation prompt and log it for the previous elicitation window.",
+    )
     parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="passive", help="Robot style guidance")
     parser.add_argument("--role-mode", choices=["off", "facilitator", "solutionist"], default="facilitator", help="Robot role guidance")
     parser.add_argument("--proactive-silence-threshold", type=float, default=PROACTIVE_SILENCE_THRESHOLD, help="Seconds of silence before proactive robot intervention")
@@ -2515,6 +2666,8 @@ def main():
             parser.error("--deepgram-api-key is required when using --deepgram-live")
 
         payload = build_live_payload(args)
+        if args.evaluation_elicitation and not (args.deepgram_live and args.audio_capture_mode == "continuous"):
+            print("Warning: --evaluation_elicitation currently applies to continuous live elicitation runs.")
 
         send_fn = console_send
         pepper = None
@@ -2536,6 +2689,7 @@ def main():
                     intervention_every=args.intervention_every,
                     keyboard_controls=not args.no_live_keyboard_controls,
                     proactive_silence_threshold=args.proactive_silence_threshold,
+                    evaluation_elicitation=args.evaluation_elicitation,
                 )
                 return
 
