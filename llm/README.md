@@ -52,7 +52,7 @@ python infra/lmstudio_minimal_bridge.py --intervene
 
 #### --intervene with Pepper speech output
 ```bash
-python infra/lmstudio_minimal_bridge.py --intervene --initiative reactive --pepper --pepper-ip 192.168.1.35 --pepper-port 9559
+python infra/lmstudio_minimal_bridge.py --intervene --initiative reactive --pepper --pepper-ip 192.168.1.116 --pepper-port 9559
 ```
 
 This keeps the same intervention logic as above:
@@ -77,11 +77,32 @@ Use this when you want a straightforward participant/robot dialogue without the 
 python infra/lmstudio_minimal_bridge.py --live --deepgram-live
 ```
 
-This now runs in continuous microphone mode by default. The microphones stay live, completed speech segments are transcribed in the background, and the robot only responds when a participant says `Pepper`.
+This runs continuous microphone input by default. The microphones stay live, each Focusrite channel is segmented and transcribed independently, and speech is mapped as `Participant 1` on input 1 and `Participant 2` on input 2.
 
-By default, live Deepgram input uses Focusrite mode: input channel 1 is logged and passed to the model as `Participant 1`, and input channel 2 is logged and passed as `Participant 2`.
+Live mode now supports the same experiment controls as intervention mode. Defaults are `group_id=G01`, `theme_id=T1`, `phase=divergence`, scheduled elicitation every 4th robot reply, passive style, reactive initiative, and facilitator role. In reactive mode, saying `Pepper` triggers the robot. In proactive mode, the robot triggers after a silence window.
 
-The Deepgram API key is read from `DEEPGRAM_API_KEY` in your shell or local `.env` file, so you only need `--deepgram-api-key` if you want to override it.
+Pepper replies stay natural and context-aware, with a 100-word ceiling and cleanup for speaker labels, notes, markdown, multi-turn scripts, or long meta explanations before TTS.
+
+Example full run:
+```bash
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --elicitation-mode scheduled --style-mode passive --initiative reactive
+```
+
+For elicitation-window engagement evaluation, add `--evaluation_elicitation`.
+Before each new prompt-bank elicitation, the console asks for a 1-100 score for
+the previous elicitation window. The score is written to `logs/transcript.csv`
+with the previous prompt metadata for analysis. When you type `exit`, the
+console asks once more for the final open elicitation window.
+
+Useful live toggles:
+```bash
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --elicitation-mode off --style-mode off --initiative off
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --elicitation-mode perspective_shift --style-mode assertive --initiative proactive
+```
+
+Optional typed controls remain available while microphones run: `ROBOT`, `CHANGE`, `DIVERGENCE`, `CONVERGENCE`, `ELICITATION off|scheduled|perspective_shift|generative|elaboration_evidence`, `STYLE off|passive|assertive|supportive`, `INITIATIVE off|reactive|proactive`, `ROLE off|facilitator|solutionist`, `GROUP G01`, `THEME T1`, and `exit`.
+
+The Deepgram API key is configured as the script default, so `--deepgram-api-key` is only needed when overriding it.
 
 To inspect audio devices:
 ```bash
@@ -101,18 +122,6 @@ python infra/lmstudio_minimal_bridge.py --live --deepgram-live --audio-device Fo
 If you also want Pepper to speak the robot output:
 ```bash
 python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper
-```
-
-For experiment-controlled intervention mode, continuous microphone input can replace typed participant lines while keeping the same `ROBOT` intervention behavior:
-```bash
-python infra/lmstudio_minimal_bridge.py --intervene --deepgram-live --pepper
-```
-
-Transcripts are written to `logs/transcript.csv` by default. Each participant utterance and robot reply gets its own row with session/group/conversation IDs, speaker, text, timestamps, Focusrite channel/source metadata, trigger status, and model/fallback metadata. The older readable intervention blocks still go to `logs/logs.csv`.
-
-Useful tuning flags:
-```bash
-python infra/lmstudio_minimal_bridge.py --live --deepgram-live --vad-start-rms 350 --vad-stop-rms 180 --vad-end-silence-seconds 0.9
 ```
 
 #### --deepgram-audio (speech recognition to LM Studio)

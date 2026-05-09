@@ -1,221 +1,1145 @@
-S_G05_T1,G05,G05_T1_1776963780
+LIVE_G01_T1_SYN,G01,G01_T1_SYN_1778500001
+
+2026-05-11T09:30:00.000,divergence,perspective_shift,P-D-01-G01,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T09:30:20.565,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T09:30:34.329,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T09:30:44.926,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T09:30:53.219,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T09:30:56.752,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. [unclear] but the point is it should be easy"
+2026-05-11T09:31:12.912,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. pepper"
+
+2026-05-11T09:31:37.846,divergence,generative,G-D-02-G01,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T09:31:50.954,Participant 1,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T09:31:59.930,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T09:32:09.880,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T09:32:16.860,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T09:32:18.851,Participant 1,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T09:32:29.994,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost. pepper"
+
+2026-05-11T09:32:52.792,divergence,elaboration_evidence,E-D-03-G01,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T09:33:10.004,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share. sorry speech thing maybe picked that up weird"
+2026-05-11T09:33:25.473,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T09:33:37.539,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T09:33:44.215,That gives us a direction. Which part should be made more concrete?
+2026-05-11T09:33:47.342,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T09:34:05.064,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+
+2026-05-11T09:34:28.055,convergence,context_only,,,phase transition
+2026-05-11T09:34:32.255,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T09:34:38.924,convergence,elaboration_evidence,E-C-04-G01,,How would you test whether this works without making it heavy for students?
+2026-05-11T09:34:54.589,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T09:35:07.225,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T09:35:17.853,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T09:35:26.708,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T09:35:36.101,Participant 1,"We should measure whether people come back, not only whether they click the form once. it transcribed me funny but I mean peer mentor"
+2026-05-11T09:35:50.434,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T09:36:03.675,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. pepper"
+
+2026-05-11T09:36:23.837,convergence,generative,G-C-05-G01,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T09:36:32.687,Participant 1,"Yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. sorry speech thing maybe picked that up weird"
+2026-05-11T09:36:50.852,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T09:37:00.901,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T09:37:07.832,That gives us a direction. Which part should be made more concrete?
+2026-05-11T09:37:08.252,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T09:37:17.028,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost. pepper"
+
+2026-05-11T09:37:36.980,convergence,perspective_shift,P-C-06-G01,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T09:37:55.466,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T09:38:06.827,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T09:38:17.225,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T09:38:30.775,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room. [unclear] but the point is it should be easy"
+2026-05-11T09:38:45.141,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T09:38:56.262,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal. pepper"
+
+
+LIVE_G02_T1_SYN,G02,G02_T1_SYN_1778500002
+
+2026-05-11T10:30:00.000,divergence,generative,G-D-01-G02,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T10:30:14.183,Participant 1,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T10:30:26.733,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T10:30:37.424,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T10:30:45.655,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T10:30:48.406,Participant 1,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. uh the word is not coming, planning rooster no timetable"
+2026-05-11T10:31:07.292,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+
+2026-05-11T10:31:23.570,divergence,elaboration_evidence,E-D-02-G02,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T10:31:37.929,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T10:31:49.713,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T10:31:59.926,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T10:32:07.442,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T10:32:09.744,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T10:32:22.292,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T10:32:31.405,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T10:32:44.523,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier. pepper
+
+2026-05-11T10:33:07.887,divergence,perspective_shift,P-D-03-G02,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T10:33:26.714,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T10:33:39.517,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T10:33:50.657,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T10:33:58.870,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T10:34:00.264,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T10:34:13.152,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind. sorry speech thing maybe picked that up weird"
+2026-05-11T10:34:31.056,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. pepper"
+
+2026-05-11T10:34:52.553,convergence,context_only,,,phase transition
+2026-05-11T10:34:56.753,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T10:35:02.254,convergence,elaboration_evidence,E-C-04-G02,,How would you test whether this works without making it heavy for students?
+2026-05-11T10:35:10.547,Participant 1,"Haha yeah, privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T10:35:19.101,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T10:35:29.695,convergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T10:35:36.688,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T10:35:37.478,Participant 1,"Yeah, a pilot could run for six weeks and then ask students if it lowered stress or made studying easier."
+2026-05-11T10:35:48.345,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T10:35:58.035,Participant 1,"Okay, if it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T10:36:08.451,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier. pepper
+
+2026-05-11T10:36:30.239,convergence,perspective_shift,P-C-05-G02,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T10:36:43.035,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T10:36:52.970,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T10:37:03.567,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T10:37:11.518,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T10:37:12.281,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T10:37:20.428,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+
+2026-05-11T10:37:38.463,convergence,generative,G-C-06-G02,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T10:37:47.353,Participant 1,"Yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T10:37:56.208,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T10:38:04.018,Participant 1,"Okay, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T10:38:13.657,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T10:38:23.797,Participant 1,"Okay, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T10:38:33.606,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+
+
+LIVE_G03_T1_SYN,G03,G03_T1_SYN_1778500003
+
+2026-05-11T11:30:00.000,divergence,elaboration_evidence,E-D-01-G03,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-11T11:30:12.035,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T11:30:21.290,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T11:30:33.180,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T11:30:42.607,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T11:30:46.560,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. We know Bogdan so it is less scary to test it, honestly."
+2026-05-11T11:31:06.376,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. it transcribed me funny but I mean peer mentor"
+2026-05-11T11:31:25.167,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T11:31:38.593,Participant 2,"We should measure whether people come back, not only whether they click the form once. pepper"
+
+2026-05-11T11:31:53.599,divergence,perspective_shift,P-D-02-G03,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T11:32:10.428,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T11:32:23.092,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal. it transcribed me funny but I mean peer mentor"
+2026-05-11T11:32:39.436,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T11:32:45.642,That gives us a direction. Which part should be made more concrete?
+2026-05-11T11:32:47.111,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T11:33:00.194,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T11:33:14.757,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T11:33:25.176,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. pepper"
+
+2026-05-11T11:33:44.921,divergence,generative,G-D-03-G03,,"What else could TU Delft try, even if it is a small or slightly rough idea?"
+2026-05-11T11:34:01.775,Participant 1,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T11:34:19.005,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T11:34:30.022,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T11:34:37.060,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T11:34:40.550,Participant 1,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T11:34:53.115,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods. pepper"
+
+2026-05-11T11:35:10.315,convergence,context_only,,,phase transition
+2026-05-11T11:35:14.515,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T11:35:19.532,convergence,generative,G-C-04-G03,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T11:35:30.876,Participant 1,"Yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T11:35:41.317,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T11:35:50.891,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T11:35:59.184,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T11:36:05.047,Participant 1,"Yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T11:36:12.671,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T11:36:20.676,Participant 1,"Okay, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+
+2026-05-11T11:36:38.010,convergence,perspective_shift,P-C-05-G03,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T11:36:53.439,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T11:37:02.057,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T11:37:11.829,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T11:37:20.984,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T11:37:21.269,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T11:37:30.501,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T11:37:41.086,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+
+2026-05-11T11:37:56.178,convergence,elaboration_evidence,E-C-06-G03,,How would you test whether this works without making it heavy for students?
+2026-05-11T11:38:12.695,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T11:38:31.184,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T11:38:42.666,Participant 1,"A pilot could run for six weeks and then ask students if it lowered stress or made studying easier. ehm not depression heavy, more everyday stress"
+2026-05-11T11:38:58.115,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T11:39:08.721,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T11:39:22.358,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+
+
+LIVE_G04_T1_SYN,G04,G04_T1_SYN_1778500004
+
+2026-05-11T12:30:00.000,divergence,perspective_shift,P-D-01-G04,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T12:30:17.404,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T12:30:33.794,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T12:30:46.056,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T12:30:55.196,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T12:30:56.301,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T12:31:07.141,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. pepper"
+
+2026-05-11T12:31:26.207,divergence,elaboration_evidence,E-D-02-G04,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T12:31:41.378,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T12:31:52.956,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T12:32:05.015,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T12:32:13.114,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T12:32:17.418,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T12:32:31.139,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T12:32:43.764,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T12:32:55.013,Participant 2,"We should measure whether people come back, not only whether they click the form once. pepper"
+
+2026-05-11T12:33:15.776,divergence,generative,G-D-03-G04,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T12:33:29.504,Participant 1,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T12:33:41.000,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T12:33:52.565,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T12:34:00.964,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T12:34:01.642,Participant 1,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T12:34:12.249,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening. [unclear] but the point is it should be easy"
+2026-05-11T12:34:35.145,Participant 1,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T12:34:45.743,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. pepper"
+
+2026-05-11T12:35:11.052,convergence,context_only,,,phase transition
+2026-05-11T12:35:15.252,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T12:35:19.309,convergence,elaboration_evidence,E-C-04-G04,,How would you test whether this works without making it heavy for students?
+2026-05-11T12:35:37.221,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. sorry speech thing maybe picked that up weird"
+2026-05-11T12:35:53.848,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T12:36:03.853,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T12:36:10.879,That gives us a direction. Which part should be made more concrete?
+2026-05-11T12:36:14.355,Participant 1,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T12:36:25.590,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. sorry speech thing maybe picked that up weird"
+2026-05-11T12:36:39.392,Participant 1,"We should measure whether people come back, not only whether they click the form once. pepper"
+
+2026-05-11T12:36:58.411,convergence,generative,G-C-05-G04,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T12:37:08.185,Participant 1,"Haha yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T12:37:16.792,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. ehm not depression heavy, more everyday stress"
+2026-05-11T12:37:31.635,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T12:37:37.896,That gives us a direction. Which part should be made more concrete?
+2026-05-11T12:37:38.533,Participant 1,"Haha yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T12:37:48.825,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T12:37:56.441,Participant 1,"Yeah, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T12:38:07.821,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+
+2026-05-11T12:38:29.373,convergence,perspective_shift,P-C-06-G04,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-11T12:38:41.166,Participant 1,"Yeah, maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T12:38:49.113,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T12:38:58.603,Participant 1,"Yeah, yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. it transcribed me funny but I mean peer mentor"
+2026-05-11T12:39:14.229,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T12:39:22.015,Participant 1,"Haha yeah, yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+
+
+LIVE_G05_T1_SYN,G05,G05_T1_SYN_1778500005
+
+2026-05-11T13:30:00.000,divergence,generative,G-D-01-G05,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T13:30:12.395,Participant 1,"Haha yeah, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T13:30:21.517,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T13:30:33.300,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T13:30:41.096,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T13:30:40.251,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T13:30:49.682,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+
+2026-05-11T13:31:10.483,divergence,perspective_shift,P-D-02-G05,,Imagine a student who is doing okay on paper but feels overloaded. What would this look like from their point of view?
+2026-05-11T13:31:24.896,Participant 1,"Haha yeah, yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T13:31:37.113,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T13:31:47.056,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T13:31:53.662,That gives us a direction. Which part should be made more concrete?
+2026-05-11T13:31:54.019,Participant 1,"Yeah, i would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T13:32:05.781,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T13:32:13.835,Participant 1,"Yeah, yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. sorry speech thing maybe picked that up weird"
+
+2026-05-11T13:32:41.704,divergence,elaboration_evidence,E-D-03-G05,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T13:32:54.666,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T13:33:09.001,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T13:33:19.830,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T13:33:27.097,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T13:33:29.574,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T13:33:44.950,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T13:33:58.706,Participant 1,"To test it we could start with one faculty and compare sign-ups and repeat attendance. ehm not depression heavy, more everyday stress"
+
+2026-05-11T13:34:23.064,convergence,context_only,,,phase transition
+2026-05-11T13:34:27.264,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T13:34:32.384,convergence,elaboration_evidence,E-C-04-G05,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T13:34:49.907,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T13:34:59.792,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T13:35:10.580,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T13:35:17.720,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T13:35:20.818,Participant 1,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T13:35:32.885,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T13:35:49.923,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+
+2026-05-11T13:36:07.083,convergence,perspective_shift,P-C-05-G05,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T13:36:20.510,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T13:36:34.490,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T13:36:47.624,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T13:36:55.670,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T13:36:59.787,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T13:37:12.912,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T13:37:27.012,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments. it transcribed me funny but I mean peer mentor pepper"
+
+2026-05-11T13:37:50.370,convergence,generative,G-C-06-G05,,How do we turn the strongest option into a small pilot that TU Delft could actually run?
+2026-05-11T13:38:06.840,Participant 1,"Haha yeah, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T13:38:17.874,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T13:38:31.513,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T13:38:39.658,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T13:38:50.339,Participant 1,"Haha yeah, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening. pepper"
+
+
+LIVE_G06_T1_SYN,G06,G06_T1_SYN_1778500006
+
+2026-05-11T14:30:00.000,divergence,elaboration_evidence,E-D-01-G06,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-11T14:30:12.529,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T14:30:24.392,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T14:30:33.717,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T14:30:42.978,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T14:30:44.565,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T14:30:56.186,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share. ehm not depression heavy, more everyday stress"
+2026-05-11T14:31:09.892,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter. pepper"
+
+2026-05-11T14:31:29.659,divergence,generative,G-D-02-G06,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T14:31:41.012,Participant 1,"Haha yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T14:31:51.431,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme. like, how do you say, laagdrempelig, low threshold"
+2026-05-11T14:32:06.848,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T14:32:14.101,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T14:32:20.392,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T14:32:29.046,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T14:32:36.632,Participant 1,"Yeah, what if every course has one very clear panic button, like who to mail when you are lost. pepper"
+
+2026-05-11T14:32:53.243,divergence,perspective_shift,P-D-03-G06,,Imagine a student who is doing okay on paper but feels overloaded. What would this look like from their point of view?
+2026-05-11T14:33:10.682,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T14:33:23.123,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T14:33:32.816,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T14:33:39.857,That gives us a direction. Which part should be made more concrete?
+2026-05-11T14:33:42.605,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T14:33:52.773,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T14:34:07.887,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. uh the word is not coming, planning rooster no timetable"
+
+2026-05-11T14:34:32.597,convergence,context_only,,,phase transition
+2026-05-11T14:34:36.797,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T14:34:43.586,convergence,generative,G-C-04-G06,,How do we turn the strongest option into a small pilot that TU Delft could actually run?
+2026-05-11T14:34:55.370,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T14:35:04.742,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T14:35:15.792,convergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T14:35:23.383,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T14:35:24.552,Participant 1,"Yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T14:35:34.025,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+
+2026-05-11T14:35:57.360,convergence,perspective_shift,P-C-05-G06,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-11T14:36:08.323,Participant 1,"Haha yeah, maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T14:36:19.537,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T14:36:28.949,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T14:36:37.624,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T14:36:39.103,Participant 1,"Haha yeah, exactly, if you are behind you do not want another official system telling you you are behind. like, how do you say, laagdrempelig, low threshold"
+2026-05-11T14:36:52.758,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. pepper"
+
+2026-05-11T14:37:16.447,convergence,elaboration_evidence,E-C-06-G06,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T14:37:25.357,Participant 1,"Okay, we should measure whether people come back, not only whether they click the form once."
+2026-05-11T14:37:34.564,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier. it transcribed me funny but I mean peer mentor
+2026-05-11T14:37:50.803,Participant 1,"Haha yeah, a pilot could run for six weeks and then ask students if it lowered stress or made studying easier. [unclear] but the point is it should be easy"
+2026-05-11T14:38:06.763,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T14:38:15.924,Participant 1,"Haha yeah, if it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T14:38:25.184,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. uh the word is not coming, planning rooster no timetable"
+
+
+LIVE_G07_T1_SYN,G07,G07_T1_SYN_1778500007
+
+2026-05-11T15:30:00.000,divergence,perspective_shift,P-D-01-G07,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T15:30:16.357,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T15:30:28.474,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T15:30:39.178,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T15:30:46.178,That gives us a direction. Which part should be made more concrete?
+2026-05-11T15:30:46.765,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T15:30:57.332,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. like, how do you say, laagdrempelig, low threshold"
+2026-05-11T15:31:14.132,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind. pepper"
+
+2026-05-11T15:31:35.000,divergence,generative,G-D-02-G07,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T15:31:47.758,Participant 1,"Haha yeah, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T15:31:59.025,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. uh the word is not coming, planning rooster no timetable"
+2026-05-11T15:32:14.119,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T15:32:21.743,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T15:32:23.359,Participant 1,"Haha yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T15:32:35.679,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T15:32:44.955,Participant 1,"Okay, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying. like, how do you say, laagdrempelig, low threshold"
+2026-05-11T15:33:00.100,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening. pepper"
+
+2026-05-11T15:33:20.743,divergence,elaboration_evidence,E-D-03-G07,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T15:33:35.007,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T15:33:46.718,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T15:33:57.175,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T15:34:03.834,That gives us a direction. Which part should be made more concrete?
+2026-05-11T15:34:08.158,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T15:34:20.708,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T15:34:29.389,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T15:34:40.162,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+
+2026-05-11T15:34:56.170,convergence,context_only,,,phase transition
+2026-05-11T15:35:00.370,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T15:35:07.982,convergence,elaboration_evidence,E-C-04-G07,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T15:35:26.906,Participant 1,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T15:35:39.961,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T15:35:50.068,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T15:35:58.291,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T15:36:01.993,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T15:36:12.474,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance. pepper
+
+2026-05-11T15:36:34.634,convergence,generative,G-C-05-G07,,How do we turn the strongest option into a small pilot that TU Delft could actually run?
+2026-05-11T15:36:47.394,Participant 1,"Haha yeah, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T15:36:57.280,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening. it transcribed me funny but I mean peer mentor"
+2026-05-11T15:37:12.610,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T15:37:19.945,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T15:37:21.600,Participant 1,"Haha yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T15:37:31.304,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T15:37:40.110,Participant 1,"Yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T15:37:49.387,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+
+2026-05-11T15:38:07.193,convergence,perspective_shift,P-C-06-G07,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-11T15:38:24.239,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T15:38:35.879,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T15:38:50.929,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T15:39:04.110,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T15:39:13.262,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments. sorry speech thing maybe picked that up weird pepper"
+
+
+LIVE_G08_T1_SYN,G08,G08_T1_SYN_1778500008
+
+2026-05-11T16:30:00.000,divergence,generative,G-D-01-G08,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T16:30:10.792,Participant 1,"Okay, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T16:30:18.081,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T16:30:27.725,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T16:30:35.774,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T16:30:37.135,Participant 1,"Okay, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T16:30:47.047,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T16:30:55.458,Participant 1,"Yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+
+2026-05-11T16:31:12.289,divergence,elaboration_evidence,E-D-02-G08,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T16:31:29.357,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T16:31:41.354,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T16:31:51.734,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T16:31:58.841,That gives us a direction. Which part should be made more concrete?
+2026-05-11T16:32:01.025,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T16:32:13.381,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T16:32:25.067,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. pepper"
+
+2026-05-11T16:32:45.965,divergence,perspective_shift,P-D-03-G08,,Imagine a student who is doing okay on paper but feels overloaded. What would this look like from their point of view?
+2026-05-11T16:33:02.413,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T16:33:16.385,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T16:33:28.636,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T16:33:36.753,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T16:33:39.252,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T16:33:51.514,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T16:34:02.327,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind. uh the word is not coming, planning rooster no timetable"
+
+2026-05-11T16:34:31.991,convergence,context_only,,,phase transition
+2026-05-11T16:34:36.191,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T16:34:41.280,convergence,elaboration_evidence,E-C-04-G08,,How would you test whether this works without making it heavy for students?
+2026-05-11T16:34:56.297,Participant 1,"Okay, we should measure whether people come back, not only whether they click the form once."
+2026-05-11T16:35:05.539,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T16:35:13.811,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T16:35:19.872,That gives us a direction. Which part should be made more concrete?
+2026-05-11T16:35:21.770,Participant 1,"Yeah, to test it we could start with one faculty and compare sign-ups and repeat attendance."
+2026-05-11T16:35:34.393,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T16:35:41.792,Participant 1,"Yeah, to test it we could start with one faculty and compare sign-ups and repeat attendance."
+2026-05-11T16:35:51.475,Participant 2,"We should measure whether people come back, not only whether they click the form once. pepper"
+
+2026-05-11T16:36:11.357,convergence,perspective_shift,P-C-05-G08,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T16:36:26.095,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T16:36:37.530,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T16:36:48.623,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T16:36:55.951,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T16:37:04.237,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T16:37:19.098,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room. it transcribed me funny but I mean peer mentor"
+2026-05-11T16:37:36.206,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal. like, how do you say, laagdrempelig, low threshold pepper"
+
+2026-05-11T16:38:03.208,convergence,generative,G-C-06-G08,,How do we turn the strongest option into a small pilot that TU Delft could actually run?
+2026-05-11T16:38:16.324,Participant 1,"Okay, what if every course has one very clear panic button, like who to mail when you are lost. it transcribed me funny but I mean peer mentor"
+2026-05-11T16:38:31.556,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T16:38:41.019,Participant 1,"Yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme. ehm not depression heavy, more everyday stress"
+2026-05-11T16:38:55.910,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+
+
+LIVE_G09_T1_SYN,G09,G09_T1_SYN_1778500009
+
+2026-05-11T17:30:00.000,divergence,elaboration_evidence,E-D-01-G09,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-11T17:30:13.278,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T17:30:25.331,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T17:30:34.689,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T17:30:42.527,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T17:30:48.541,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T17:31:00.757,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. pepper"
+
+2026-05-11T17:31:21.037,divergence,perspective_shift,P-D-02-G09,,Imagine a student who is doing okay on paper but feels overloaded. What would this look like from their point of view?
+2026-05-11T17:31:34.092,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T17:31:42.292,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments. sorry speech thing maybe picked that up weird"
+2026-05-11T17:31:55.883,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T17:32:03.692,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T17:32:04.819,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T17:32:16.819,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T17:32:28.522,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room. pepper"
+
+2026-05-11T17:32:49.031,divergence,generative,G-D-03-G09,,"What else could TU Delft try, even if it is a small or slightly rough idea?"
+2026-05-11T17:33:00.422,Participant 1,"Yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T17:33:09.953,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T17:33:19.313,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T17:33:26.057,That gives us a direction. Which part should be made more concrete?
+2026-05-11T17:33:27.182,Participant 1,"Yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T17:33:37.058,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T17:33:44.601,Participant 1,"Yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+
+2026-05-11T17:34:05.777,convergence,context_only,,,phase transition
+2026-05-11T17:34:09.977,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T17:34:15.158,convergence,generative,G-C-04-G09,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T17:34:25.968,Participant 1,"Haha yeah, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T17:34:37.854,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T17:34:48.246,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T17:34:56.727,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T17:34:58.460,Participant 1,"Haha yeah, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T17:35:09.267,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. pepper"
+
+2026-05-11T17:35:32.176,convergence,perspective_shift,P-C-05-G09,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T17:35:42.926,Participant 1,"Okay, maybe the first step should feel like asking a friend, not like booking mental health support immediately. uh the word is not coming, planning rooster no timetable"
+2026-05-11T17:36:02.868,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T17:36:10.899,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T17:36:20.221,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T17:36:21.626,Participant 1,"Haha yeah, i would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T17:36:34.480,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. pepper"
+
+2026-05-11T17:36:50.307,convergence,elaboration_evidence,E-C-06-G09,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T17:37:10.079,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T17:37:21.758,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T17:37:33.361,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T17:37:45.080,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T17:37:59.471,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+
+
+LIVE_G10_T1_SYN,G10,G10_T1_SYN_1778500010
+
+2026-05-11T18:30:00.000,divergence,perspective_shift,P-D-01-G10,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T18:30:14.608,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T18:30:26.387,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T18:30:39.220,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T18:30:47.214,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T18:30:50.726,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T18:31:04.606,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. like, how do you say, laagdrempelig, low threshold pepper"
+
+2026-05-11T18:31:28.361,divergence,elaboration_evidence,E-D-02-G10,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-11T18:31:43.479,Participant 1,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T18:31:53.461,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T18:32:03.576,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T18:32:10.393,That gives us a direction. Which part should be made more concrete?
+2026-05-11T18:32:14.508,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T18:32:24.393,Participant 2,"We should measure whether people come back, not only whether they click the form once. [unclear] but the point is it should be easy"
+
+2026-05-11T18:32:50.191,divergence,generative,G-D-03-G10,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T18:33:03.958,Participant 1,"Okay, we could do a buddy thing, but not matching forever, just two weeks around exam periods. it transcribed me funny but I mean peer mentor"
+2026-05-11T18:33:17.145,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T18:33:28.022,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T18:33:36.496,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T18:33:35.610,Participant 1,"Haha yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T18:33:46.886,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. uh the word is not coming, planning rooster no timetable pepper"
+
+2026-05-11T18:34:11.287,convergence,context_only,,,phase transition
+2026-05-11T18:34:15.487,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T18:34:23.326,convergence,elaboration_evidence,E-C-04-G10,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T18:34:33.640,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T18:34:44.839,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T18:34:55.653,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T18:35:02.704,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T18:35:06.389,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T18:35:23.471,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T18:35:34.965,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T18:35:45.906,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. pepper"
+
+2026-05-11T18:36:01.744,convergence,generative,G-C-05-G10,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T18:36:10.966,Participant 1,"Yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T18:36:19.971,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. uh the word is not coming, planning rooster no timetable"
+2026-05-11T18:36:33.915,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T18:36:42.160,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T18:36:41.396,Participant 1,"Yeah, what if every course has one very clear panic button, like who to mail when you are lost. ehm not depression heavy, more everyday stress"
+2026-05-11T18:36:55.846,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T18:37:05.387,Participant 1,"Yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme. pepper"
+
+2026-05-11T18:37:30.818,convergence,perspective_shift,P-C-06-G10,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T18:37:45.595,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T18:37:59.402,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T18:38:12.657,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T18:38:25.991,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+
+
+LIVE_G11_T1_SYN,G11,G11_T1_SYN_1778500011
+
+2026-05-11T19:30:00.000,divergence,generative,G-D-01-G11,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T19:30:15.283,Participant 1,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T19:30:24.367,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T19:30:33.868,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T19:30:42.157,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T19:30:44.373,Participant 1,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T19:30:57.515,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. ehm not depression heavy, more everyday stress"
+2026-05-11T19:31:16.581,Participant 1,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+
+2026-05-11T19:31:38.064,divergence,perspective_shift,P-D-02-G11,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T19:32:01.118,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. uh the word is not coming, planning rooster no timetable"
+2026-05-11T19:32:20.078,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T19:32:31.130,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T19:32:39.049,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T19:32:41.427,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments. sorry speech thing maybe picked that up weird"
+2026-05-11T19:32:57.051,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T19:33:09.082,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal. sorry speech thing maybe picked that up weird"
+
+2026-05-11T19:33:33.450,divergence,elaboration_evidence,E-D-03-G11,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T19:33:53.649,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T19:34:06.069,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T19:34:16.209,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T19:34:24.961,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T19:34:25.526,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T19:34:35.013,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T19:34:46.736,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share. pepper"
+
+2026-05-11T19:35:07.473,convergence,context_only,,,phase transition
+2026-05-11T19:35:11.673,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T19:35:18.919,convergence,elaboration_evidence,E-C-04-G11,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T19:35:31.701,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter. ehm not depression heavy, more everyday stress"
+2026-05-11T19:35:47.518,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T19:35:57.203,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T19:36:05.531,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T19:36:13.487,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T19:36:23.753,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+
+2026-05-11T19:36:39.404,convergence,perspective_shift,P-C-05-G11,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-11T19:36:55.025,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T19:37:04.490,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T19:37:14.568,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T19:37:20.714,That gives us a direction. Which part should be made more concrete?
+2026-05-11T19:37:23.479,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T19:37:38.187,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. sorry speech thing maybe picked that up weird"
+
+2026-05-11T19:38:04.999,convergence,generative,G-C-06-G11,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T19:38:14.990,Participant 1,"Yeah, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T19:38:26.752,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. uh the word is not coming, planning rooster no timetable"
+2026-05-11T19:38:46.584,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T19:38:55.323,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T19:39:04.303,Participant 1,"Okay, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T19:39:14.067,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+
+
+LIVE_G12_T1_SYN,G12,G12_T1_SYN_1778500012
+
+2026-05-11T20:30:00.000,divergence,elaboration_evidence,E-D-01-G12,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-11T20:30:16.703,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T20:30:26.075,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T20:30:37.222,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T20:30:44.241,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T20:30:44.608,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T20:30:59.090,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T20:31:15.690,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+
+2026-05-11T20:31:37.345,divergence,generative,G-D-02-G12,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T20:31:54.207,Participant 1,"Haha yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T20:32:03.085,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T20:32:13.605,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T20:32:21.526,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T20:32:20.855,Participant 1,"Okay, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T20:32:29.459,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T20:32:40.073,Participant 1,"Haha yeah, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+
+2026-05-11T20:33:00.078,divergence,perspective_shift,P-D-03-G12,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T20:33:10.890,Participant 1,"Haha yeah, maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T20:33:20.633,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T20:33:30.367,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T20:33:37.501,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T20:33:43.188,Participant 1,"Haha yeah, i would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T20:34:01.648,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T20:34:12.250,Participant 1,"Okay, i would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T20:34:22.274,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+
+2026-05-11T20:34:37.877,convergence,context_only,,,phase transition
+2026-05-11T20:34:42.077,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T20:34:46.888,convergence,generative,G-C-04-G12,,How do we turn the strongest option into a small pilot that TU Delft could actually run?
+2026-05-11T20:34:58.505,Participant 1,"Yeah, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T20:35:07.413,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. Rowing people would probably join if it is after training, but not only them."
+2026-05-11T20:35:23.577,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T20:35:30.270,That gives us a direction. Which part should be made more concrete?
+2026-05-11T20:35:30.605,Participant 1,"Yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T20:35:40.295,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost. sorry speech thing maybe picked that up weird"
+
+2026-05-11T20:35:59.076,convergence,perspective_shift,P-C-05-G12,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-11T20:36:15.363,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T20:36:26.770,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T20:36:38.241,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T20:36:46.567,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T20:36:50.076,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T20:37:00.113,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+
+2026-05-11T20:37:22.704,convergence,elaboration_evidence,E-C-06-G12,,How would you test whether this works without making it heavy for students?
+2026-05-11T20:37:33.998,Participant 1,"Haha yeah, we should measure whether people come back, not only whether they click the form once."
+2026-05-11T20:37:43.869,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T20:37:55.355,Participant 1,"Yeah, privacy is important, so the mentor should not see grades, only what the student chooses to share. ehm not depression heavy, more everyday stress"
+2026-05-11T20:38:08.440,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. pepper"
+
+
+LIVE_G13_T1_SYN,G13,G13_T1_SYN_1778500013
+
+2026-05-11T21:30:00.000,divergence,perspective_shift,P-D-01-G13,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T21:30:15.627,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T21:30:27.059,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T21:30:37.475,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T21:30:44.616,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T21:30:45.269,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T21:30:58.024,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+
+2026-05-11T21:31:22.410,divergence,generative,G-D-02-G13,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-11T21:31:34.779,Participant 1,"Haha yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T21:31:45.660,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T21:31:54.436,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T21:32:00.719,That gives us a direction. Which part should be made more concrete?
+2026-05-11T21:32:01.290,Participant 1,"Okay, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T21:32:11.052,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. it transcribed me funny but I mean peer mentor pepper"
+
+2026-05-11T21:32:36.087,divergence,elaboration_evidence,E-D-03-G13,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T21:32:57.435,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T21:33:07.176,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share. sorry speech thing maybe picked that up weird"
+2026-05-11T21:33:23.402,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T21:33:31.107,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-11T21:33:34.081,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T21:33:46.327,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T21:34:03.580,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T21:34:16.906,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. pepper"
+
+2026-05-11T21:34:36.467,convergence,context_only,,,phase transition
+2026-05-11T21:34:40.667,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T21:34:46.592,convergence,elaboration_evidence,E-C-04-G13,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T21:34:55.051,Participant 1,"Haha yeah, to test it we could start with one faculty and compare sign-ups and repeat attendance."
+2026-05-11T21:35:03.292,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T21:35:14.026,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T21:35:22.043,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T21:35:22.742,Participant 1,"Yeah, the risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-11T21:35:32.679,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+
+2026-05-11T21:35:50.900,convergence,generative,G-C-05-G13,,How do we turn the strongest option into a small pilot that TU Delft could actually run?
+2026-05-11T21:36:04.577,Participant 1,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T21:36:17.527,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T21:36:27.785,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T21:36:35.723,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T21:36:37.077,Participant 1,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T21:36:47.755,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening. sorry speech thing maybe picked that up weird pepper"
+
+2026-05-11T21:37:07.479,convergence,perspective_shift,P-C-06-G13,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-11T21:37:25.825,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind. ehm not depression heavy, more everyday stress"
+2026-05-11T21:37:39.941,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T21:37:49.739,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-11T21:38:02.384,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind. pepper"
+
+
+LIVE_G14_T1_SYN,G14,G14_T1_SYN_1778500014
+
+2026-05-11T22:30:00.000,divergence,generative,G-D-01-G14,,"What else could TU Delft try, even if it is a small or slightly rough idea?"
+2026-05-11T22:30:11.827,Participant 1,"Okay, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T22:30:23.136,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T22:30:32.259,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T22:30:39.243,That gives us a direction. Which part should be made more concrete?
+2026-05-11T22:30:40.350,Participant 1,"Haha yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T22:30:50.227,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+
+2026-05-11T22:31:05.621,divergence,elaboration_evidence,E-D-02-G14,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T22:31:23.284,Participant 1,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-11T22:31:35.597,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T22:31:46.724,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T22:31:54.078,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T22:31:55.931,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T22:32:09.338,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+
+2026-05-11T22:32:31.110,divergence,perspective_shift,P-D-03-G14,,Imagine a student who is doing okay on paper but feels overloaded. What would this look like from their point of view?
+2026-05-11T22:32:44.286,Participant 1,"Yeah, the student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T22:32:53.689,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal. sorry speech thing maybe picked that up weird"
+2026-05-11T22:33:10.127,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T22:33:17.709,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T22:33:17.128,Participant 1,"Haha yeah, exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-11T22:33:28.244,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T22:33:39.953,Participant 1,"Haha yeah, yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. pepper"
+
+2026-05-11T22:34:00.321,convergence,context_only,,,phase transition
+2026-05-11T22:34:04.521,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T22:34:08.755,convergence,elaboration_evidence,E-C-04-G14,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-11T22:34:21.800,Participant 1,"We should measure whether people come back, not only whether they click the form once. like, how do you say, laagdrempelig, low threshold"
+2026-05-11T22:34:36.604,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T22:34:47.601,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T22:34:53.764,That gives us a direction. Which part should be made more concrete?
+2026-05-11T22:34:56.050,Participant 1,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T22:35:11.327,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T22:35:23.793,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-11T22:35:36.224,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier. pepper
+
+2026-05-11T22:35:55.551,convergence,perspective_shift,P-C-05-G14,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-11T22:36:07.984,Participant 1,"Haha yeah, yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T22:36:17.079,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T22:36:28.837,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T22:36:37.420,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T22:36:38.869,Participant 1,"Yeah, maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T22:36:49.527,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+
+2026-05-11T22:37:10.326,convergence,generative,G-C-06-G14,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T22:37:18.033,Participant 1,"Okay, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T22:37:27.384,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T22:37:37.158,Participant 1,"Yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T22:37:51.850,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+
+
+LIVE_G15_T1_SYN,G15,G15_T1_SYN_1778500015
+
+2026-05-11T23:30:00.000,divergence,elaboration_evidence,E-D-01-G15,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-11T23:30:14.988,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. sorry speech thing maybe picked that up weird"
+2026-05-11T23:30:32.757,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T23:30:44.034,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T23:30:52.072,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-11T23:30:54.009,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T23:31:03.448,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T23:31:14.313,Participant 1,"We should measure whether people come back, not only whether they click the form once. pepper"
+
+2026-05-11T23:31:34.829,divergence,perspective_shift,P-D-02-G15,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-11T23:31:52.439,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T23:32:04.760,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-11T23:32:15.370,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T23:32:21.923,That gives us a direction. Which part should be made more concrete?
+2026-05-11T23:32:26.184,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-11T23:32:38.044,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+
+2026-05-11T23:32:59.957,divergence,generative,G-D-03-G15,,"What else could TU Delft try, even if it is a small or slightly rough idea?"
+2026-05-11T23:33:13.039,Participant 1,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T23:33:24.805,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T23:33:34.763,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-11T23:33:41.063,That gives us a direction. Which part should be made more concrete?
+2026-05-11T23:33:44.386,Participant 1,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-11T23:33:55.587,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-11T23:34:04.370,Participant 1,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-11T23:34:15.133,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods. pepper"
+
+2026-05-11T23:34:33.162,convergence,context_only,,,phase transition
+2026-05-11T23:34:37.362,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-11T23:34:44.885,convergence,generative,G-C-04-G15,,"With the ideas you have, what should the next practical step be?"
+2026-05-11T23:34:54.076,Participant 1,"Okay, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-11T23:35:03.906,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-11T23:35:14.582,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T23:35:23.307,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-11T23:35:24.374,Participant 1,"Yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-11T23:35:32.475,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. pepper"
+
+2026-05-11T23:35:54.519,convergence,perspective_shift,P-C-05-G15,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-11T23:36:13.508,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T23:36:25.098,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-11T23:36:33.964,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T23:36:42.128,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-11T23:36:44.898,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. uh the word is not coming, planning rooster no timetable"
+2026-05-11T23:37:00.534,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-11T23:37:13.948,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately. [unclear] but the point is it should be easy pepper"
+
+2026-05-11T23:37:41.934,convergence,elaboration_evidence,E-C-06-G15,,How would you test whether this works without making it heavy for students?
+2026-05-11T23:37:57.254,Participant 1,"We should measure whether people come back, not only whether they click the form once."
+2026-05-11T23:38:11.380,Participant 2,"The risk is that only already social people join, so we need a way for quieter students to enter. sorry speech thing maybe picked that up weird"
+2026-05-11T23:38:25.516,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-11T23:38:37.524,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-11T23:38:52.279,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier. pepper
+
+
+LIVE_G16_T1_SYN,G16,G16_T1_SYN_1778500016
+
+2026-05-12T00:30:00.000,divergence,perspective_shift,P-D-01-G16,,Imagine a student who is doing okay on paper but feels overloaded. What would this look like from their point of view?
+2026-05-12T00:30:19.090,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T00:30:33.523,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. [unclear] but the point is it should be easy"
+2026-05-12T00:30:49.130,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T00:30:57.033,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T00:31:07.248,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-12T00:31:18.014,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-12T00:31:27.129,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T00:31:42.208,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+
+2026-05-12T00:32:06.145,divergence,elaboration_evidence,E-D-02-G16,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-12T00:32:18.880,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T00:32:30.511,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-12T00:32:40.552,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T00:32:49.357,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T00:32:51.255,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T00:33:05.484,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-12T00:33:16.777,Participant 1,"We should measure whether people come back, not only whether they click the form once. pepper"
+
+2026-05-12T00:33:36.003,divergence,generative,G-D-03-G16,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-12T00:33:47.441,Participant 1,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T00:34:00.225,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T00:34:11.849,divergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T00:34:19.434,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T00:34:20.831,Participant 1,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T00:34:34.212,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-12T00:34:45.427,Participant 1,"We could do a buddy thing, but not matching forever, just two weeks around exam periods. pepper"
+
+2026-05-12T00:35:02.187,convergence,context_only,,,phase transition
+2026-05-12T00:35:06.387,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-12T00:35:14.047,convergence,elaboration_evidence,E-C-04-G16,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-12T00:35:23.574,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-12T00:35:35.531,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T00:35:47.244,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T00:35:54.492,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T00:35:57.481,Participant 1,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-12T00:36:06.633,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-12T00:36:22.398,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-12T00:36:32.490,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. sorry speech thing maybe picked that up weird pepper"
+
+2026-05-12T00:36:59.202,convergence,generative,G-C-05-G16,,"With the ideas you have, what should the next practical step be?"
+2026-05-12T00:37:08.926,Participant 1,"Haha yeah, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T00:37:18.970,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-12T00:37:29.248,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T00:37:37.720,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T00:37:37.101,Participant 1,"Haha yeah, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-12T00:37:47.938,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+
+2026-05-12T00:38:02.198,convergence,perspective_shift,P-C-06-G16,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-12T00:38:15.417,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-12T00:38:25.795,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-12T00:38:36.346,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-12T00:38:47.039,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind. pepper"
+
+
+LIVE_G17_T1_SYN,G17,G17_T1_SYN_1778500017
+
+2026-05-12T01:30:00.000,divergence,generative,G-D-01-G17,,"What else could TU Delft try, even if it is a small or slightly rough idea?"
+2026-05-12T01:30:15.744,Participant 1,"Haha yeah, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T01:30:25.894,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-12T01:30:35.227,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T01:30:43.256,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T01:30:44.084,Participant 1,"Okay, tU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-12T01:30:52.031,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-12T01:31:00.385,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+
+2026-05-12T01:31:18.602,divergence,perspective_shift,P-D-02-G17,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-12T01:31:32.623,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-12T01:31:42.171,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-12T01:31:51.731,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T01:31:59.719,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T01:32:00.883,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-12T01:32:10.060,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+
+2026-05-12T01:32:34.572,divergence,elaboration_evidence,E-D-03-G17,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-12T01:32:49.899,Participant 1,"We should measure whether people come back, not only whether they click the form once."
+2026-05-12T01:33:00.315,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-12T01:33:10.314,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T01:33:19.067,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T01:33:19.430,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-12T01:33:32.971,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-12T01:33:44.107,Participant 1,"We should measure whether people come back, not only whether they click the form once."
+
+2026-05-12T01:34:01.472,convergence,context_only,,,phase transition
+2026-05-12T01:34:05.672,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-12T01:34:11.554,convergence,elaboration_evidence,E-C-04-G17,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-12T01:34:23.531,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T01:34:33.875,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-12T01:34:43.834,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-12T01:34:49.792,That gives us a direction. Which part should be made more concrete?
+2026-05-12T01:34:52.531,Participant 1,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform. ehm not depression heavy, more everyday stress"
+2026-05-12T01:35:07.137,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share. pepper"
+
+2026-05-12T01:35:24.387,convergence,perspective_shift,P-C-05-G17,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-12T01:35:38.067,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-12T01:35:51.124,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-12T01:36:03.058,convergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T01:36:10.684,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T01:36:13.245,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments. [unclear] but the point is it should be easy"
+2026-05-12T01:36:27.946,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-12T01:36:39.148,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal. uh the word is not coming, planning rooster no timetable"
+2026-05-12T01:36:56.208,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments. pepper"
+
+2026-05-12T01:37:19.332,convergence,generative,G-C-06-G17,,"With the ideas you have, what should the next practical step be?"
+2026-05-12T01:37:28.971,Participant 1,"Okay, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-12T01:37:37.072,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T01:37:46.057,Participant 1,"Okay, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-12T01:37:55.175,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost. pepper"
+
+
+LIVE_G18_T1_SYN,G18,G18_T1_SYN_1778500018
+
+2026-05-12T02:30:00.000,divergence,elaboration_evidence,E-D-01-G18,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-12T02:30:15.015,Participant 1,"Yeah, to test it we could start with one faculty and compare sign-ups and repeat attendance."
+2026-05-12T02:30:24.930,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-12T02:30:35.328,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T02:30:42.438,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T02:30:41.991,Participant 1,"Haha yeah, privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T02:30:50.324,Participant 2,"We should measure whether people come back, not only whether they click the form once. ehm not depression heavy, more everyday stress"
+2026-05-12T02:31:00.152,Participant 1,"Haha yeah, a pilot could run for six weeks and then ask students if it lowered stress or made studying easier. pepper"
+
+2026-05-12T02:31:25.990,divergence,generative,G-D-02-G18,,"What else could TU Delft try, even if it is a small or slightly rough idea?"
+2026-05-12T02:31:37.908,Participant 1,"Okay, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-12T02:31:47.049,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-12T02:31:57.402,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-12T02:32:03.468,That gives us a direction. Which part should be made more concrete?
+2026-05-12T02:32:08.691,Participant 1,"Okay, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. [unclear] but the point is it should be easy"
+2026-05-12T02:32:26.304,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. like, how do you say, laagdrempelig, low threshold pepper"
+
+2026-05-12T02:32:49.637,divergence,perspective_shift,P-D-03-G18,,Imagine a student who is doing okay on paper but feels overloaded. What would this look like from their point of view?
+2026-05-12T02:33:05.967,Participant 1,"Haha yeah, for a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T02:33:17.158,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-12T02:33:27.240,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-12T02:33:34.004,That gives us a direction. Which part should be made more concrete?
+2026-05-12T02:33:35.918,Participant 1,"Yeah, i would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-12T02:33:47.756,Participant 2,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-12T02:34:01.164,Participant 1,"Okay, for a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T02:34:12.471,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+
+2026-05-12T02:34:32.211,convergence,context_only,,,phase transition
+2026-05-12T02:34:36.411,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-12T02:34:40.824,convergence,generative,G-C-04-G18,,How do we turn the strongest option into a small pilot that TU Delft could actually run?
+2026-05-12T02:34:52.805,Participant 1,"Yeah, what if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-12T02:35:02.546,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-12T02:35:12.874,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-12T02:35:19.376,That gives us a direction. Which part should be made more concrete?
+2026-05-12T02:35:25.317,Participant 1,"Haha yeah, we could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-12T02:35:34.223,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening."
+2026-05-12T02:35:44.702,Participant 1,"Haha yeah, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-12T02:35:54.377,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. pepper"
+
+2026-05-12T02:36:12.911,convergence,perspective_shift,P-C-05-G18,,Imagine being the student who would use this. Which option would feel easiest to actually start using?
+2026-05-12T02:36:28.832,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-12T02:36:39.447,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-12T02:36:50.354,convergence,context_only,,,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T02:36:58.235,"Okay, let's keep the student experience central and make the next step specific."
+2026-05-12T02:37:00.786,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-12T02:37:11.065,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-12T02:37:22.809,Participant 1,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+
+2026-05-12T02:37:46.366,convergence,elaboration_evidence,E-C-06-G18,,How would you test whether this works without making it heavy for students?
+2026-05-12T02:37:59.390,Participant 1,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T02:38:08.172,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T02:38:18.901,Participant 1,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-12T02:38:29.751,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-12T02:38:42.380,Participant 1,"The risk is that only already social people join, so we need a way for quieter students to enter."
+2026-05-12T02:38:54.291,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+
+
+LIVE_G19_T1_SYN,G19,G19_T1_SYN_1778500019
+
+2026-05-12T03:30:00.000,divergence,perspective_shift,P-D-01-G19,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-12T03:30:15.123,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T03:30:28.778,Participant 2,"Maybe the first step should feel like asking a friend, not like booking mental health support immediately."
+2026-05-12T03:30:39.806,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T03:30:47.874,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T03:30:50.982,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-12T03:31:01.785,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-12T03:31:13.268,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room. pepper"
+
+2026-05-12T03:31:33.939,divergence,generative,G-D-02-G19,,Let's add more options before judging them. What else could support wellbeing in daily student life?
+2026-05-12T03:31:46.407,Participant 1,"Okay, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-12T03:31:55.792,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-12T03:32:06.441,divergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-12T03:32:12.400,That gives us a direction. Which part should be made more concrete?
+2026-05-12T03:32:14.142,Participant 1,"Okay, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-12T03:32:26.100,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-12T03:32:35.521,Participant 1,"Yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable."
+2026-05-12T03:32:43.347,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying. pepper"
+
+2026-05-12T03:33:01.936,divergence,elaboration_evidence,E-D-03-G19,,Pick one idea and make it more concrete. What would need to be true for it to actually work?
+2026-05-12T03:33:15.644,Participant 1,"Haha yeah, a pilot could run for six weeks and then ask students if it lowered stress or made studying easier."
+2026-05-12T03:33:26.460,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-12T03:33:36.489,divergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T03:33:45.821,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T03:33:51.147,Participant 1,"Yeah, privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T03:33:59.771,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance. pepper
+
+2026-05-12T03:34:17.024,convergence,context_only,,,phase transition
+2026-05-12T03:34:21.224,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-12T03:34:26.935,convergence,elaboration_evidence,E-C-04-G19,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-12T03:34:38.824,Participant 1,"Yeah, a pilot could run for six weeks and then ask students if it lowered stress or made studying easier."
+2026-05-12T03:34:50.971,Participant 2,"Privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T03:35:02.596,convergence,context_only,,,That gives us a direction. Which part should be made more concrete?
+2026-05-12T03:35:08.940,That gives us a direction. Which part should be made more concrete?
+2026-05-12T03:35:10.617,Participant 1,"Haha yeah, to test it we could start with one faculty and compare sign-ups and repeat attendance."
+2026-05-12T03:35:20.056,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance. pepper
+
+2026-05-12T03:35:37.418,convergence,generative,G-C-05-G19,,"With the ideas you have, what should the next practical step be?"
+2026-05-12T03:35:50.501,Participant 1,"Okay, okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
+2026-05-12T03:35:58.835,Participant 2,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening. it transcribed me funny but I mean peer mentor"
+2026-05-12T03:36:12.169,convergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T03:36:19.724,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T03:36:19.441,Participant 1,"Okay, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T03:36:30.594,Participant 2,"We could do a buddy thing, but not matching forever, just two weeks around exam periods. pepper"
+
+2026-05-12T03:36:54.017,convergence,perspective_shift,P-C-06-G19,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-12T03:37:08.836,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-12T03:37:24.832,Participant 2,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy."
+2026-05-12T03:37:35.077,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-12T03:37:46.902,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T03:37:58.710,Participant 1,"Yeah, I think the hidden thing is that people pretend they are fine because everyone else looks busy. pepper"
+
+
+LIVE_G20_T1_SYN,G20,G20_T1_SYN_1778500020
+
+2026-05-12T04:30:00.000,divergence,generative,G-D-01-G20,,"What else could TU Delft try, even if it is a small or slightly rough idea?"
+2026-05-12T04:30:21.473,Participant 1,"We could do a buddy thing, but not matching forever, just two weeks around exam periods."
+2026-05-12T04:30:32.477,Participant 2,"There could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T04:30:43.690,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T04:30:51.409,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T04:30:54.679,Participant 1,"TU Delft could put recovery blocks in the timetable, even if it is only one protected evening. ehm not depression heavy, more everyday stress"
+2026-05-12T04:31:07.746,Participant 2,"Maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. pepper"
+
+2026-05-12T04:31:27.195,divergence,elaboration_evidence,E-D-02-G20,,What evidence would show that this idea is helping instead of just sounding nice?
+2026-05-12T04:31:38.940,Participant 1,"Yeah, if it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-12T04:31:49.327,Participant 2,"If it is too much admin it dies, so maybe use existing study associations instead of a new platform."
+2026-05-12T04:31:59.535,divergence,context_only,,,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T04:32:08.180,"Nice, so the idea is becoming more practical. What would make it easy to join?"
+2026-05-12T04:32:10.113,Participant 1,"Haha yeah, a pilot could run for six weeks and then ask students if it lowered stress or made studying easier."
+2026-05-12T04:32:22.711,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+2026-05-12T04:32:32.127,Participant 1,"Yeah, a pilot could run for six weeks and then ask students if it lowered stress or made studying easier."
+
+2026-05-12T04:32:56.741,divergence,perspective_shift,P-D-03-G20,,Try to take the perspective of a student who is quietly falling behind. What would they notice first?
+2026-05-12T04:33:13.295,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T04:33:25.007,Participant 2,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-12T04:33:34.761,divergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T04:33:42.640,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T04:33:44.657,Participant 1,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-12T04:33:56.571,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind. pepper"
+
+2026-05-12T04:34:16.422,convergence,context_only,,,phase transition
+2026-05-12T04:34:20.622,Let's switch toward convergence now and choose what feels most realistic.
+
+2026-05-12T04:34:25.582,convergence,elaboration_evidence,E-C-04-G20,,"What problems could appear during implementation, and how would you avoid them?"
+2026-05-12T04:34:34.450,Participant 1,"Haha yeah, privacy is important, so the mentor should not see grades, only what the student chooses to share."
+2026-05-12T04:34:42.651,Participant 2,A pilot could run for six weeks and then ask students if it lowered stress or made studying easier.
+2026-05-12T04:34:53.464,convergence,context_only,,,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T04:35:02.570,That sounds useful. Can you connect that to what students would do in a normal week?
+2026-05-12T04:35:09.305,Participant 1,"Haha yeah, privacy is important, so the mentor should not see grades, only what the student chooses to share. ehm not depression heavy, more everyday stress"
+2026-05-12T04:35:21.821,Participant 2,"We should measure whether people come back, not only whether they click the form once."
+2026-05-12T04:35:30.145,Participant 1,"Okay, the risk is that only already social people join, so we need a way for quieter students to enter. sorry speech thing maybe picked that up weird"
+2026-05-12T04:35:43.726,Participant 2,To test it we could start with one faculty and compare sign-ups and repeat attendance.
+
+2026-05-12T04:35:59.884,convergence,perspective_shift,P-C-05-G20,,"From the user's point of view, which idea feels least awkward and most reachable?"
+2026-05-12T04:36:16.746,Participant 1,"I would make it more gezellig, like a small dinner or study group where help is just there in the room."
+2026-05-12T04:36:31.137,Participant 2,"Exactly, if you are behind you do not want another official system telling you you are behind."
+2026-05-12T04:36:42.569,convergence,context_only,,,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T04:36:49.990,I hear a concern about making it low-pressure. What would keep it simple?
+2026-05-12T04:36:50.751,Participant 1,"The student probably wants one clear next step, not a whole website with ten departments."
+2026-05-12T04:36:59.427,Participant 2,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+2026-05-12T04:37:13.901,Participant 1,"For a first year it can be quite awkward to say you are lonely, even if it is super normal."
+
+2026-05-12T04:37:34.768,convergence,generative,G-C-06-G20,,"With the ideas you have, what should the next practical step be?"
+2026-05-12T04:37:43.160,Participant 1,"Okay, we could do a buddy thing, but not matching forever, just two weeks around exam periods. ehm not depression heavy, more everyday stress"
+2026-05-12T04:37:55.097,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-12T04:38:05.735,Participant 1,"Haha yeah, maybe a wellbeing check-in after the first failed midterm, because then people are actually reachable. sorry speech thing maybe picked that up weird"
+2026-05-12T04:38:17.617,Participant 2,"What if every course has one very clear panic button, like who to mail when you are lost."
+2026-05-12T04:38:26.299,Participant 1,"Okay, there could be quiet sport slots, like not competitive, just move a bit and then go back to studying."
+2026-05-12T04:38:36.327,Participant 2,"Okay what else, maybe a weekly no pressure study table with coffee and someone older from the programme."
 
-2026-04-23T19:03:12,divergence,context_only,,,
-2026-04-23T19:03:04,Participant,I wanna die
-2026-04-23T19:03:07,Participant,"Yes, me too"
-2026-04-23T19:03:11,Participant,Besties
-2026-04-23T19:03:25,Could you expand on that a bit more?
-
-
-S_G05_T1,G05,G05_T1_1776963899
-
-2026-04-23T19:05:13,divergence,context_only,,,
-2026-04-23T19:05:06,Participant,yes
-2026-04-23T19:05:08,Participant,me too
-2026-04-23T19:05:09,Participant,yes
-2026-04-23T19:05:11,Participant,no
-2026-04-23T19:05:29,"It seems like we've covered a lot of ground quickly. To help us focus, what area of student life feels most challenging to you right now?"
-
-
-S_G01_T1,G01,G01_T1_1776979442
-
-2026-04-23T23:25:04,divergence,context_only,,,
-2026-04-23T23:24:51,Participant,delft needs more events
-2026-04-23T23:24:54,Participant,yes i agree
-2026-04-23T23:25:06,"It sounds like we're both in agreement about increasing events at TU Delft to boost student engagement! Perhaps, let’s explore different types of gatherings that could cater to various interests among students? What kind of event do you think would be most beneficial for fostering a sense of community and wellbeing?"
-
-2026-04-23T23:25:56,divergence,context_only,,,
-2026-04-23T23:25:45,Participant,I dont know
-2026-04-23T23:25:57,"That's okay! Let’s brainstorm some event types together that might appeal to different students at TU Delft, like workshops or social mixers. What are your thoughts? Maybe you have a favorite idea in mind already!"
-
-2026-04-23T23:26:16,divergence,context_only,,,
-2026-04-23T23:26:10,Participant,i dont
-2026-04-23T23:26:14,Participant,i dont
-2026-04-23T23:26:16,Participant,Pepper i dont
-2026-04-23T23:26:18,"It's perfectly fine to feel a bit unsure about starting this brainstorming session! How about we begin with some broad categories of events? Workshops, sports days, cultural festivals – these could all be great ways for students at TU Delft to connect and relax. What do you think might resonate most with our student body based on your experiences or interests?"
-
-
-S_G01_T1,G01,G01_T1_1777455947
-
-2026-04-29T11:46:00,divergence,context_only,,,
-2026-04-29T11:45:50,Participant,something
-2026-04-29T11:46:03,Could you expand on that a bit more?
-
-
-LIVE_1777460246,G_LIVE,LIVE_1777460246
-
-2026-04-29T12:57:53,divergence,context_only,,,
-2026-04-29T12:57:53,Participant,What do you think of Delft's campus?
-2026-04-29T12:57:56,Could you tell me a little more?
-
-
-S_G01_T1,G01,G01_T1_1777460758
-
-2026-04-29T13:06:20,divergence,context_only,,,
-2026-04-29T13:06:10,Participant,What do you think of the campus in Delft
-2026-04-29T13:06:27,"It's great to hear your thoughts about TU Delft! To better support student wellbeing, perhaps we could explore more community events or initiatives that bring students together? What are some specific areas where you feel engagement might be enhanced?"
-
-2026-04-29T13:07:44,divergence,context_only,,,
-2026-04-29T13:07:34,Participant,What do you think about the building Echo?
-2026-04-29T13:07:46,"That's an interesting point! Buildings like Echo could be focal points for student gatherings or events, fostering a sense of community. Maybe we can think about how these spaces are utilized to enhance engagement? What activities do you envision taking place there that would benefit both wellbeing and academic involvement?"
-
-2026-04-29T13:09:31,divergence,context_only,,,
-2026-04-29T13:08:24,Participant,a
-2026-04-29T13:09:31,Participant,"Pepper , do you think students from a computer science background still know how to code or do you think AI is now doing all the work for them while they just give it prompts to do their work?"
-2026-04-29T13:09:33,"That's an insightful question! It might be beneficial to encourage a balance between AI assistance in computer science courses and hands-on coding experiences, ensuring students retain their practical skills while also leveraging technology for efficiency. How do you think we could achieve this blend at TU Delft?"
-
-
-LIVE_1777461263,G_LIVE,LIVE_1777461263
-
-2026-04-29T13:14:29,divergence,context_only,,,
-2026-04-29T13:14:29,Participant,hello
-2026-04-29T13:14:30,It's great to have you here! Let's start by sharing any initial thoughts or topics that come to mind for our brainstorming session today. What are we aiming to explore? Feel free to jump in whenever you feel ready.
-
-2026-04-29T13:14:48,divergence,context_only,,,
-2026-04-29T13:14:48,Participant,why are you not talking
-2026-04-29T13:14:49,"I apologize for any confusion; I'm here to facilitate our discussion, so please feel free to share your thoughts or questions at any time! What topic would you like us to focus on today? Your input is key as we move forward in this brainstorming session together."
-
-
-LIVE_1777461317,G_LIVE,LIVE_1777461317
-
-2026-04-29T13:15:19,divergence,context_only,,,
-2026-04-29T13:15:19,Participant,hello
-2026-04-29T13:15:20,"It's great to see everyone here! Let's start by sharing any initial thoughts or topics that come to mind for our brainstorming today. Feel free to go wherever your creativity takes you, no idea is too small at this stage. What are we thinking about first?"
-
-
-LIVE_1777900387,G_LIVE,LIVE_1777900387
-
-2026-05-04T15:13:12,divergence,context_only,,,
-2026-05-04T15:13:12,Participant,"Hello, can you help me with brainstorming ideas?"
-2026-05-04T15:13:12,Could you tell me a little more?
-
-
-LIVE_1778063958,G_LIVE,LIVE_1778063958
-
-2026-05-06T12:39:29,divergence,context_only,,,
-2026-05-06T12:39:29,Participant,oh can you hear me i'm trying to see something here
-2026-05-06T12:39:29,Could you tell me a little more?
-
-2026-05-06T12:42:03,divergence,context_only,,,
-2026-05-06T12:42:03,Participant,can we talk about some specific topics like improving campus life
-2026-05-06T12:42:03,Could you tell me a little more?
-
-
-LIVE_1778064224,G_LIVE,LIVE_1778064224
-
-2026-05-06T12:43:55,divergence,context_only,,,
-2026-05-06T12:43:55,Participant,hello pepper nice to meet you sweet
-2026-05-06T12:43:55,Could you tell me a little more?
-
-2026-05-06T12:44:40,divergence,context_only,,,
-2026-05-06T12:44:40,Participant,can we talk about something
-2026-05-06T12:45:01,"I'm happy to chat! To get us started, is there a specific topic or area you had in mind that we could brainstorm around today?"
-
-
-LIVE_1778064405,G_LIVE,LIVE_1778064405
-
-2026-05-06T12:47:09,divergence,context_only,,,
-2026-05-06T12:47:09,Participant,a little pepper introduce yourself i wonder because saw two usb so then i think it can separate cordless too so that maybe we can just do some sort of pork
-2026-05-06T12:47:29,That's quite a few ideas in one thought! Maybe we could start by focusing on just one aspect—like the cordless separation—to see where that leads us first?
-
-2026-05-06T12:47:50,divergence,context_only,,,
-2026-05-06T12:47:50,Participant,to come up how should need out sorry i haven't moved experience excuse christ core feed never
-2026-05-06T12:48:13,No worries at all! Sometimes these ideas can get tangled up. Maybe we could take a quick breath and just revisit what aspect of the cordless separation you wanted to explore next?
-
-2026-05-06T12:48:35,divergence,context_only,,,
-2026-05-06T12:48:35,Participant,just moves inside it at random time he just the leaps and green shorts every single age what's the yeah group
-2026-05-06T12:48:59,"It sounds like we're jumping through a lot of ideas right now! Maybe if we take a quick step back, what was the single most interesting part about that cordless separation idea again?"
-
-
-LIVE_1778067271,G_LIVE,LIVE_1778067271
-
-2026-05-06T13:34:42,divergence,context_only,,,
-2026-05-06T13:34:42,Participant 1,because i'm talking currently now i'm talking who does this for twenty seconds
-2026-05-06T13:34:42,Participant 2,i'm talking currently do you talk this
-2026-05-06T13:35:09,Could you tell me a little more?
-
-2026-05-06T13:35:26,divergence,context_only,,,
-2026-05-06T13:35:26,Participant 1,i am currently here at two del testing if pepper is doing the thing that we are trying to make a do
-2026-05-06T13:35:26,Participant 2,currently testing doing paper is a robot that makes us really happy it has a nice
-2026-05-06T13:35:51,Could you tell me a little more?
-
-2026-05-06T13:36:46,divergence,context_only,,,
-2026-05-06T13:36:46,Participant 1,at two del there are two quarters that i can get at the c convenience store
-2026-05-06T13:36:46,Participant 2,at two del there are two quarters that i can get at the c convenience store i love butter i love a butter of water
-2026-05-06T13:37:12,Could you tell me a little more?
-
-
-LIVE_1778067819,G_LIVE,LIVE_1778067819
-
-2026-05-06T13:43:42,divergence,context_only,,,
-2026-05-06T13:43:42,Participant 2,pepper what do you think of your
-2026-05-06T13:44:07,Could you tell me a little more?
-
-
-LIVE_1778067926,G_LIVE,LIVE_1778067926
-
-2026-05-06T13:45:30,divergence,context_only,,,
-2026-05-06T13:45:30,Participant 2,hi pepper what do you think of your belt
-2026-05-06T13:45:53,Could you tell me a little more?
-
-
-LIVE_1778069028,G_LIVE,LIVE_1778069028
-
-2026-05-06T14:04:06.180,divergence,context_only,,,
-2026-05-06T14:04:06.180,Participant 2,i'm talking i'm talking pepper and talking
-2026-05-06T14:04:08.888,"That sounds like a good start! Let’s build upon that energy. What if we each share one idea related to our discussion topic? No pressure, just freely flowing thoughts as they come up for you too. How about starting with 'pepper'—any unique angles or themes in mind?"
-
-2026-05-06T14:04:50.530,divergence,context_only,,,
-2026-05-06T14:04:41.701,Participant 2,can probably you if i say paper
-2026-05-06T14:04:50.530,Participant 1,pepper what do you think about the current situation
-2026-05-06T14:04:52.822,"Sure, let's explore that idea of ""paper."" What unique angles can we consider for it? Maybe its role in sustainability or innovation within packaging solutions could be interesting to delve into during our brainstorming session! How about you start with your thoughts on paper and I’ll follow up."
-
-
-LIVE_1778070713,G_LIVE,LIVE_1778070713
-
-2026-05-06T14:33:57.393,divergence,context_only,,,
-2026-05-06T14:33:57.393,Participant 2,hey pepper
-2026-05-06T14:33:59.488,Hey there! What's our first idea to explore today? Let's see where we can diverge creatively from here. Maybe start with something familiar but then twist it unexpectedly—what do you think could be a fun angle for us to delve into?
-
-2026-05-06T14:34:56.093,divergence,context_only,,,
-2026-05-06T14:34:04.313,Participant 2,never mind that was retarded
-2026-05-06T14:34:14.113,Participant 2,hey there what's the first idea to explore to the and now run time error
-2026-05-06T14:34:20.353,Participant 2,leopard t failed continuing with without stopping live listeners or t brief failed
-2026-05-06T14:34:28.433,Participant 2,what the fuck
-2026-05-06T14:34:31.353,Participant 1,what the fuck what the fuck what
-2026-05-06T14:34:40.073,Participant 1,do you recognize my speech
-2026-05-06T14:34:56.093,Participant 1,pepper
-2026-05-06T14:34:58.835,"I see we're starting with a bit of energy! How about using that ""retarded"" vibe as inspiration? Maybe brainstorm some quirky, unexpected product features or campaigns around it—keeping our tone light but creative. What do you feel could be an amusing yet innovative spin on this theme?"
-
-
-LIVE_1778071207,G_LIVE,LIVE_1778071207
-
-2026-05-06T14:40:15.787,divergence,context_only,,,
-2026-05-06T14:40:15.787,Participant 1,hay pepper
-2026-05-06T14:40:18.031,"Hey there! I'm here to help us branch out our thoughts. What topic are we considering for divergence today? Any idea you want to explore or a direction that feels intriguing could be great starting points. Let’s see where these ideas can take us, shall we?"
-
-
-LIVE_1778071318,G_LIVE,LIVE_1778071318
-
-2026-05-06T14:42:06.895,divergence,context_only,,,
-2026-05-06T14:42:06.895,Participant 1,a pepper
-2026-05-06T14:42:09.008,"Hey there! I'm Pepper, ready to help us branch out our thoughts. What specific topic are we exploring today for this divergence? Any idea you want to start with would be great—no pressure at all! Let's see where these ideas can take us together."
-
-2026-05-06T14:42:08.374,divergence,context_only,,,
-2026-05-06T14:42:08.374,Participant 2,hay pepper
-2026-05-06T14:42:26.031,"Sounds like we're gearing up for some creative exploration! How about starting with anything that piques your interest today? Maybe a new product idea or an innovative concept to discuss further—just throw any thought my way, and let’s see where our conversation can flow."
-
-2026-05-06T14:43:04.985,divergence,context_only,,,
-2026-05-06T14:42:29.274,Participant 2,can we stop
-2026-05-06T14:42:40.975,Participant 1,and see
-2026-05-06T14:42:56.535,Participant 1,was doing go fuck yourself
-2026-05-06T14:42:58.345,Participant 2,you see and here in this even if it's while it was doing shit go fuck yourself go fuck yourself
-2026-05-06T14:43:04.985,Participant 2,pepper
-2026-05-06T14:43:07.529,"I hear we have a bit of energy flowing here! Let’s channel that into something positive—how about focusing our thoughts around improving processes or tackling challenges? We can definitely steer clear from any rough language, keeping it all constructive and innovative. What's on your mind in terms of an area we could brainstorm improvements for today?"
-
-2026-05-06T14:43:05.084,divergence,context_only,,,
-2026-05-06T14:43:05.084,Participant 1,pepper
-2026-05-06T14:43:29.799,"Sure thing! Let's take that enthusiasm we have, channel it into a positive direction—how about brainstorming ways to streamline our current project processes? We can look for any bottlenecks or inefficiencies and turn them around together creatively. What do you think could be an area ripe for improvement today?"
 
 
 LIVE_1778073042,G_LIVE,LIVE_1778073042

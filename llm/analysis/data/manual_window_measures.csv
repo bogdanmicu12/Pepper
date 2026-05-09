@@ -1,0 +1,7 @@
+window_id,session_id,prompt_id,phase,strategy,idea_fluency,elaboration_units,elaborated_contribution_count,consecutive_topic_turns,coder_id,notes
+LIVE_G01_T1_SYN__P-D-01-G01,LIVE_G01_T1_SYN,P-D-01-G01,divergence,perspective_shift,2,5,2,3,synthetic_coder_A,Synthetic manual coding estimate based on generated transcript content.
+LIVE_G01_T1_SYN__G-D-02-G01,LIVE_G01_T1_SYN,G-D-02-G01,divergence,generative,6,4,2,6,synthetic_coder_A,Synthetic manual coding estimate based on generated transcript content.
+LIVE_G01_T1_SYN__E-D-03-G01,LIVE_G01_T1_SYN,E-D-03-G01,divergence,elaboration_evidence,4,8,4,5,synthetic_coder_A,Synthetic manual coding estimate based on generated transcript content.
+LIVE_G01_T1_SYN__E-C-04-G01,LIVE_G01_T1_SYN,E-C-04-G01,convergence,elaboration_evidence,3,8,3,5,synthetic_coder_A,Synthetic manual coding estimate based on generated transcript content.
+LIVE_G01_T1_SYN__G-C-05-G01,LIVE_G01_T1_SYN,G-C-05-G01,convergence,generative,3,5,2,6,synthetic_coder_A,Synthetic manual coding estimate based on generated transcript content.
+LIVE_G01_T1_SYN__P-C-06-G01,LIVE_G01_T1_SYN,P-C-06-G01,convergence,perspective_shift,4,6,3,5,synthetic_coder_A,Synthetic manual coding estimate based on generated transcript content.

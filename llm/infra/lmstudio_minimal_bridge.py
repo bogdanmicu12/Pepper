@@ -85,6 +85,10 @@ TRANSCRIPT_LOG_COLUMNS = [
     "triggered_robot",
     "trigger_words",
     "fallback_reason",
+    "elicitation_engagement_score",
+    "previous_elicitation_prompt_id",
+    "previous_elicitation_strategy",
+    "previous_elicitation_phase",
 ]
 
 DEFAULT_PEPPER_VOCABULARY = [
@@ -174,8 +178,29 @@ ELICITATION_SETUP = {
 BASE_SETUP = (
     "You are Pepper in a two-person brainstorming session. "
     "Respond naturally and conversationally, as if speaking aloud. "
-    "Keep responses brief (1-3 sentences) and focused on one key idea or question."
+    "Stay grounded in the latest participant turns and the recent history. "
+    "Give one fluent spoken response that moves the discussion forward. "
+    "Do not write dialogue labels, notes, markdown, analysis, explanations of your behavior, or multiple possible replies. "
+    "If participants are joking, testing, or using profanity, stay calm and redirect briefly without scolding."
 )
+REPLY_CONTRACT = (
+    "Output only Pepper's spoken words. "
+    "Prioritize the latest participant turns over older history; do not invent a new topic. "
+    "No speaker labels such as Pepper: or Robot:. "
+    "No notes, markdown, separators, lists, or meta-commentary. "
+    "Maximum 100 words."
+)
+DEFAULT_REPLY_MAX_WORDS = 100
+DEFAULT_LM_STOP_SEQUENCES = [
+    "\nParticipant",
+    "\nParticipant 1",
+    "\nParticipant 2",
+    "\nRobot:",
+    "\nPepper:",
+    "\n---",
+    "\nNote:",
+    "\n**Note",
+]
 
 
 def parse_phrase_list(value):
@@ -1339,6 +1364,17 @@ def get_mode_value(payload, key):
     return selected
 
 
+def get_optional_mode_value(payload, key):
+    selected = payload.get("mode_combo", {}).get(key, MODE_DEFAULTS[key])
+    if selected in {None, "", "off"}:
+        return None
+    return get_mode_value(payload, key)
+
+
+def get_delivery_style(payload):
+    return get_optional_mode_value(payload, "style") or "passive"
+
+
 def normalize_elicitation(value):
     return ELICITATION_ALIASES.get(value, value)
 
@@ -1380,9 +1416,9 @@ def select_prompt(payload, prompt_bank):
 
 
 def build_messages(payload, prompt_row, elicitation_key):
-    style_key = get_mode_value(payload, "style")
-    initiative_key = get_mode_value(payload, "initiative")
-    role_key = get_mode_value(payload, "role")
+    style_key = get_optional_mode_value(payload, "style")
+    initiative_key = get_optional_mode_value(payload, "initiative")
+    role_key = get_optional_mode_value(payload, "role")
     seed_ideas = payload.get("seed_ideas", [])
     seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
     history_window_turns = int(payload.get("history_window_turns", 10))
@@ -1393,13 +1429,17 @@ def build_messages(payload, prompt_row, elicitation_key):
         for item in pending_turns
     ) if pending_turns else "none"
 
-    system_text = (
-        f"{BASE_SETUP} "
-        f"Elicitation mode guidance: {ELICITATION_SETUP[elicitation_key]} "
-        f"Style guidance: {STYLE_SETUP[style_key]} "
-        f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]} "
-        f"Role guidance: {ROLE_SETUP[role_key]}"
-    )
+    guidance = [
+        BASE_SETUP,
+        f"Elicitation mode guidance: {ELICITATION_SETUP[elicitation_key]}",
+    ]
+    if style_key:
+        guidance.append(f"Style guidance: {STYLE_SETUP[style_key]}")
+    if initiative_key:
+        guidance.append(f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]}")
+    if role_key:
+        guidance.append(f"Role guidance: {ROLE_SETUP[role_key]}")
+    system_text = " ".join(guidance)
 
     user_text = (
         f"Theme: {payload.get('theme', '')}\n"
@@ -1408,8 +1448,9 @@ def build_messages(payload, prompt_row, elicitation_key):
         f"Latest uninterrupted participant turns:\n{pending_text}\n"
         f"Last participant utterance: {payload.get('last_user_utterance', '')}\n"
         f"Seed ideas: {seed_text}\n"
-        f"Intervention to deliver: {prompt_row['text']}\n"
-        "Respond naturally as if speaking in the conversation, not as meta-commentary. Keep your response brief and direct."
+        f"Intervention prompt to adapt briefly to this moment: {prompt_row['text']}\n"
+        f"Bridge from what the participants just said before using the intervention.\n"
+        f"{REPLY_CONTRACT}"
     )
 
     return [
@@ -1419,9 +1460,9 @@ def build_messages(payload, prompt_row, elicitation_key):
 
 
 def build_messages_context_only(payload):
-    style_key = get_mode_value(payload, "style")
-    initiative_key = get_mode_value(payload, "initiative")
-    role_key = get_mode_value(payload, "role")
+    style_key = get_optional_mode_value(payload, "style")
+    initiative_key = get_optional_mode_value(payload, "initiative")
+    role_key = get_optional_mode_value(payload, "role")
     seed_ideas = payload.get("seed_ideas", [])
     seed_text = "; ".join(seed_ideas) if seed_ideas else "none"
     history_window_turns = int(payload.get("history_window_turns", 10))
@@ -1432,13 +1473,15 @@ def build_messages_context_only(payload):
         for item in pending_turns
     ) if pending_turns else "none"
 
-    system_text = (
-        f"{BASE_SETUP} "
-        f"Style guidance: {STYLE_SETUP[style_key]} "
-        f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]} "
-        f"Role guidance: {ROLE_SETUP[role_key]} "
-        "No predefined intervention prompt is active. Respond only based on conversation context."
-    )
+    guidance = [BASE_SETUP]
+    if style_key:
+        guidance.append(f"Style guidance: {STYLE_SETUP[style_key]}")
+    if initiative_key:
+        guidance.append(f"Initiative guidance: {INITIATIVE_SETUP[initiative_key]}")
+    if role_key:
+        guidance.append(f"Role guidance: {ROLE_SETUP[role_key]}")
+    guidance.append("No predefined intervention prompt is active. Respond only based on conversation context.")
+    system_text = " ".join(guidance)
 
     user_text = (
         f"Theme: {payload.get('theme', '')}\n"
@@ -1447,7 +1490,8 @@ def build_messages_context_only(payload):
         f"Latest uninterrupted participant turns:\n{pending_text}\n"
         f"Last participant utterance: {payload.get('last_user_utterance', '')}\n"
         f"Seed ideas: {seed_text}\n"
-        "Respond naturally and briefly based only on the context above."
+        f"Respond directly to the latest participant request or question.\n"
+        f"{REPLY_CONTRACT}"
     )
 
     return [
@@ -1462,6 +1506,7 @@ def call_lmstudio(payload, messages):
         "messages": messages,
         "temperature": payload.get("temperature", 0.35),
         "max_tokens": payload.get("max_tokens", 600),
+        "stop": payload.get("stop", DEFAULT_LM_STOP_SEQUENCES),
         "thinking": False,
         "enable_thinking": False,
     }
@@ -1494,14 +1539,60 @@ def call_lmstudio(payload, messages):
 
 
 def fallback_reply(payload, prompt_row):
-    return payload.get("fallback_prompt") or prompt_row["text"]
+    if payload.get("fallback_prompt"):
+        return sanitize_reply(payload["fallback_prompt"]) or "What should we focus on next from what you just said?"
+
+    strategy = normalize_elicitation(prompt_row.get("strategy", ""))
+    if strategy == "perspective_shift":
+        return "How might this feel from a student's point of view?"
+    if strategy == "generative":
+        return "What is one more option we could add?"
+    if strategy == "elaboration_evidence":
+        return "What would make this idea concrete enough to test?"
+    return "What should we focus on next from what you just said?"
 
 
-def sanitize_reply(text):
-    line = " ".join((text or "").strip().split())
+def truncate_reply(line, max_words=DEFAULT_REPLY_MAX_WORDS):
+    line = " ".join((line or "").strip().split())
+    if not line:
+        return ""
+
+    words = line.split()
+    if len(words) > int(max_words):
+        line = " ".join(words[:int(max_words)]).rstrip(" ,;:")
+        if line and line[-1] not in ".!?":
+            line += "."
+
+    return line.strip()
+
+
+def sanitize_reply(text, max_words=DEFAULT_REPLY_MAX_WORDS):
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+
+    raw = re.sub(r"^\s*(?:Pepper|Robot|Assistant)\s*:\s*", "", raw, flags=re.IGNORECASE)
+
+    split_patterns = [
+        r"\n\s*---",
+        r"\s+---\s+",
+        r"\s+\*\*?\s*Note\s*:",
+        r"\s+Note\s*:",
+        r"\s+(?:Pepper|Robot|Assistant)\s*:",
+        r"\s+Participant\s*\d*\s*:",
+        r"\n\s*(?:Pepper|Robot|Assistant|Participant\s*\d*)\s*:",
+    ]
+    for pattern in split_patterns:
+        raw = re.split(pattern, raw, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+
+    line = " ".join(raw.split())
+    line = line.replace("**", "").replace("__", "")
+    line = re.sub(r"^[\-*•]\s*", "", line)
+    line = re.sub(r"[#/]{2,}", " ", line)
+    line = re.sub(r"[=]{1,}/\w+", "", line)
+    line = " ".join(line.split())
     lower = line.lower()
     
-    # Detect explicit reasoning markers
     reasoning_markers = [
         "thinking process",
         "analyze the request",
@@ -1509,6 +1600,15 @@ def sanitize_reply(text):
         "analyze role",
         "internal reasoning",
         "response:",
+        "the conversation has been crafted",
+        "given instructions",
+        "according to the given instructions",
+        "as pepper",
+        "pepper:",
+        "robot:",
+        "participant:",
+        "multiple possible",
+        "dialogue cycle",
     ]
     
     if any(marker in lower for marker in reasoning_markers):
@@ -1523,12 +1623,11 @@ def sanitize_reply(text):
         if len(steps) > 1:
             return ""
     
-    # Reject if it looks like meta-reasoning (starts with action words + the request)
-    meta_starts = ["i need to", "the user wants", "i should", "we need to"]
+    meta_starts = ["i need to", "the user wants", "i should", "we need to", "here are", "sure, here"]
     if any(lower.startswith(prefix) for prefix in meta_starts):
         return ""
-    
-    return line
+
+    return truncate_reply(line, max_words=max_words)
 
 
 def process(payload):
@@ -1538,7 +1637,10 @@ def process(payload):
 
     fallback_reason = ""
     try:
-        reply = sanitize_reply(call_lmstudio(payload, messages))
+        reply = sanitize_reply(
+            call_lmstudio(payload, messages),
+            max_words=int(payload.get("reply_max_words", DEFAULT_REPLY_MAX_WORDS)),
+        )
         if not reply:
             raise ValueError("Unusable LM Studio reply")
         source = "lmstudio"
@@ -1556,7 +1658,7 @@ def process(payload):
         reply = fallback_reply(payload, prompt_row)
         source = "fallback"
 
-    style = get_mode_value(payload, "style")
+    style = get_delivery_style(payload)
     return {
         "ok": True,
         "source": source,
@@ -1573,10 +1675,16 @@ def process(payload):
 def process_context_only(payload):
     messages = build_messages_context_only(payload)
     fallback_reason = ""
-    fallback_text = payload.get("context_fallback") or "Could you expand on that a bit more?"
+    fallback_text = (
+        sanitize_reply(payload.get("context_fallback") or "What should we focus on next from what you just said?")
+        or "What should we focus on next from what you just said?"
+    )
 
     try:
-        reply = sanitize_reply(call_lmstudio(payload, messages))
+        reply = sanitize_reply(
+            call_lmstudio(payload, messages),
+            max_words=int(payload.get("reply_max_words", DEFAULT_REPLY_MAX_WORDS)),
+        )
         if not reply:
             raise ValueError("Unusable LM Studio reply")
         source = "lmstudio"
@@ -1585,7 +1693,7 @@ def process_context_only(payload):
         reply = fallback_text
         source = "fallback"
 
-    style = get_mode_value(payload, "style")
+    style = get_delivery_style(payload)
     return {
         "ok": True,
         "source": source,
@@ -1631,6 +1739,10 @@ def append_transcript_event(transcript_log_path, payload, event):
         "triggered_robot": event.get("triggered_robot", ""),
         "trigger_words": event.get("trigger_words", ""),
         "fallback_reason": event.get("fallback_reason", ""),
+        "elicitation_engagement_score": event.get("elicitation_engagement_score", ""),
+        "previous_elicitation_prompt_id": event.get("previous_elicitation_prompt_id", ""),
+        "previous_elicitation_strategy": event.get("previous_elicitation_strategy", ""),
+        "previous_elicitation_phase": event.get("previous_elicitation_phase", ""),
     }
 
     with path.open("a", encoding="utf-8", newline="") as handle:
@@ -1664,7 +1776,20 @@ def append_participant_transcript_event(transcript_log_path, payload, turn, sequ
     )
 
 
-def append_robot_transcript_event(transcript_log_path, payload, result, sequence_index, robot_turn_index, robot_timestamp):
+def append_robot_transcript_event(
+    transcript_log_path,
+    payload,
+    result,
+    sequence_index,
+    robot_turn_index,
+    robot_timestamp=None,
+    robot_start_timestamp=None,
+    robot_end_timestamp=None,
+):
+    if robot_start_timestamp is None:
+        robot_start_timestamp = robot_timestamp or timestamp_from_epoch()
+    if robot_end_timestamp is None:
+        robot_end_timestamp = robot_timestamp or robot_start_timestamp
     append_transcript_event(
         transcript_log_path,
         payload,
@@ -1672,9 +1797,9 @@ def append_robot_transcript_event(transcript_log_path, payload, result, sequence
             "sequence_index": sequence_index,
             "robot_turn_index": robot_turn_index,
             "event_type": "robot",
-            "timestamp": robot_timestamp,
-            "start_timestamp": robot_timestamp,
-            "end_timestamp": robot_timestamp,
+            "timestamp": robot_end_timestamp,
+            "start_timestamp": robot_start_timestamp,
+            "end_timestamp": robot_end_timestamp,
             "speaker": "Robot",
             "text": result.get("reply", ""),
             "phase": result.get("phase", payload.get("phase", "")),
@@ -1683,6 +1808,10 @@ def append_robot_transcript_event(transcript_log_path, payload, result, sequence
             "source": result.get("source", ""),
             "triggered_robot": "true",
             "fallback_reason": result.get("fallback_reason", ""),
+            "elicitation_engagement_score": result.get("elicitation_engagement_score", ""),
+            "previous_elicitation_prompt_id": result.get("previous_elicitation_prompt_id", ""),
+            "previous_elicitation_strategy": result.get("previous_elicitation_strategy", ""),
+            "previous_elicitation_phase": result.get("previous_elicitation_phase", ""),
         },
     )
 
@@ -1933,7 +2062,17 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
         )
 
 
-def run_continuous_live_dialog(base_payload, listener, send_fn, trigger_words=DEFAULT_TRIGGER_WORDS):
+def run_continuous_live_dialog(
+    base_payload,
+    listener,
+    send_fn,
+    trigger_words=DEFAULT_TRIGGER_WORDS,
+    elicitation_mode="off",
+    intervention_every=4,
+    keyboard_controls=True,
+    proactive_silence_threshold=PROACTIVE_SILENCE_THRESHOLD,
+    evaluation_elicitation=False,
+):
     print("--- Continuous live dialog mode started ---")
     print("Microphones are live. Say Pepper to trigger the robot. Press Ctrl+C to stop.")
 
@@ -1943,9 +2082,76 @@ def run_continuous_live_dialog(base_payload, listener, send_fn, trigger_words=DE
     sequence_index = 0
     robot_turn_index = 0
     trigger_words = parse_trigger_words(trigger_words)
+    current_phase = base_payload.get("phase", "divergence")
+    elicitation_mode = (elicitation_mode or "off").strip().lower()
+    intervention_every = max(1, int(intervention_every or 1))
+    prompt_bank = load_prompt_bank()
+    strategy_sequences = safe_strategy_sequences(base_payload.get("group_id", ""), base_payload.get("theme_id", ""))
+    used_strategies = {"divergence": [], "convergence": []}
+    phase_reply_count = {"divergence": 0, "convergence": 0}
+    command_queue = queue.Queue()
+    stop_event = threading.Event()
+    last_proactive_epoch = 0.0
+    last_elicitation_result = None
+
+    base_payload["phase"] = current_phase
+    print_live_control_summary(base_payload, elicitation_mode, intervention_every, keyboard_controls)
+
+    if keyboard_controls:
+        start_live_command_reader(command_queue, stop_event)
+
+    def current_initiative():
+        return base_payload.get("mode_combo", {}).get("initiative", "reactive")
+
+    def refresh_strategy_sequences():
+        nonlocal strategy_sequences, used_strategies
+        strategy_sequences = safe_strategy_sequences(base_payload.get("group_id", ""), base_payload.get("theme_id", ""))
+        used_strategies = {"divergence": [], "convergence": []}
+
+    def build_robot_result(request):
+        mode = (elicitation_mode or "off").strip().lower()
+        result = None
+
+        if mode == "scheduled":
+            next_reply_index = phase_reply_count[current_phase] + 1
+            schedule_slot = (next_reply_index % intervention_every == 0)
+            if schedule_slot:
+                planned = strategy_sequences.get(current_phase, [])
+                next_strategy = None
+                for strategy in planned:
+                    strategy = normalize_elicitation(strategy)
+                    if strategy and strategy not in used_strategies[current_phase]:
+                        next_strategy = strategy
+                        break
+
+                if next_strategy:
+                    prompt_row = select_first_prompt_for_strategy(prompt_bank, next_strategy, current_phase)
+                    if prompt_row:
+                        request["mode_combo"] = dict(request.get("mode_combo", {}))
+                        request["mode_combo"]["elicitation"] = next_strategy
+                        request["prompt_id"] = prompt_row["prompt_id"]
+                        result = process(request)
+                        used_strategies[current_phase].append(next_strategy)
+
+        elif mode != "off":
+            strategy = normalize_elicitation(mode)
+            prompt_row = select_first_prompt_for_strategy(prompt_bank, strategy, current_phase)
+            if prompt_row:
+                request["mode_combo"] = dict(request.get("mode_combo", {}))
+                request["mode_combo"]["elicitation"] = strategy
+                request["prompt_id"] = prompt_row["prompt_id"]
+                result = process(request)
+            else:
+                print(f"Warning: no prompt found for {strategy}/{current_phase}; using context-only response.")
+
+        if result is None:
+            request["prompt_id"] = ""
+            result = process_context_only(request)
+
+        return result
 
     def trigger_robot(triggering_turn):
-        nonlocal sequence_index, robot_turn_index, pending_participant_turns
+        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result
         if not pending_participant_turns:
             return
 
@@ -1954,22 +2160,36 @@ def run_continuous_live_dialog(base_payload, listener, send_fn, trigger_words=DE
         request.update({
             "turn_index": robot_turn_index,
             "turn_timestamp": triggering_turn.get("timestamp", timestamp_from_epoch()),
+            "phase": current_phase,
             "last_user_utterance": format_participant_turns_text(pending_participant_turns),
             "recent_participant_turns": list(pending_participant_turns),
             "conversation_history": conversation_history,
         })
 
-        result = process_context_only(request)
-        robot_timestamp = timestamp_from_epoch()
+        result = build_robot_result(request)
+        result_is_elicitation = is_elicitation_result(result)
+        if evaluation_elicitation and result_is_elicitation:
+            score = prompt_previous_elicitation_engagement(
+                last_elicitation_result,
+                input_queue=command_queue if keyboard_controls else None,
+                stop_event=stop_event,
+            )
+            attach_previous_elicitation_engagement(result, last_elicitation_result, score)
+            if stop_event.is_set():
+                return
+
+        robot_start_timestamp = timestamp_from_epoch()
 
         robot_turn = {
             "speaker": "Robot",
             "text": result["reply"],
-            "timestamp": robot_timestamp,
+            "timestamp": robot_start_timestamp,
         }
         conversation_history.append(robot_turn)
 
         print_robot_turn(result)
+        send_fn(result["reply"], style=result.get("style", "passive"))
+        robot_end_timestamp = timestamp_from_epoch()
         sequence_index += 1
         append_robot_transcript_event(
             transcript_log_path,
@@ -1977,29 +2197,179 @@ def run_continuous_live_dialog(base_payload, listener, send_fn, trigger_words=DE
             result,
             sequence_index=sequence_index,
             robot_turn_index=robot_turn_index,
-            robot_timestamp=robot_timestamp,
+            robot_start_timestamp=robot_start_timestamp,
+            robot_end_timestamp=robot_end_timestamp,
         )
-        send_fn(result["reply"], style=result.get("style", "passive"))
         append_log_turn_block(
             base_payload.get("log_path"),
             request,
             result,
             list(pending_participant_turns),
-            robot_timestamp,
+            robot_end_timestamp,
         )
+        phase_reply_count[current_phase] += 1
+        if result_is_elicitation:
+            last_elicitation_result = result
         pending_participant_turns = []
+
+    def record_final_elicitation_evaluation():
+        nonlocal sequence_index, last_elicitation_result
+        if not evaluation_elicitation or not last_elicitation_result:
+            return
+
+        score = prompt_previous_elicitation_engagement(
+            last_elicitation_result,
+            input_queue=command_queue if keyboard_controls else None,
+            stop_event=None,
+        )
+        if score == "":
+            return
+
+        sequence_index += 1
+        append_transcript_event(
+            transcript_log_path,
+            base_payload,
+            {
+                "sequence_index": sequence_index,
+                "robot_turn_index": robot_turn_index,
+                "event_type": "elicitation_evaluation",
+                "timestamp": timestamp_from_epoch(),
+                "speaker": "Researcher",
+                "text": "Final elicitation engagement score",
+                "phase": last_elicitation_result.get("phase", current_phase),
+                "strategy": last_elicitation_result.get("strategy", ""),
+                "prompt_id": last_elicitation_result.get("prompt_id", ""),
+                "source": "manual_evaluation",
+                "elicitation_engagement_score": score,
+            },
+        )
+        last_elicitation_result = None
+
+    def handle_command(line):
+        nonlocal current_phase, elicitation_mode
+        text = (line or "").strip()
+        if not text:
+            return True
+
+        upper = text.upper()
+        parts = text.split()
+        command = parts[0].lower() if parts else ""
+        value = " ".join(parts[1:]).strip()
+
+        if text.lower() in {"quit", "exit", "stop"}:
+            record_final_elicitation_evaluation()
+            stop_event.set()
+            return False
+
+        if upper == "ROBOT":
+            trigger_robot({"timestamp": timestamp_from_epoch()})
+            return True
+
+        if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
+            current_phase = "convergence" if current_phase == "divergence" else "divergence"
+            base_payload["phase"] = current_phase
+            print(f"--- Switched to phase: {current_phase} ---")
+            return True
+
+        if upper in {"DIVERGENCE", "CONVERGENCE"}:
+            current_phase = upper.lower()
+            base_payload["phase"] = current_phase
+            print(f"--- Phase set to: {current_phase} ---")
+            return True
+
+        if upper in {"PROACTIVE", "REACTIVE"}:
+            base_payload.setdefault("mode_combo", {})["initiative"] = upper.lower()
+            print(f"--- Initiative switched to: {upper.lower()} ---")
+            return True
+
+        if command in {"initiative", "style", "role", "elicitation"}:
+            selected = value.lower()
+            if not selected:
+                print(f"Usage: {command.upper()} <value>")
+                return True
+
+            if command == "initiative":
+                if selected not in {"off", "reactive", "proactive"}:
+                    print("Initiative must be off, reactive, or proactive.")
+                    return True
+                base_payload.setdefault("mode_combo", {})["initiative"] = selected
+                print(f"--- Initiative switched to: {selected} ---")
+                return True
+
+            if command == "style":
+                if selected not in {"off", "passive", "assertive", "supportive"}:
+                    print("Style must be off, passive, assertive, or supportive.")
+                    return True
+                base_payload.setdefault("mode_combo", {})["style"] = selected
+                print(f"--- Style switched to: {selected} ---")
+                return True
+
+            if command == "role":
+                if selected not in {"off", "facilitator", "solutionist"}:
+                    print("Role must be off, facilitator, or solutionist.")
+                    return True
+                base_payload.setdefault("mode_combo", {})["role"] = selected
+                print(f"--- Role switched to: {selected} ---")
+                return True
+
+            if command == "elicitation":
+                if selected not in {"off", "scheduled", "perspective_shift", "constraint_reframing", "generative", "elaboration_evidence"}:
+                    print("Elicitation must be off, scheduled, perspective_shift, generative, constraint_reframing, or elaboration_evidence.")
+                    return True
+                elicitation_mode = selected
+                print(f"--- Elicitation switched to: {selected} ---")
+                return True
+
+        if command == "group" and value:
+            base_payload["group_id"] = value.upper()
+            refresh_strategy_sequences()
+            print(f"--- Group set to: {base_payload['group_id']} ---")
+            return True
+
+        if command == "theme" and value:
+            theme_id, theme_text = resolve_theme_text(value, "")
+            base_payload["theme_id"] = theme_id
+            base_payload["theme"] = theme_text
+            refresh_strategy_sequences()
+            print(f"--- Theme set to: {theme_id or theme_text} ---")
+            return True
+
+        print(f"Unrecognized live control: {text}")
+        return True
 
     listener.start()
     try:
         while True:
+            if stop_event.is_set():
+                break
+
+            try:
+                while True:
+                    if not handle_command(command_queue.get_nowait()):
+                        break
+            except queue.Empty:
+                pass
+            if stop_event.is_set():
+                break
+
             event = listener.get_event(timeout=0.2)
             if event is None:
+                if current_initiative() == "proactive" and pending_participant_turns:
+                    try:
+                        last_epoch = epoch_from_timestamp(pending_participant_turns[-1].get("timestamp"))
+                    except Exception:
+                        last_epoch = None
+                    if last_epoch and last_epoch != last_proactive_epoch:
+                        elapsed = time.time() - last_epoch
+                        if elapsed >= float(proactive_silence_threshold):
+                            last_proactive_epoch = last_epoch
+                            trigger_robot({"timestamp": timestamp_from_epoch()})
                 continue
 
             event_type = event.get("type")
             if event_type == "turn":
                 turn = event["turn"]
-                triggered = text_contains_trigger_word(turn.get("text", ""), trigger_words)
+                triggered = current_initiative() == "reactive" and text_contains_trigger_word(turn.get("text", ""), trigger_words)
                 conversation_history.append(turn)
                 pending_participant_turns.append(turn)
                 sequence_index += 1
@@ -2074,6 +2444,176 @@ def build_continuous_audio_transcriber_from_args(args, participant_channel_map):
     )
 
 
+def resolve_theme_text(theme_id, custom_theme=""):
+    custom_theme = (custom_theme or "").strip()
+    theme_id = (theme_id or "").strip().upper()
+    if custom_theme:
+        return theme_id, custom_theme
+
+    themes = load_themes()
+    if theme_id and theme_id in themes:
+        return theme_id, themes[theme_id].get("description", "")
+
+    if theme_id:
+        print(f"Warning: theme_id {theme_id} not found; using generic live theme.")
+    return theme_id, "Open brainstorming conversation"
+
+
+def safe_strategy_sequences(group_id, theme_id):
+    sequences = {"divergence": [], "convergence": []}
+    if not group_id or not theme_id:
+        return sequences
+
+    for phase in sequences:
+        try:
+            sequences[phase] = get_strategy_sequence(group_id, theme_id, phase)
+        except Exception as error:
+            print(f"Warning: counterbalancing unavailable for {group_id}/{theme_id}/{phase}: {error}")
+            sequences[phase] = []
+    return sequences
+
+
+def is_elicitation_result(result):
+    if not result or not result.get("prompt_id"):
+        return False
+    strategy = normalize_elicitation(str(result.get("strategy", "")).strip())
+    return strategy in MODE_REGISTRY["elicitation"]
+
+
+def parse_engagement_score(value):
+    text = str(value or "").strip()
+    if not text or text.lower() in {"skip", "na", "n/a", "none"}:
+        return ""
+    score = float(text)
+    if score < 1 or score > 100:
+        raise ValueError("score must be between 1 and 100")
+    if score.is_integer():
+        return int(score)
+    return round(score, 2)
+
+
+def prompt_previous_elicitation_engagement(previous_result, input_queue=None, stop_event=None):
+    if not previous_result:
+        print("[Evaluation] First elicitation prompt; the first completed window can be scored at the next elicitation prompt.")
+        return ""
+
+    label = (
+        f"{previous_result.get('phase', '')}/{previous_result.get('strategy', '')} "
+        f"{previous_result.get('prompt_id', '')}"
+    ).strip()
+    prompt = f"[Evaluation] Engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
+
+    while True:
+        if input_queue is None:
+            try:
+                raw = input(prompt)
+            except EOFError:
+                return ""
+        else:
+            print(prompt, end="", flush=True)
+            while True:
+                if stop_event is not None and stop_event.is_set():
+                    print("")
+                    return ""
+                try:
+                    raw = input_queue.get(timeout=0.1)
+                    break
+                except queue.Empty:
+                    continue
+
+        text = str(raw or "").strip()
+        if text.lower() in LIVE_EXIT_WORDS:
+            if stop_event is not None:
+                stop_event.set()
+            return ""
+        try:
+            return parse_engagement_score(text)
+        except ValueError:
+            print("Please enter a number from 1 to 100, or press Enter to skip.")
+
+
+def attach_previous_elicitation_engagement(result, previous_result, score):
+    if not previous_result or score == "":
+        return
+    result["elicitation_engagement_score"] = score
+    result["previous_elicitation_prompt_id"] = previous_result.get("prompt_id", "")
+    result["previous_elicitation_strategy"] = previous_result.get("strategy", "")
+    result["previous_elicitation_phase"] = previous_result.get("phase", "")
+
+
+def start_live_command_reader(command_queue, stop_event):
+    def reader():
+        while not stop_event.is_set():
+            try:
+                line = input().strip()
+            except EOFError:
+                stop_event.set()
+                break
+            except Exception:
+                time.sleep(0.1)
+                continue
+            if line:
+                command_queue.put(line)
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    return thread
+
+
+def print_live_control_summary(payload, elicitation_mode, intervention_every, keyboard_controls):
+    mode_combo = payload.get("mode_combo", {})
+    print(
+        "Live controls: "
+        f"group={payload.get('group_id', '')}, theme={payload.get('theme_id', '')}, "
+        f"phase={payload.get('phase', '')}, elicitation={elicitation_mode}, "
+        f"style={mode_combo.get('style', 'off')}, initiative={mode_combo.get('initiative', 'off')}, "
+        f"role={mode_combo.get('role', 'off')}, every={intervention_every}"
+    )
+    if keyboard_controls:
+        print(
+            "Optional typed controls while mics run: ROBOT, CHANGE, DIVERGENCE, CONVERGENCE, "
+            "ELICITATION off|scheduled|perspective_shift|generative|elaboration_evidence, "
+            "STYLE off|passive|assertive|supportive, INITIATIVE off|reactive|proactive, "
+            "ROLE off|facilitator|solutionist, GROUP G01, THEME T1, exit."
+        )
+
+
+def build_live_payload(args):
+    theme_id, theme_text = resolve_theme_text(args.theme_id, args.theme)
+    group_id = (args.group_id or "G01").strip().upper()
+    chosen_initiative = args.initiative or "reactive"
+    conversation_id = f"{group_id}_{theme_id or 'LIVE'}_{int(time.time())}"
+    return {
+        "server_url": "http://127.0.0.1:1234/v1/chat/completions",
+        "model": "phi-3.5-mini-3.8b-instruct",
+        "session_id": f"LIVE_{group_id}_{theme_id or int(time.time())}",
+        "group_id": group_id,
+        "conversation_id": conversation_id,
+        "theme": theme_text,
+        "theme_id": theme_id,
+        "phase": args.phase,
+        "log_path": DEFAULT_LOG_PATH,
+        "transcript_log_path": args.transcript_log_path,
+        "audio_input_mode": args.audio_input_mode if args.deepgram_live else "",
+        "audio_device": args.audio_device or "",
+        "mode_combo": {
+            "elicitation": "perspective_shift",
+            "style": args.style_mode,
+            "initiative": chosen_initiative,
+            "role": args.role_mode,
+        },
+        "seed_ideas": [],
+        "conversation_history": [],
+        "history_window_turns": 12,
+        "temperature": 0.35,
+        "max_tokens": 600,
+        "reply_max_words": DEFAULT_REPLY_MAX_WORDS,
+        "timeout_seconds": 30.0,
+        "fallback_prompt": "Could you expand on that from a different angle?",
+        "context_fallback": "What should we focus on next from what you just said?",
+    }
+
+
 
 def main():
     load_local_env_file()
@@ -2083,8 +2623,29 @@ def main():
     parser.add_argument("--simulate", help="Path to a multi-turn session JSON file")
     parser.add_argument("--intervene", action="store_true", help="Manual intervention mode with counterbalancing schedule")
     parser.add_argument("--live", action="store_true", help="Live conversation mode (console or Pepper I/O)")
-    parser.add_argument("--initiative", choices=["reactive", "proactive"], help="Default initiative mode for intervene (reactive|proactive)")
-    parser.add_argument("--theme", default="Open brainstorming conversation", help="Theme text used in live mode")
+    parser.add_argument("--initiative", choices=["off", "reactive", "proactive"], help="Initiative mode for live/intervene (off|reactive|proactive)")
+    parser.add_argument("--theme", default="", help="Custom theme text. If omitted, --theme-id is loaded from design/themes.json.")
+    parser.add_argument("--theme-id", default="T1", help="Theme ID for live experiment mode, e.g. T1 or T2")
+    parser.add_argument("--group-id", default="G01", help="Group ID for live experiment mode and counterbalancing, e.g. G01")
+    parser.add_argument("--phase", choices=["divergence", "convergence"], default="divergence", help="Starting phase")
+    parser.add_argument(
+        "--elicitation-mode",
+        choices=["off", "scheduled", "perspective_shift", "constraint_reframing", "generative", "elaboration_evidence"],
+        default="scheduled",
+        help="Live robot strategy mode: off, scheduled counterbalancing, or a fixed elicitation strategy.",
+    )
+    parser.add_argument("--intervention-every", type=int, default=4, help="Scheduled elicitation fires every Nth robot reply")
+    parser.add_argument(
+        "--evaluation_elicitation",
+        "--evaluation-elicitation",
+        action="store_true",
+        dest="evaluation_elicitation",
+        help="In live scheduled/fixed elicitation mode, ask the researcher for a 1-100 engagement score before each new elicitation prompt and log it for the previous elicitation window.",
+    )
+    parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="passive", help="Robot style guidance")
+    parser.add_argument("--role-mode", choices=["off", "facilitator", "solutionist"], default="facilitator", help="Robot role guidance")
+    parser.add_argument("--proactive-silence-threshold", type=float, default=PROACTIVE_SILENCE_THRESHOLD, help="Seconds of silence before proactive robot intervention")
+    parser.add_argument("--no-live-keyboard-controls", action="store_true", help="Disable optional typed live controls while microphones run")
     parser.add_argument("--pepper", action="store_true", help="Use Pepper NAOqi I/O in live mode")
     parser.add_argument("--pepper-ip", default="192.168.1.116", help="Pepper robot IP")
     parser.add_argument("--pepper-port", type=int, default=9559, help="Pepper NAOqi port")
@@ -2182,8 +2743,9 @@ def main():
                 "history_window_turns": 12,
                 "temperature": 0.35,
                 "max_tokens": 600,
+                "reply_max_words": DEFAULT_REPLY_MAX_WORDS,
                 "timeout_seconds": 30.0,
-                "context_fallback": "Could you tell me a little more?",
+                "context_fallback": "What should we focus on next from what you just said?",
             }
 
         request = build_audio_turn_request(payload, transcript)
@@ -2206,32 +2768,9 @@ def main():
         if args.deepgram_live and not args.deepgram_api_key:
             parser.error("--deepgram-api-key is required when using --deepgram-live")
 
-        payload = {
-            "server_url": "http://127.0.0.1:1234/v1/chat/completions",
-            "model": "phi-3.5-mini-3.8b-instruct",
-            "session_id": f"LIVE_{int(time.time())}",
-            "group_id": "G_LIVE",
-            "conversation_id": f"LIVE_{int(time.time())}",
-            "theme": args.theme,
-            "phase": "divergence",
-            "log_path": DEFAULT_LOG_PATH,
-            "transcript_log_path": args.transcript_log_path,
-            "audio_input_mode": args.audio_input_mode if args.deepgram_live else "",
-            "audio_device": args.audio_device or "",
-            "mode_combo": {
-                "elicitation": "perspective_shift",
-                "style": "passive",
-                "initiative": "reactive",
-                "role": "facilitator",
-            },
-            "seed_ideas": [],
-            "conversation_history": [],
-            "history_window_turns": 12,
-            "temperature": 0.35,
-            "max_tokens": 600,
-            "timeout_seconds": 30.0,
-            "context_fallback": "Could you tell me a little more?",
-        }
+        payload = build_live_payload(args)
+        if args.evaluation_elicitation and not (args.deepgram_live and args.audio_capture_mode == "continuous"):
+            print("Warning: --evaluation_elicitation currently applies to continuous live elicitation runs.")
 
         send_fn = console_send
         pepper = None
@@ -2249,6 +2788,11 @@ def main():
                     listener,
                     send_fn,
                     trigger_words=parse_trigger_words(args.trigger_words),
+                    elicitation_mode=args.elicitation_mode,
+                    intervention_every=args.intervention_every,
+                    keyboard_controls=not args.no_live_keyboard_controls,
+                    proactive_silence_threshold=args.proactive_silence_threshold,
+                    evaluation_elicitation=args.evaluation_elicitation,
                 )
                 return
 
@@ -2313,9 +2857,10 @@ def main():
             "history_window_turns": 12,
             "temperature": 0.35,
             "max_tokens": 600,
+            "reply_max_words": DEFAULT_REPLY_MAX_WORDS,
             "timeout_seconds": 30.0,
             "fallback_prompt": "Could you expand on that from a different angle?",
-            "context_fallback": "Could you expand on that a bit more?",
+            "context_fallback": "What should we focus on next from what you just said?",
         }
 
         prompt_bank = load_prompt_bank()
