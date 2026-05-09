@@ -27,7 +27,7 @@ In continuous Focusrite mode:
 - The microphones stay live and speech is segmented automatically.
 - Saying `Pepper` triggers the same robot intervention as the console `ROBOT` command.
 - Full event transcripts are written to `logs/transcript.csv`.
-- The Deepgram API key is configured as the script default and can still be overridden with `--deepgram-api-key`.
+- The Deepgram API key is read from `DEEPGRAM_API_KEY` in your shell or local `.env` file, and can still be overridden with `--deepgram-api-key`.
 
 Expected result:
 

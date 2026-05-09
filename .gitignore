@@ -1,2 +1,4 @@
 activate_naoqi.ps1
 .env
+/llm/infra/__pycache__/
+.venv/

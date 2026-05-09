@@ -81,7 +81,7 @@ This now runs in continuous microphone mode by default. The microphones stay liv
 
 By default, live Deepgram input uses Focusrite mode: input channel 1 is logged and passed to the model as `Participant 1`, and input channel 2 is logged and passed as `Participant 2`.
 
-The Deepgram API key is configured as the script default, so you only need `--deepgram-api-key` if you want to override it.
+The Deepgram API key is read from `DEEPGRAM_API_KEY` in your shell or local `.env` file, so you only need `--deepgram-api-key` if you want to override it.
 
 To inspect audio devices:
 ```bash

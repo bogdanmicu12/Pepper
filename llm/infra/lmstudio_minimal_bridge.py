@@ -35,7 +35,8 @@ COUNTERBALANCING = ROOT / "design" / "counterbalancing_elicitation.csv"
 THEMES_FILE = ROOT / "design" / "themes.json"
 DEFAULT_LOG_PATH = "logs/logs.csv"
 DEFAULT_TRANSCRIPT_LOG_PATH = "logs/transcript.csv"
-DEFAULT_DEEPGRAM_API_KEY = "1e2c44170806023c9a41217044208e89b466a040"
+DEFAULT_DEEPGRAM_API_KEY = ""
+DEEPGRAM_API_KEY_ENV_VAR = "DEEPGRAM_API_KEY"
 DEFAULT_PEPPER_LEGACY_PYTHON = r"C:\Python27\python.exe"
 PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
@@ -266,6 +267,27 @@ def resolve_log_path(log_path):
     if path.is_absolute():
         return path
     return ROOT / path
+
+
+def load_local_env_file(env_path=None):
+    path = pathlib.Path(env_path) if env_path else ROOT.parent / ".env"
+    if not path.exists():
+        return
+
+    with path.open("r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+def get_env_secret(name, default=""):
+    return os.environ.get(name) or default
 
 
 def load_sounddevice():
@@ -1106,6 +1128,27 @@ class PepperIO:
             time.sleep(0.1)
 
         return ""
+
+
+def build_naoqi_subprocess_env():
+    env = os.environ.copy()
+    sdk_root = env.get("NAOQI_SDK_ROOT") or DEFAULT_NAOQI_SDK_ROOT
+    sdk_lib = str(pathlib.Path(sdk_root) / "lib")
+
+    env.setdefault("NAOQI_SDK_ROOT", sdk_root)
+    if pathlib.Path(sdk_lib).exists():
+        existing_pythonpath = env.get("NAOQI_PYTHONPATH", "")
+        pythonpath_parts = [item for item in existing_pythonpath.split(os.pathsep) if item]
+        if sdk_lib not in pythonpath_parts:
+            pythonpath_parts.insert(0, sdk_lib)
+        env["NAOQI_PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
+
+        path_parts = [item for item in env.get("PATH", "").split(os.pathsep) if item]
+        if sdk_lib not in path_parts:
+            path_parts.insert(0, sdk_lib)
+        env["PATH"] = os.pathsep.join(path_parts)
+
+    return env
 
 
 def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
@@ -2033,6 +2076,8 @@ def build_continuous_audio_transcriber_from_args(args, participant_channel_map):
 
 
 def main():
+    load_local_env_file()
+
     parser = argparse.ArgumentParser(description="Minimal LM Studio bridge for scripted elicitation prompts")
     parser.add_argument("--request", help="Path to a one-turn JSON request")
     parser.add_argument("--simulate", help="Path to a multi-turn session JSON file")
@@ -2049,7 +2094,11 @@ def main():
     parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
     parser.add_argument("--pepper-legacy-python", default=DEFAULT_PEPPER_LEGACY_PYTHON, help="Python launcher command for Python 2.7 Pepper helper")
     parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
-    parser.add_argument("--deepgram-api-key", default=DEFAULT_DEEPGRAM_API_KEY, help="Deepgram API key for speech-to-text audio transcription")
+    parser.add_argument(
+        "--deepgram-api-key",
+        default=get_env_secret(DEEPGRAM_API_KEY_ENV_VAR, DEFAULT_DEEPGRAM_API_KEY),
+        help=f"Deepgram API key for speech-to-text audio transcription. Defaults to ${DEEPGRAM_API_KEY_ENV_VAR}.",
+    )
     parser.add_argument("--deepgram-audio", help="Path to an audio file for Deepgram transcription")
     parser.add_argument("--deepgram-live", action="store_true", help="Use microphone + Deepgram for live participant speech recognition")
     parser.add_argument("--deepgram-record-seconds", type=float, default=20.0, help="Maximum seconds to record from the microphone for each live speech turn")
