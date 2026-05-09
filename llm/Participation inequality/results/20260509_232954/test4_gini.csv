@@ -1,0 +1,10 @@
+dataset,analysis_group,metric,adjusted_gini,standard_gini,participant_count,total_value,min_participant_value,max_participant_value,interpretation
+test4,convergence,word_count,0.0,0.0,2,672.0,336.0,336.0,very equal
+test4,convergence,turn_count,0.0,0.0,2,30.0,15.0,15.0,very equal
+test4,convergence,speech_time_seconds,0.0096,0.0048,2,416.0,206.0,210.0,very equal
+test4,divergence,word_count,0.0863,0.0431,2,904.0,413.0,491.0,very equal
+test4,divergence,turn_count,0.0303,0.0152,2,33.0,16.0,17.0,very equal
+test4,divergence,speech_time_seconds,0.0604,0.0302,2,447.0,210.0,237.0,very equal
+test4,overall,word_count,0.0495,0.0247,2,1576.0,749.0,827.0,very equal
+test4,overall,turn_count,0.0159,0.0079,2,63.0,31.0,32.0,very equal
+test4,overall,speech_time_seconds,0.0267,0.0133,2,863.0,420.0,443.0,very equal

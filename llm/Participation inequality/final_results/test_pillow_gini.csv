@@ -1,0 +1,4 @@
+dataset,analysis_group,metric,adjusted_gini,standard_gini,participant_count,total_value,min_participant_value,max_participant_value,interpretation
+test_pillow,overall,word_count,0.5175,0.2587,2,630.0,152.0,478.0,high inequality
+test_pillow,overall,turn_count,0.0714,0.0357,2,28.0,13.0,15.0,very equal
+test_pillow,overall,speech_time_seconds,0.4133,0.2066,2,392.0,115.0,277.0,moderate inequality
