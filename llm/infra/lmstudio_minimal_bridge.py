@@ -54,6 +54,16 @@ DEFAULT_FOCUSRITE_PARTICIPANTS = (
     (2, "Participant 2"),
 )
 DEFAULT_TRIGGER_WORDS = ("pepper",)
+DEFAULT_PROACTIVE_STRUGGLE_CUES = (
+    "i don't know",
+    "we're stuck",
+    "no ideas",
+    "this is hard",
+    "nothing works",
+    "we can't think of anything",
+    "we are stuck",
+    "we need help",
+)
 TRANSCRIPT_LOG_COLUMNS = [
     "session_id",
     "group_id",
@@ -83,6 +93,10 @@ TRANSCRIPT_LOG_COLUMNS = [
     "previous_elicitation_strategy",
     "previous_elicitation_phase",
 ]
+
+# In-memory recent conversation buffer used for lightweight novelty detection
+GLOBAL_CONVERSATION_HISTORY = []
+
 
 DEFAULT_PEPPER_VOCABULARY = [
     "pepper",
@@ -565,6 +579,125 @@ def text_contains_trigger_word(text, trigger_words=DEFAULT_TRIGGER_WORDS):
         if re.search(pattern, lower_text):
             return True
     return False
+
+
+def text_contains_proactive_cue(text, cues=DEFAULT_PROACTIVE_STRUGGLE_CUES):
+    lower_text = (text or "").lower()
+    for cue in cues:
+        if cue and cue.lower() in lower_text:
+            return True
+    return False
+
+
+def should_trigger_proactive_robot(turn_text, trigger_words=DEFAULT_TRIGGER_WORDS, struggle_cues=DEFAULT_PROACTIVE_STRUGGLE_CUES):
+    decision = evaluate_proactive_trigger(
+        turn_text,
+        trigger_words=trigger_words,
+        struggle_cues=struggle_cues,
+    )
+    return bool(decision.get("triggered"))
+
+
+# Novelty / lack-of-novelty detection
+DEFAULT_NOVELTY_RECENT_TURNS = 4
+DEFAULT_NOVELTY_PREV_TURNS = 8
+DEFAULT_NOVELTY_MIN_NEW = 6
+PROACTIVE_TRIGGER_SCORE_THRESHOLD = 2.5
+PROACTIVE_TRIGGER_COOLDOWN_SECONDS = 15.0
+PROACTIVE_TRIGGER_WEIGHTS = {
+    "trigger_word": 3.0,
+    "struggle_cue": 2.5,
+    "low_novelty": 2.5,
+}
+
+
+def _tokenize_text(text):
+    tokens = re.findall(r"\b\w+\b", (text or "").lower())
+    stopwords = {
+        "the","and","a","an","to","of","in","on","for","is","are","it","that","this","we","you","i","they","he","she","be","or","as","with","not","but"
+    }
+    return [t for t in tokens if t and t not in stopwords and len(t) > 2]
+
+
+def lacks_novelty(conversation_events, recent_turns=DEFAULT_NOVELTY_RECENT_TURNS, prev_turns=DEFAULT_NOVELTY_PREV_TURNS, min_new_keywords=DEFAULT_NOVELTY_MIN_NEW):
+    """Return True when recent participant turns introduce fewer than `min_new_keywords`
+    new meaningful tokens compared to the previous window.
+
+    conversation_events: list of event dicts with at least a 'speaker' and 'text' key.
+    """
+    if not conversation_events or len(conversation_events) < 2:
+        return False
+
+    participant_turns = [e for e in conversation_events if str(e.get("speaker", "")).lower().startswith("participant")]
+    if len(participant_turns) < 2:
+        return False
+
+    recent = participant_turns[-int(recent_turns):]
+    if len(participant_turns) >= (int(recent_turns) + int(prev_turns)):
+        prev = participant_turns[-(int(recent_turns) + int(prev_turns)):-int(recent_turns)]
+    else:
+        prev = participant_turns[:-int(recent_turns)]
+
+    if not prev:
+        return False
+
+    prev_tokens = set()
+    for t in prev:
+        prev_tokens.update(_tokenize_text(t.get("text", "")))
+
+    recent_tokens = set()
+    for t in recent:
+        recent_tokens.update(_tokenize_text(t.get("text", "")))
+
+    new_tokens = [tok for tok in recent_tokens if tok not in prev_tokens]
+    return len(new_tokens) < int(min_new_keywords)
+
+
+def evaluate_proactive_trigger(
+    turn_text,
+    trigger_words=DEFAULT_TRIGGER_WORDS,
+    struggle_cues=DEFAULT_PROACTIVE_STRUGGLE_CUES,
+    conversation_events=None,
+    last_trigger_epoch=None,
+    current_epoch=None,
+    cooldown_seconds=PROACTIVE_TRIGGER_COOLDOWN_SECONDS,
+    score_threshold=PROACTIVE_TRIGGER_SCORE_THRESHOLD,
+):
+    score = 0.0
+    reasons = []
+    cooldown_active = False
+
+    if last_trigger_epoch is not None and current_epoch is not None:
+        try:
+            cooldown_active = float(current_epoch) - float(last_trigger_epoch) < float(cooldown_seconds)
+        except Exception:
+            cooldown_active = False
+
+    if cooldown_active:
+        return {"triggered": False, "score": 0.0, "reasons": ["cooldown"], "cooldown_active": True}
+
+    if text_contains_trigger_word(turn_text, trigger_words):
+        score += PROACTIVE_TRIGGER_WEIGHTS["trigger_word"]
+        reasons.append("trigger_word")
+
+    if text_contains_proactive_cue(turn_text, struggle_cues):
+        score += PROACTIVE_TRIGGER_WEIGHTS["struggle_cue"]
+        reasons.append("struggle_cue")
+
+    events = conversation_events if conversation_events is not None else GLOBAL_CONVERSATION_HISTORY
+    try:
+        if lacks_novelty(events):
+            score += PROACTIVE_TRIGGER_WEIGHTS["low_novelty"]
+            reasons.append("low_novelty")
+    except Exception:
+        pass
+
+    return {
+        "triggered": score >= float(score_threshold),
+        "score": round(score, 2),
+        "reasons": reasons,
+        "cooldown_active": False,
+    }
 
 
 def resolve_live_audio_input(
@@ -1654,6 +1787,18 @@ def append_transcript_event(transcript_log_path, payload, event):
             writer.writeheader()
         writer.writerow(row)
 
+        # Update in-memory conversation history for novelty detection (bounded)
+        try:
+            GLOBAL_CONVERSATION_HISTORY.append({
+                "speaker": row.get("speaker", ""),
+                "text": row.get("text", ""),
+                "timestamp": row.get("timestamp", ""),
+            })
+            if len(GLOBAL_CONVERSATION_HISTORY) > 500:
+                del GLOBAL_CONVERSATION_HISTORY[: len(GLOBAL_CONVERSATION_HISTORY) - 500]
+        except Exception:
+            pass
+
 
 def append_participant_transcript_event(transcript_log_path, payload, turn, sequence_index, triggered_robot=False, trigger_words=DEFAULT_TRIGGER_WORDS, robot_turn_index=""):
     append_transcript_event(
@@ -2262,17 +2407,29 @@ def run_continuous_live_dialog(
                         last_epoch = epoch_from_timestamp(pending_participant_turns[-1].get("timestamp"))
                     except Exception:
                         last_epoch = None
-                    if last_epoch and last_epoch != last_proactive_epoch:
-                        elapsed = time.time() - last_epoch
-                        if elapsed >= float(proactive_silence_threshold):
-                            last_proactive_epoch = last_epoch
-                            trigger_robot({"timestamp": timestamp_from_epoch()})
+                    if last_epoch:
+                        now_epoch = time.time()
+                        elapsed = now_epoch - last_epoch
+                        cooldown_elapsed = now_epoch - last_proactive_epoch
+                        if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
+                            last_proactive_epoch = now_epoch
+                            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)})
                 continue
 
             event_type = event.get("type")
             if event_type == "turn":
                 turn = event["turn"]
-                triggered = current_initiative() == "reactive" and text_contains_trigger_word(turn.get("text", ""), trigger_words)
+                turn_text = turn.get("text", "")
+                turn_epoch = epoch_from_timestamp(turn.get("timestamp")) or time.time()
+                proactive_decision = evaluate_proactive_trigger(
+                    turn_text,
+                    trigger_words=trigger_words,
+                    conversation_events=conversation_history,
+                    last_trigger_epoch=last_proactive_epoch,
+                    current_epoch=turn_epoch,
+                )
+                proactive_triggered = current_initiative() == "proactive" and bool(proactive_decision.get("triggered"))
+                triggered = current_initiative() == "reactive" and text_contains_trigger_word(turn_text, trigger_words)
                 conversation_history.append(turn)
                 pending_participant_turns.append(turn)
                 sequence_index += 1
@@ -2282,12 +2439,14 @@ def run_continuous_live_dialog(
                     base_payload,
                     turn,
                     sequence_index=sequence_index,
-                    triggered_robot=triggered,
+                    triggered_robot=triggered or proactive_triggered,
                     trigger_words=trigger_words,
-                    robot_turn_index=robot_turn_index + 1 if triggered else "",
+                    robot_turn_index=robot_turn_index + 1 if (triggered or proactive_triggered) else "",
                 )
-                if triggered:
+                if proactive_triggered or triggered:
                     trigger_robot(turn)
+                    if proactive_triggered:
+                        last_proactive_epoch = turn_epoch
                 continue
 
             if event_type == "empty":
@@ -2797,7 +2956,7 @@ def main():
         event_queue = queue.Queue()
         input_queue = queue.Queue()
         stop_event = threading.Event()
-        last_triggered_last_epoch = 0
+        last_triggered_last_epoch = 0.0
         input_lock = threading.Lock()
         current_input_line = [""]  # list so it's mutable in nested scope
 
@@ -2811,10 +2970,11 @@ def main():
                         if last_ts:
                             try:
                                 last_epoch = epoch_from_timestamp(last_ts)
-                                elapsed = time.time() - last_epoch
-                                if elapsed >= PROACTIVE_SILENCE_THRESHOLD and last_epoch != last_triggered_last_epoch:
+                                now_epoch = time.time()
+                                elapsed = now_epoch - last_epoch
+                                if elapsed >= PROACTIVE_SILENCE_THRESHOLD and (now_epoch - last_triggered_last_epoch) >= PROACTIVE_TRIGGER_COOLDOWN_SECONDS:
                                     event_queue.put("AUTO_ROBOT")
-                                    last_triggered_last_epoch = last_epoch
+                                    last_triggered_last_epoch = now_epoch
                             except Exception:
                                 pass
                 except Exception:
@@ -2967,7 +3127,17 @@ def main():
 
             if event_type == "turn":
                 turn = event["turn"]
-                triggered = text_contains_trigger_word(turn.get("text", ""), trigger_words)
+                turn_text = turn.get("text", "")
+                triggered = text_contains_trigger_word(turn_text, trigger_words)
+                turn_epoch = epoch_from_timestamp(turn.get("timestamp")) or time.time()
+                proactive_decision = evaluate_proactive_trigger(
+                    turn_text,
+                    trigger_words=trigger_words,
+                    conversation_events=payload.get("conversation_history", []),
+                    last_trigger_epoch=last_triggered_last_epoch,
+                    current_epoch=turn_epoch,
+                )
+                proactive_triggered = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"]) == "proactive" and bool(proactive_decision.get("triggered"))
                 payload["phase"] = current_phase
                 payload.setdefault("conversation_history", []).append(turn)
                 pending_participant_turns.append(turn)
@@ -2978,12 +3148,14 @@ def main():
                     payload,
                     turn,
                     sequence_index=sequence_index,
-                    triggered_robot=triggered,
+                    triggered_robot=triggered or proactive_triggered,
                     trigger_words=trigger_words,
-                    robot_turn_index=turn_index + 1 if triggered else "",
+                    robot_turn_index=turn_index + 1 if (triggered or proactive_triggered) else "",
                 )
-                if triggered:
+                if proactive_triggered or triggered:
                     trigger_robot()
+                    if proactive_triggered:
+                        last_triggered_last_epoch = turn_epoch
                 return
 
             if event_type == "empty":
@@ -3079,6 +3251,10 @@ def main():
                 speaker, text = parse_speaker_prefixed_text(line)
                 participant_turn = make_participant_turn(speaker, text, timestamp=participant_timestamp)
                 triggered = text_contains_trigger_word(text, trigger_words)
+                proactive_triggered = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"]) == "proactive" and should_trigger_proactive_robot(
+                    text,
+                    trigger_words=trigger_words,
+                )
 
                 payload.setdefault("conversation_history", []).append(participant_turn)
                 pending_participant_turns.append(participant_turn)
@@ -3096,6 +3272,9 @@ def main():
                 # Reactive immediate trigger: if initiative is reactive and the participant called the robot's name, intervene now
                 try:
                     initiative_now = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"])
+                    if initiative_now == "proactive" and proactive_triggered:
+                        trigger_robot()
+                        continue
                     if initiative_now == "reactive" and triggered:
                         trigger_robot()
                         continue
