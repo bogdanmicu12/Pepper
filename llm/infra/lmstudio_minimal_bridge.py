@@ -605,7 +605,7 @@ DEFAULT_NOVELTY_RECENT_TURNS = 4
 DEFAULT_NOVELTY_PREV_TURNS = 8
 DEFAULT_NOVELTY_MIN_NEW = 6
 PROACTIVE_TRIGGER_SCORE_THRESHOLD = 2.5
-PROACTIVE_TRIGGER_COOLDOWN_SECONDS = 15.0
+PROACTIVE_TRIGGER_COOLDOWN_SECONDS = 20.0
 PROACTIVE_TRIGGER_WEIGHTS = {
     "trigger_word": 3.0,
     "struggle_cue": 2.5,
@@ -1016,6 +1016,10 @@ class ContinuousAudioTranscriber:
             )
             for channel_number, speaker in self.channel_map
         ]
+
+    @property
+    def has_active_speech(self):
+        return any(segmenter.active for segmenter in self.segmenters)
 
     @property
     def device_name(self):
@@ -2506,17 +2510,20 @@ def run_continuous_live_dialog(
             event = listener.get_event(timeout=0.2)
             if event is None:
                 if current_initiative() == "proactive" and pending_participant_turns:
-                    try:
-                        last_epoch = epoch_from_timestamp(pending_participant_turns[-1].get("timestamp"))
-                    except Exception:
-                        last_epoch = None
-                    if last_epoch:
-                        now_epoch = time.time()
-                        elapsed = now_epoch - last_epoch
-                        cooldown_elapsed = now_epoch - last_proactive_epoch
-                        if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
-                            last_proactive_epoch = now_epoch
-                            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
+                    if listener.has_active_speech:
+                        silence_started_epoch = None
+                        continue
+
+                    now_epoch = time.time()
+                    if silence_started_epoch is None:
+                        silence_started_epoch = now_epoch
+
+                    elapsed = now_epoch - silence_started_epoch
+                    cooldown_elapsed = now_epoch - last_proactive_epoch
+                    if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
+                        last_proactive_epoch = now_epoch
+                        silence_started_epoch = None
+                        trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
                 continue
 
             event_type = event.get("type")
@@ -2546,6 +2553,7 @@ def run_continuous_live_dialog(
                     trigger_words=trigger_words,
                     robot_turn_index=robot_turn_index + 1 if (triggered or proactive_triggered) else "",
                 )
+                silence_started_epoch = None
                 if proactive_triggered or triggered:
                     trigger_robot(
                         turn,
@@ -3087,21 +3095,27 @@ def main():
 
         def monitor_silence():
             nonlocal last_triggered_last_epoch
+            silence_started_epoch = None
             while not stop_event.is_set():
                 try:
                     initiative = payload.get("mode_combo", {}).get("initiative", "reactive")
                     if initiative == "proactive" and pending_participant_turns:
-                        last_ts = pending_participant_turns[-1].get("timestamp")
-                        if last_ts:
-                            try:
-                                last_epoch = epoch_from_timestamp(last_ts)
-                                now_epoch = time.time()
-                                elapsed = now_epoch - last_epoch
-                                if elapsed >= PROACTIVE_SILENCE_THRESHOLD and (now_epoch - last_triggered_last_epoch) >= PROACTIVE_TRIGGER_COOLDOWN_SECONDS:
-                                    event_queue.put("AUTO_ROBOT")
-                                    last_triggered_last_epoch = now_epoch
-                            except Exception:
-                                pass
+                        if continuous_listener and continuous_listener.has_active_speech:
+                            silence_started_epoch = None
+                            time.sleep(1)
+                            continue
+
+                        now_epoch = time.time()
+                        if silence_started_epoch is None:
+                            silence_started_epoch = now_epoch
+
+                        elapsed = now_epoch - silence_started_epoch
+                        if elapsed >= PROACTIVE_SILENCE_THRESHOLD and (now_epoch - last_triggered_last_epoch) >= PROACTIVE_TRIGGER_COOLDOWN_SECONDS:
+                            event_queue.put("AUTO_ROBOT")
+                            last_triggered_last_epoch = now_epoch
+                            silence_started_epoch = None
+                    else:
+                        silence_started_epoch = None
                 except Exception:
                     pass
                 time.sleep(1)
