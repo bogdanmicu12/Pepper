@@ -1918,6 +1918,26 @@ def print_robot_turn(result):
         print(f"[Fallback reason] {result['fallback_reason']}")
 
 
+def print_robot_trigger_reason(trigger_reason=None, trigger_reasons=None):
+    reasons = []
+    if trigger_reasons:
+        reasons.extend(str(reason).strip() for reason in trigger_reasons if str(reason).strip())
+    elif trigger_reason:
+        reason_text = str(trigger_reason).strip()
+        if reason_text:
+            reasons.append(reason_text)
+
+    if not reasons:
+        reasons = ["manual"]
+
+    deduped = []
+    for reason in reasons:
+        if reason not in deduped:
+            deduped.append(reason)
+
+    print(f"[Robot trigger] reason={', '.join(deduped)}")
+
+
 def run_session(session_payload):
     print(f"# Session {session_payload.get('session_id', 'S01')} / group {session_payload.get('group_id', 'G01')}")
     history = list(session_payload.get("conversation_history", []))
@@ -2255,7 +2275,7 @@ def run_continuous_live_dialog(
 
         return result
 
-    def trigger_robot(triggering_turn):
+    def trigger_robot(triggering_turn, trigger_reason=None, trigger_reasons=None):
         nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result
         if not pending_participant_turns:
             return
@@ -2292,6 +2312,7 @@ def run_continuous_live_dialog(
         }
         conversation_history.append(robot_turn)
 
+        print_robot_trigger_reason(trigger_reason=trigger_reason, trigger_reasons=trigger_reasons)
         print_robot_turn(result)
         send_fn(result["reply"], style=result.get("style", "passive"))
         robot_end_timestamp = timestamp_from_epoch()
@@ -2388,7 +2409,7 @@ def run_continuous_live_dialog(
             return False
 
         if upper == "ROBOT":
-            trigger_robot({"timestamp": timestamp_from_epoch()})
+            trigger_robot({"timestamp": timestamp_from_epoch()}, trigger_reason="manual")
             return True
 
         if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
@@ -2495,7 +2516,7 @@ def run_continuous_live_dialog(
                         cooldown_elapsed = now_epoch - last_proactive_epoch
                         if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
                             last_proactive_epoch = now_epoch
-                            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)})
+                            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
                 continue
 
             event_type = event.get("type")
@@ -2526,7 +2547,10 @@ def run_continuous_live_dialog(
                     robot_turn_index=robot_turn_index + 1 if (triggered or proactive_triggered) else "",
                 )
                 if proactive_triggered or triggered:
-                    trigger_robot(turn)
+                    trigger_robot(
+                        turn,
+                        trigger_reasons=proactive_decision.get("reasons", []) if proactive_triggered else ["trigger_word"],
+                    )
                     if proactive_triggered:
                         last_proactive_epoch = turn_epoch
                 continue
@@ -3137,7 +3161,7 @@ def main():
         input_thread.start()
 
         # Helper to perform the robot intervention; extracted to reuse for manual, auto, and reactive triggers
-        def trigger_robot():
+        def trigger_robot(trigger_reason=None, trigger_reasons=None):
             nonlocal turn_index, pending_participant_turns, sequence_index
             if not pending_participant_turns:
                 print("Robot: No participant turns buffered yet.")
@@ -3184,6 +3208,7 @@ def main():
             payload.setdefault("conversation_history", []).append(
                 {"speaker": "Robot", "text": result["reply"], "timestamp": robot_timestamp}
             )
+            print_robot_trigger_reason(trigger_reason=trigger_reason, trigger_reasons=trigger_reasons)
             print_robot_turn(result)
             sequence_index += 1
             append_robot_transcript_event(
@@ -3254,7 +3279,9 @@ def main():
                     robot_turn_index=turn_index + 1 if (triggered or proactive_triggered) else "",
                 )
                 if proactive_triggered or triggered:
-                    trigger_robot()
+                    trigger_robot(
+                        trigger_reasons=proactive_decision.get("reasons", []) if proactive_triggered else ["trigger_word"],
+                    )
                     if proactive_triggered:
                         last_triggered_last_epoch = turn_epoch
                 return
@@ -3301,7 +3328,7 @@ def main():
 
                 if ev == "AUTO_ROBOT":
                 # Auto-trigger from proactive monitor
-                    trigger_robot()
+                    trigger_robot(trigger_reason="silence")
                 # After robot prints, redraw prompt and current input buffer so user can continue typing without pressing Enter
                     try:
                         with input_lock:
@@ -3345,7 +3372,7 @@ def main():
                     continue
 
                 if upper == "ROBOT":
-                    trigger_robot()
+                    trigger_robot(trigger_reason="manual")
                     continue
 
                 participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -3374,10 +3401,15 @@ def main():
                 try:
                     initiative_now = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"])
                     if initiative_now == "proactive" and proactive_triggered:
-                        trigger_robot()
+                        proactive_decision = evaluate_proactive_trigger(
+                            text,
+                            trigger_words=trigger_words,
+                            conversation_events=payload.get("conversation_history", []),
+                        )
+                        trigger_robot(trigger_reasons=proactive_decision.get("reasons", []))
                         continue
                     if initiative_now == "reactive" and triggered:
-                        trigger_robot()
+                        trigger_robot(trigger_reasons=["trigger_word"])
                         continue
                 except Exception:
                     pass
