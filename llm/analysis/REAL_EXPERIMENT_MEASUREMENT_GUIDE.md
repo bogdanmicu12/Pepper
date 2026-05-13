@@ -61,7 +61,8 @@ What happens during the session:
 
 Useful live controls:
 
-- `ROBOT`: trigger Pepper manually.
+- `ROBOT`: trigger Pepper manually. In reactive microphone mode, `Pepper` and
+  the transcript misrecognition `Paper` both trigger Pepper.
 - `CHANGE`: switch between divergence and convergence.
 - `DIVERGENCE`: force divergence phase.
 - `CONVERGENCE`: force convergence phase.
