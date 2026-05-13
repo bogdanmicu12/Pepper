@@ -5,6 +5,7 @@ This guide assumes the final measurement setup uses:
 - response latency
 - participant speaking time
 - elicitation-window engagement rating, scored by the researcher from 1-100
+- start/end creative-confidence rating, scored by the researcher from 1-100
 - vocal activation score
 - connection-cue score
 - manually coded substantive contribution measures
@@ -46,16 +47,7 @@ Use the group and theme IDs for the current session. Example for group `G01`,
 theme `T1`:
 
 ```powershell
-python .\llm\infra\lmstudio_minimal_bridge.py `
-  --live `
-  --deepgram-live `
-  --pepper `
-  --group-id G01 `
-  --theme-id T1 `
-  --phase divergence `
-  --elicitation-mode scheduled `
-  --intervention-every 4 `
-  --evaluation_elicitation 
+python .\llm\infra\lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --phase divergence --elicitation-mode scheduled --intervention-every 4 --evaluation_elicitation --initiative proactive
 ```
 
 What happens during the session:
@@ -76,19 +68,26 @@ Useful live controls:
 - `ELICITATION off|scheduled|perspective_shift|generative|elaboration_evidence`: change elicitation behavior.
 - `exit`: stop the session.
 
-## 3. Enter The 1-100 Elicitation Engagement Rating
+## 3. Enter The 1-100 Evaluation Ratings
 
 When `--evaluation_elicitation` is enabled, the console asks for engagement
-right before each new prompt-bank elicitation.
+at the start of the conversation before the first elicitation strategy. It also
+asks:
+
+```text
+How confident are you in your creative abilities?
+```
+
+at the start and end of the session, using the same 1-100 scale.
 
 Important timing detail:
 
+- The start engagement score is a baseline taken before the first elicitation
+  strategy.
 - The score you enter before elicitation prompt B belongs to the window after
   elicitation prompt A.
-- The first elicitation prompt has no previous window yet, so there is nothing
-  to score.
 - When you type `exit`, the console asks once more for the final open
-  elicitation window.
+  elicitation window and the end creative-confidence score.
 
 Use the same judgement rule every time, for example:
 
@@ -99,7 +98,9 @@ Use the same judgement rule every time, for example:
 ```
 
 The score is saved in `llm\logs\transcript.csv` as
-`elicitation_engagement_score`. For mid-session scores, the row also includes
+`elicitation_engagement_score`. Creative confidence is saved as
+`creative_confidence_score`, with `evaluation_moment` set to `start` or `end`.
+For mid-session engagement scores, the row also includes
 `previous_elicitation_prompt_id`, so the analysis maps the score back to the
 correct previous window.
 
@@ -194,6 +195,9 @@ Main output files:
 
 - `elicitation_windows.csv`
 - `elicitation_engagement_summary_by_phase_strategy.csv`
+- `session_evaluation_scores.csv`
+- `session_evaluation_summary.csv`
+- `creative_confidence_change_by_session.csv`
 - `transcript_window_metrics.csv`
 - `transcript_summary_by_phase_strategy.csv`
 - `manual_window_measures_cleaned.csv`

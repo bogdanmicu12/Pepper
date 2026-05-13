@@ -118,7 +118,7 @@ session_id,prompt_id,phase,strategy,prompt_start_time,prompt_end_time
 Recommended columns:
 
 ```csv
-session_id,prompt_id,phase,strategy,prompt_type,prompt_start_time,prompt_end_time,window_end_time,elicitation_engagement_score
+session_id,prompt_id,phase,strategy,prompt_type,prompt_start_time,prompt_end_time,window_end_time,elicitation_engagement_score,creative_confidence_score,evaluation_moment
 ```
 
 Column meanings:
@@ -136,15 +136,21 @@ Column meanings:
   should close the window before the next elicitation strategy.
 - `elicitation_engagement_score`: optional 1-100 engagement score for this
   elicitation window.
+- `creative_confidence_score`: optional 1-100 answer to "How confident are you
+  in your creative abilities?"
+- `evaluation_moment`: optional label such as `start` or `end` for
+  session-level evaluation rows.
 
 Live `transcript.csv` files from `lmstudio_minimal_bridge.py` can also be used
 as the intervention log. The analysis script will read robot rows with
 `prompt_id`, `strategy`, `start_timestamp`, and `end_timestamp`. If live mode is
-started with `--evaluation_elicitation`, the score entered before a new
-elicitation prompt is stored on that new robot row together with
-`previous_elicitation_prompt_id`; the analysis maps it back to the previous
-elicitation window. The final score entered on `exit` is stored as an
-`elicitation_evaluation` event and mapped directly to the last open window.
+started with `--evaluation_elicitation`, the start-of-session engagement and
+creative-confidence scores are stored as a `session_start_evaluation` event.
+The score entered before a new elicitation prompt is stored on that new robot
+row together with `previous_elicitation_prompt_id`; the analysis maps it back
+to the previous elicitation window. The final engagement and creative-confidence
+scores entered on `exit` are stored as a `session_end_evaluation` event, with
+the engagement score mapped directly to the last open window.
 
 How the script detects elicitation rows:
 
@@ -225,6 +231,12 @@ Core CSV outputs:
 - `elicitation_engagement_summary_by_phase_strategy.csv`: grouped mean,
   median, standard deviation, and counts for 1-100 engagement scores when
   present.
+- `session_evaluation_scores.csv`: start/end evaluation rows, including
+  engagement and creative-confidence scores.
+- `session_evaluation_summary.csv`: grouped start/end summaries for those
+  1-100 evaluation scores.
+- `creative_confidence_change_by_session.csv`: start, end, and change scores
+  for creative confidence when both moments are present.
 - `transcript_window_metrics.csv`: response delay, speaking time, turn count,
   word count, and mean participant turn duration for each window.
 - `transcript_summary_by_phase_strategy.csv`: grouped transcript metrics by
@@ -241,6 +253,8 @@ Generated chart filenames:
 - `response_delay_by_phase_strategy.png`
 - `speaking_time_by_phase_strategy.png`
 - `elicitation_engagement_by_phase_strategy.png`
+- `evaluation_engagement_by_moment.png`
+- `creative_confidence_by_moment.png`
 - `vocal_activation_by_phase_strategy.png`
 - `connection_cue_score_by_phase_strategy.png`
 - `speech_rate_by_phase_strategy.png`
@@ -313,5 +327,6 @@ study.
 
 The vocal activation and connection-cue scores are lightweight behavioral
 proxies rather than validated standalone scales. They are designed to complement
-response latency, speaking time, and the elicitation-window engagement rating
-with transparent transcript/audio-log features.
+response latency, speaking time, elicitation-window engagement, and the
+start/end creative-confidence rating with transparent transcript/audio-log
+features.

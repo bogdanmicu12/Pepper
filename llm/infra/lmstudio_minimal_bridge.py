@@ -89,6 +89,8 @@ TRANSCRIPT_LOG_COLUMNS = [
     "trigger_words",
     "fallback_reason",
     "elicitation_engagement_score",
+    "creative_confidence_score",
+    "evaluation_moment",
     "previous_elicitation_prompt_id",
     "previous_elicitation_strategy",
     "previous_elicitation_phase",
@@ -195,9 +197,9 @@ REPLY_CONTRACT = (
     "Prioritize the latest participant turns over older history; do not invent a new topic. "
     "No speaker labels such as Pepper: or Robot:. "
     "No notes, markdown, separators, lists, or meta-commentary. "
-    "Maximum 100 words."
+    "Maximum 35 words."
 )
-DEFAULT_REPLY_MAX_WORDS = 100
+DEFAULT_REPLY_MAX_WORDS = 35
 DEFAULT_LM_STOP_SEQUENCES = [
     "\nParticipant",
     "\nParticipant 1",
@@ -1776,6 +1778,8 @@ def append_transcript_event(transcript_log_path, payload, event):
         "trigger_words": event.get("trigger_words", ""),
         "fallback_reason": event.get("fallback_reason", ""),
         "elicitation_engagement_score": event.get("elicitation_engagement_score", ""),
+        "creative_confidence_score": event.get("creative_confidence_score", ""),
+        "evaluation_moment": event.get("evaluation_moment", ""),
         "previous_elicitation_prompt_id": event.get("previous_elicitation_prompt_id", ""),
         "previous_elicitation_strategy": event.get("previous_elicitation_strategy", ""),
         "previous_elicitation_phase": event.get("previous_elicitation_phase", ""),
@@ -1857,6 +1861,8 @@ def append_robot_transcript_event(
             "triggered_robot": "true",
             "fallback_reason": result.get("fallback_reason", ""),
             "elicitation_engagement_score": result.get("elicitation_engagement_score", ""),
+            "creative_confidence_score": result.get("creative_confidence_score", ""),
+            "evaluation_moment": result.get("evaluation_moment", ""),
             "previous_elicitation_prompt_id": result.get("previous_elicitation_prompt_id", ""),
             "previous_elicitation_strategy": result.get("previous_elicitation_strategy", ""),
             "previous_elicitation_phase": result.get("previous_elicitation_phase", ""),
@@ -2141,6 +2147,8 @@ def run_continuous_live_dialog(
     stop_event = threading.Event()
     last_proactive_epoch = 0.0
     last_elicitation_result = None
+    session_start_evaluation_recorded = False
+    final_evaluation_recorded = False
 
     base_payload["phase"] = current_phase
     print_live_control_summary(base_payload, elicitation_mode, intervention_every, keyboard_controls)
@@ -2155,6 +2163,55 @@ def run_continuous_live_dialog(
         nonlocal strategy_sequences, used_strategies
         strategy_sequences = safe_strategy_sequences(base_payload.get("group_id", ""), base_payload.get("theme_id", ""))
         used_strategies = {"divergence": [], "convergence": []}
+
+    def evaluation_input_queue():
+        return command_queue if keyboard_controls else None
+
+    def record_session_start_evaluation():
+        nonlocal sequence_index, session_start_evaluation_recorded
+        if session_start_evaluation_recorded or not evaluation_elicitation:
+            return
+        if elicitation_mode == "off":
+            return
+
+        engagement_score = prompt_start_elicitation_engagement(
+            input_queue=evaluation_input_queue(),
+            stop_event=stop_event,
+        )
+        if stop_event.is_set():
+            return
+
+        confidence_score = prompt_creative_confidence(
+            "start",
+            input_queue=evaluation_input_queue(),
+            stop_event=stop_event,
+        )
+        if stop_event.is_set() or (engagement_score == "" and confidence_score == ""):
+            session_start_evaluation_recorded = True
+            return
+
+        now = timestamp_from_epoch()
+        sequence_index += 1
+        append_transcript_event(
+            transcript_log_path,
+            base_payload,
+            {
+                "sequence_index": sequence_index,
+                "event_type": "session_start_evaluation",
+                "timestamp": now,
+                "start_timestamp": now,
+                "end_timestamp": now,
+                "speaker": "Researcher",
+                "text": "Session-start engagement and creative confidence scores",
+                "phase": current_phase,
+                "strategy": "session_start",
+                "source": "manual_evaluation",
+                "elicitation_engagement_score": engagement_score,
+                "creative_confidence_score": confidence_score,
+                "evaluation_moment": "start",
+            },
+        )
+        session_start_evaluation_recorded = True
 
     def build_robot_result(request):
         mode = (elicitation_mode or "off").strip().lower()
@@ -2216,10 +2273,10 @@ def run_continuous_live_dialog(
 
         result = build_robot_result(request)
         result_is_elicitation = is_elicitation_result(result)
-        if evaluation_elicitation and result_is_elicitation:
+        if evaluation_elicitation and result_is_elicitation and last_elicitation_result:
             score = prompt_previous_elicitation_engagement(
                 last_elicitation_result,
-                input_queue=command_queue if keyboard_controls else None,
+                input_queue=evaluation_input_queue(),
                 stop_event=stop_event,
             )
             attach_previous_elicitation_engagement(result, last_elicitation_result, score)
@@ -2261,18 +2318,34 @@ def run_continuous_live_dialog(
         pending_participant_turns = []
 
     def record_final_elicitation_evaluation():
-        nonlocal sequence_index, last_elicitation_result
-        if not evaluation_elicitation or not last_elicitation_result:
+        nonlocal sequence_index, last_elicitation_result, final_evaluation_recorded
+        if final_evaluation_recorded or not evaluation_elicitation:
             return
 
-        score = prompt_previous_elicitation_engagement(
-            last_elicitation_result,
-            input_queue=command_queue if keyboard_controls else None,
+        engagement_score = ""
+        event_phase = current_phase
+        event_strategy = ""
+        event_prompt_id = ""
+        if last_elicitation_result:
+            engagement_score = prompt_previous_elicitation_engagement(
+                last_elicitation_result,
+                input_queue=evaluation_input_queue(),
+                stop_event=None,
+            )
+            event_phase = last_elicitation_result.get("phase", current_phase)
+            event_strategy = last_elicitation_result.get("strategy", "")
+            event_prompt_id = last_elicitation_result.get("prompt_id", "")
+
+        confidence_score = prompt_creative_confidence(
+            "end",
+            input_queue=evaluation_input_queue(),
             stop_event=None,
         )
-        if score == "":
+        if engagement_score == "" and confidence_score == "":
+            final_evaluation_recorded = True
             return
 
+        now = timestamp_from_epoch()
         sequence_index += 1
         append_transcript_event(
             transcript_log_path,
@@ -2280,18 +2353,23 @@ def run_continuous_live_dialog(
             {
                 "sequence_index": sequence_index,
                 "robot_turn_index": robot_turn_index,
-                "event_type": "elicitation_evaluation",
-                "timestamp": timestamp_from_epoch(),
+                "event_type": "session_end_evaluation",
+                "timestamp": now,
+                "start_timestamp": now,
+                "end_timestamp": now,
                 "speaker": "Researcher",
-                "text": "Final elicitation engagement score",
-                "phase": last_elicitation_result.get("phase", current_phase),
-                "strategy": last_elicitation_result.get("strategy", ""),
-                "prompt_id": last_elicitation_result.get("prompt_id", ""),
+                "text": "Session-end engagement and creative confidence scores",
+                "phase": event_phase,
+                "strategy": event_strategy,
+                "prompt_id": event_prompt_id,
                 "source": "manual_evaluation",
-                "elicitation_engagement_score": score,
+                "elicitation_engagement_score": engagement_score,
+                "creative_confidence_score": confidence_score,
+                "evaluation_moment": "end",
             },
         )
         last_elicitation_result = None
+        final_evaluation_recorded = True
 
     def handle_command(line):
         nonlocal current_phase, elicitation_mode
@@ -2384,6 +2462,10 @@ def run_continuous_live_dialog(
 
         print(f"Unrecognized live control: {text}")
         return True
+
+    record_session_start_evaluation()
+    if stop_event.is_set():
+        return
 
     listener.start()
     try:
@@ -2542,7 +2624,7 @@ def is_elicitation_result(result):
     return strategy in MODE_REGISTRY["elicitation"]
 
 
-def parse_engagement_score(value):
+def parse_1_100_score(value):
     text = str(value or "").strip()
     if not text or text.lower() in {"skip", "na", "n/a", "none"}:
         return ""
@@ -2554,17 +2636,11 @@ def parse_engagement_score(value):
     return round(score, 2)
 
 
-def prompt_previous_elicitation_engagement(previous_result, input_queue=None, stop_event=None):
-    if not previous_result:
-        print("[Evaluation] First elicitation prompt; the first completed window can be scored at the next elicitation prompt.")
-        return ""
+def parse_engagement_score(value):
+    return parse_1_100_score(value)
 
-    label = (
-        f"{previous_result.get('phase', '')}/{previous_result.get('strategy', '')} "
-        f"{previous_result.get('prompt_id', '')}"
-    ).strip()
-    prompt = f"[Evaluation] Engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
 
+def prompt_1_100_score(prompt, input_queue=None, stop_event=None):
     while True:
         if input_queue is None:
             try:
@@ -2589,9 +2665,34 @@ def prompt_previous_elicitation_engagement(previous_result, input_queue=None, st
                 stop_event.set()
             return ""
         try:
-            return parse_engagement_score(text)
+            return parse_1_100_score(text)
         except ValueError:
             print("Please enter a number from 1 to 100, or press Enter to skip.")
+
+
+def prompt_start_elicitation_engagement(input_queue=None, stop_event=None):
+    prompt = "[Evaluation] Engagement at start of conversation before first elicitation strategy, 1-100; Enter/skip to omit: "
+    return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
+
+
+def prompt_creative_confidence(moment, input_queue=None, stop_event=None):
+    moment_label = (moment or "").strip().lower()
+    suffix = f" ({moment_label}, 1-100; Enter/skip to omit): " if moment_label else " (1-100; Enter/skip to omit): "
+    prompt = f"[Evaluation] How confident are you in your creative abilities?{suffix}"
+    return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
+
+
+def prompt_previous_elicitation_engagement(previous_result, input_queue=None, stop_event=None):
+    if not previous_result:
+        print("[Evaluation] First elicitation prompt; the first completed window can be scored at the next elicitation prompt.")
+        return ""
+
+    label = (
+        f"{previous_result.get('phase', '')}/{previous_result.get('strategy', '')} "
+        f"{previous_result.get('prompt_id', '')}"
+    ).strip()
+    prompt = f"[Evaluation] Engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
+    return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
 
 
 def attach_previous_elicitation_engagement(result, previous_result, score):
@@ -2700,7 +2801,7 @@ def main():
         "--evaluation-elicitation",
         action="store_true",
         dest="evaluation_elicitation",
-        help="In live scheduled/fixed elicitation mode, ask the researcher for a 1-100 engagement score before each new elicitation prompt and log it for the previous elicitation window.",
+        help="In live scheduled/fixed elicitation mode, ask the researcher for 1-100 start/end evaluation scores, including engagement and creative-confidence ratings.",
     )
     parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="passive", help="Robot style guidance")
     parser.add_argument("--role-mode", choices=["off", "facilitator", "solutionist"], default="facilitator", help="Robot role guidance")

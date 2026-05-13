@@ -88,11 +88,13 @@ Example full run:
 python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --elicitation-mode scheduled --style-mode passive --initiative reactive
 ```
 
-For elicitation-window engagement evaluation, add `--evaluation_elicitation`.
-Before each new prompt-bank elicitation, the console asks for a 1-100 score for
-the previous elicitation window. The score is written to `logs/transcript.csv`
-with the previous prompt metadata for analysis. When you type `exit`, the
-console asks once more for the final open elicitation window.
+For elicitation-window evaluation, add `--evaluation_elicitation`. The console
+asks for start engagement before the first elicitation strategy, asks "How
+confident are you in your creative abilities?" at the start and end, and asks
+for 1-100 engagement before each later prompt-bank elicitation to score the
+previous window. Scores are written to `logs/transcript.csv` with evaluation
+metadata for analysis. When you type `exit`, the console asks once more for the
+final open elicitation window.
 
 Useful live toggles:
 ```bash
