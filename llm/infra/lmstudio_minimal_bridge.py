@@ -577,7 +577,13 @@ def parse_trigger_words(value):
 def text_contains_trigger_word(text, trigger_words=DEFAULT_TRIGGER_WORDS):
     lower_text = (text or "").lower()
     for word in parse_trigger_words(trigger_words):
-        pattern = r"(?<![a-z0-9_])" + re.escape(word.lower()) + r"(?![a-z0-9_])"
+        w = word.lower()
+        # Treat common mis-hearings and stems of 'pepper' as triggers (paper, papa, peper, paperwork...)
+        if w == "pepper":
+            alt = r"(?:pepper|paper|papa|peper)"
+            pattern = r"\b" + alt + r"\w*\b"
+        else:
+            pattern = r"(?<![a-z0-9_])" + re.escape(w) + r"(?![a-z0-9_])"
         if re.search(pattern, lower_text):
             return True
     return False
@@ -1362,10 +1368,9 @@ def format_history_window(history, window_turns):
     window = history[-window_turns:]
     lines = []
     for item in window:
-        timestamp = item.get("timestamp", "")
         speaker = item.get("speaker", "Participant")
         text = item.get("text", "")
-        lines.append(f"{timestamp} {speaker}: {text}".strip())
+        lines.append(f"{speaker}: {text}".strip())
     return "\n".join(lines)
 
 
@@ -1467,7 +1472,7 @@ def build_messages(payload, prompt_row, elicitation_key):
     history_text = format_history_window(payload.get("conversation_history", []), history_window_turns)
     pending_turns = payload.get("recent_participant_turns", [])
     pending_text = "\n".join(
-        f"{item.get('timestamp', '')} {item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
+        f"{item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
         for item in pending_turns
     ) if pending_turns else "none"
 
@@ -1511,7 +1516,7 @@ def build_messages_context_only(payload):
     history_text = format_history_window(payload.get("conversation_history", []), history_window_turns)
     pending_turns = payload.get("recent_participant_turns", [])
     pending_text = "\n".join(
-        f"{item.get('timestamp', '')} {item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
+        f"{item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
         for item in pending_turns
     ) if pending_turns else "none"
 
@@ -1614,6 +1619,8 @@ def sanitize_reply(text, max_words=DEFAULT_REPLY_MAX_WORDS):
         return ""
 
     raw = re.sub(r"^\s*(?:Pepper|Robot|Assistant)\s*:\s*", "", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"^\s*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?\s*", "", raw)
+    raw = re.sub(r"^\s*\[?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?\]?\s*", "", raw)
 
     split_patterns = [
         r"\n\s*---",
@@ -2170,6 +2177,7 @@ def run_continuous_live_dialog(
     command_queue = queue.Queue()
     stop_event = threading.Event()
     last_proactive_epoch = 0.0
+    silence_started_epoch = None
     last_elicitation_result = None
     session_start_evaluation_recorded = False
     final_evaluation_recorded = False
@@ -2182,6 +2190,30 @@ def run_continuous_live_dialog(
 
     def current_initiative():
         return base_payload.get("mode_combo", {}).get("initiative", "reactive")
+
+    def maybe_trigger_proactive_silence(trigger_timestamp=None):
+        nonlocal silence_started_epoch, last_proactive_epoch
+        if current_initiative() != "proactive" or not pending_participant_turns:
+            silence_started_epoch = None
+            return False
+
+        if listener.has_active_speech:
+            silence_started_epoch = None
+            return False
+
+        now_epoch = float(trigger_timestamp or time.time())
+        if silence_started_epoch is None:
+            silence_started_epoch = now_epoch
+
+        elapsed = now_epoch - silence_started_epoch
+        cooldown_elapsed = now_epoch - last_proactive_epoch
+        if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
+            last_proactive_epoch = now_epoch
+            silence_started_epoch = None
+            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
+            return True
+
+        return False
 
     def refresh_strategy_sequences():
         nonlocal strategy_sequences, used_strategies
@@ -2509,21 +2541,7 @@ def run_continuous_live_dialog(
 
             event = listener.get_event(timeout=0.2)
             if event is None:
-                if current_initiative() == "proactive" and pending_participant_turns:
-                    if listener.has_active_speech:
-                        silence_started_epoch = None
-                        continue
-
-                    now_epoch = time.time()
-                    if silence_started_epoch is None:
-                        silence_started_epoch = now_epoch
-
-                    elapsed = now_epoch - silence_started_epoch
-                    cooldown_elapsed = now_epoch - last_proactive_epoch
-                    if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
-                        last_proactive_epoch = now_epoch
-                        silence_started_epoch = None
-                        trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
+                maybe_trigger_proactive_silence()
                 continue
 
             event_type = event.get("type")
@@ -2568,6 +2586,7 @@ def run_continuous_live_dialog(
                     f"[{event.get('end_timestamp', '')} {event.get('speaker', 'Participant')}] "
                     "No speech recognized."
                 )
+                maybe_trigger_proactive_silence(epoch_from_timestamp(event.get("end_timestamp")) or time.time())
                 continue
 
             if event_type in {"warning", "error"}:
