@@ -16,6 +16,21 @@ from PIL import Image, ImageDraw, ImageFont
 PARTICIPANT_DEFAULTS = ("P1", "P2", "Participant", "participant", "Human")
 ROBOT_DEFAULTS = ("Robot", "Pepper", "Facilitator", "robot", "pepper")
 NON_ELICITATION_STRATEGIES = {"", "none", "nan", "context_only", "normal", "baseline"}
+PHASE_SORT_ORDER = {"divergence": 0, "convergence": 1}
+STRATEGY_SORT_ORDER = {
+    "generative": 0,
+    "elaboration_evidence": 1,
+    "elaborative": 1,
+    "perspective_shift": 2,
+    "perspective": 2,
+}
+EVALUATION_MOMENT_SORT_ORDER = {
+    "start": 0,
+    "after_previous_elicitation": 1,
+    "direct_window": 2,
+    "end": 3,
+    "unspecified": 99,
+}
 ENGAGEMENT_SCORE_ALIASES = (
     "elicitation_engagement_score",
     "evaluation_elicitation_score",
@@ -531,21 +546,17 @@ def compute_transcript_metrics(
     ) / 3.0
     metrics["vocal_activation_score"] = clipped_score(50.0 + 15.0 * activation_raw)
 
-    window_minutes = (pd.to_numeric(metrics["participant_speaking_time_seconds"], errors="coerce") / 60.0).replace(0, np.nan)
-    backchannels_per_speaking_minute = (
-        pd.to_numeric(metrics["backchannel_count"], errors="coerce") / window_minutes
-    ).replace([np.inf, -np.inf], np.nan).fillna(0.0)
-    laughter_per_speaking_minute = (
-        pd.to_numeric(metrics["laughter_count"], errors="coerce") / window_minutes
-    ).replace([np.inf, -np.inf], np.nan).fillna(0.0)
-    overlap_per_window = pd.to_numeric(metrics["cooperative_overlap_count"], errors="coerce").fillna(0.0)
-    metrics["connection_cue_score"] = clipped_score(
-        25.0 * pd.to_numeric(metrics["adjacency_response_success"], errors="coerce").fillna(0.0)
-        + 30.0 * np.minimum(backchannels_per_speaking_minute / 2.0, 1.0)
-        + 20.0 * np.minimum(laughter_per_speaking_minute / 1.0, 1.0)
-        + 15.0 * np.minimum(overlap_per_window / 2.0, 1.0)
-        + 10.0 * np.minimum(pd.to_numeric(metrics["connection_cues_per_minute"], errors="coerce").fillna(0.0) / 3.0, 1.0)
+    participant_speaking_minutes = (
+        pd.to_numeric(metrics["participant_speaking_time_seconds"], errors="coerce") / 60.0
+    ).replace(0, np.nan)
+    connection_cue_count = (
+        pd.to_numeric(metrics["backchannel_count"], errors="coerce").fillna(0.0)
+        + pd.to_numeric(metrics["laughter_count"], errors="coerce").fillna(0.0)
+        + pd.to_numeric(metrics["cooperative_overlap_count"], errors="coerce").fillna(0.0)
     )
+    metrics["connection_cue_rate"] = (
+        connection_cue_count / participant_speaking_minutes
+    ).replace([np.inf, -np.inf], np.nan).fillna(0.0).round(3)
     return metrics
 
 
@@ -619,22 +630,71 @@ def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, m
     return lines or [""]
 
 
+def format_chart_label(label: object) -> str:
+    return " ".join(str(label).replace("_", " ").replace("/", " / ").split())
+
+
+def short_strategy_label(strategy: object) -> str:
+    normalized = str(strategy).strip().lower()
+    return {
+        "elaboration_evidence": "elaborative",
+        "perspective_shift": "perspective",
+        "context_only": "context",
+    }.get(normalized, format_chart_label(strategy))
+
+
+def format_phase_strategy_label(phase: object, strategy: object) -> str:
+    return f"{short_strategy_label(strategy)}\n{format_chart_label(phase)}"
+
+
+def format_evaluation_moment_label(moment: object) -> str:
+    normalized = str(moment).strip().lower()
+    return {
+        "after_previous_elicitation": "after\nelicitation",
+        "direct_window": "direct\nwindow",
+    }.get(normalized, format_chart_label(moment))
+
+
+def draw_centered_x_label(
+    draw: ImageDraw.ImageDraw,
+    label: str,
+    center_x: float,
+    top_y: float,
+    bold_font: ImageFont.ImageFont,
+    regular_font: ImageFont.ImageFont,
+) -> None:
+    lines = str(label).splitlines()
+    if len(lines) >= 2:
+        strategy, phase = lines[0], lines[1]
+        sw, sh = _text_size(draw, strategy, bold_font)
+        pw, ph = _text_size(draw, phase, regular_font)
+        draw.text((center_x - sw / 2, top_y), strategy, fill="#111827", font=bold_font)
+        draw.text((center_x - pw / 2, top_y + sh + 6), phase, fill="#111827", font=regular_font)
+        return
+
+    text = lines[0] if lines else ""
+    tw, _ = _text_size(draw, text, bold_font)
+    draw.text((center_x - tw / 2, top_y), text, fill="#111827", font=bold_font)
+
+
 def draw_bar_chart(series: ChartSeries) -> None:
     labels = series.labels
     values = [0.0 if pd.isna(v) else float(v) for v in series.values]
     if not labels:
         return
 
-    width, height = 1400, 900
-    margin_left, margin_right, margin_top, margin_bottom = 130, 60, 95, 190
+    width, height = 1600, 1000
+    margin_left, margin_right, margin_top, margin_bottom = 140, 45, 110, 150
     plot_w = width - margin_left - margin_right
     plot_h = height - margin_top - margin_bottom
     image = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(image)
-    title_font = _font(34, bold=True)
-    label_font = _font(21)
-    small_font = _font(18)
-    axis_font = _font(20, bold=True)
+    title_font = _font(46, bold=True)
+    label_font = _font(27)
+    label_bold_font = _font(34, bold=True)
+    value_font = _font(52, bold=True)
+    tick_font = _font(25)
+    axis_font = _font(31, bold=True)
 
     palette = ["#3465a4", "#4e9a06", "#c17d11", "#75507b", "#cc0000", "#2e3436"]
     title_w, _ = _text_size(draw, series.title, title_font)
@@ -648,7 +708,7 @@ def draw_bar_chart(series: ChartSeries) -> None:
     max_value = max(values) if values else 1.0
     if max_value <= 0:
         max_value = 1.0
-    y_max = max_value * 1.15
+    y_max = max_value * 1.25
     tick_count = 5
     for i in range(tick_count + 1):
         frac = i / tick_count
@@ -657,38 +717,38 @@ def draw_bar_chart(series: ChartSeries) -> None:
         draw.line([(x0 - 8, y), (x0, y)], fill="#2f3a45", width=2)
         draw.line([(x0, y), (x1, y)], fill="#e6e8eb", width=1)
         tick = f"{val:.1f}" if y_max < 20 else f"{val:.0f}"
-        tw, th = _text_size(draw, tick, small_font)
-        draw.text((x0 - tw - 14, y - th / 2), tick, fill="#374151", font=small_font)
+        tw, th = _text_size(draw, tick, tick_font)
+        draw.text((x0 - tw - 20, y - th / 2), tick, fill="#374151", font=tick_font)
 
     n = len(labels)
-    gap = max(8, int(plot_w * 0.02))
-    bar_slot = plot_w / n
-    bar_w = max(22, min(90, int(bar_slot * 0.56)))
+    bar_gap = 10 if n > 1 else 0
+    bar_w = max(64, min(350, int((plot_w - bar_gap * (n - 1)) / n)))
+    cluster_w = n * bar_w + bar_gap * (n - 1)
+    if cluster_w > plot_w:
+        bar_gap = 4 if n > 1 else 0
+        bar_w = max(44, int((plot_w - bar_gap * (n - 1)) / n))
+        cluster_w = n * bar_w + bar_gap * (n - 1)
+    cluster_x0 = x0 + (plot_w - cluster_w) / 2
     for i, (label, value) in enumerate(zip(labels, values)):
-        center = x0 + bar_slot * (i + 0.5)
-        bar_x0 = center - bar_w / 2
-        bar_x1 = center + bar_w / 2
+        bar_x0 = cluster_x0 + i * (bar_w + bar_gap)
+        bar_x1 = bar_x0 + bar_w
+        center = bar_x0 + bar_w / 2
         bar_h = 0 if y_max == 0 else (value / y_max) * plot_h
         bar_y0 = y1 - bar_h
         color = palette[i % len(palette)]
         draw.rounded_rectangle([bar_x0, bar_y0, bar_x1, y1], radius=5, fill=color)
         value_text = f"{value:.2f}" if abs(value) < 10 else f"{value:.1f}"
-        vw, vh = _text_size(draw, value_text, small_font)
-        draw.text((center - vw / 2, max(y0, bar_y0 - vh - 8)), value_text, fill="#111827", font=small_font)
+        vw, vh = _text_size(draw, value_text, value_font)
+        draw.text((center - vw / 2, max(y0, bar_y0 - vh - 14)), value_text, fill="#111827", font=value_font)
 
-        wrapped = wrap_text(draw, label, label_font, int(bar_slot - gap))
-        ty = y1 + 18
-        for line in wrapped[:4]:
-            lw, lh = _text_size(draw, line, label_font)
-            draw.text((center - lw / 2, ty), line, fill="#111827", font=label_font)
-            ty += lh + 4
+        draw_centered_x_label(draw, label, center, y1 + 18, label_bold_font, label_font)
 
     yw, yh = _text_size(draw, series.y_label, axis_font)
-    ylabel_img = Image.new("RGBA", (yw + 12, yh + 12), (255, 255, 255, 0))
+    ylabel_img = Image.new("RGBA", (yw + 20, yh + 20), (255, 255, 255, 0))
     ydraw = ImageDraw.Draw(ylabel_img)
-    ydraw.text((6, 6), series.y_label, fill="#1f2933", font=axis_font)
+    ydraw.text((10, 10), series.y_label, fill="#1f2933", font=axis_font)
     rotated = ylabel_img.rotate(90, expand=True)
-    image.paste(rotated, (22, int(y0 + plot_h / 2 - rotated.height / 2)), rotated)
+    image.paste(rotated, (20, int(y0 + plot_h / 2 - rotated.height / 2)), rotated)
 
     series.output_path.parent.mkdir(parents=True, exist_ok=True)
     image.save(series.output_path)
@@ -718,7 +778,38 @@ def chart_group_means(
     grouped = grouped.dropna(subset=[metric])
     if grouped.empty:
         return
-    labels = grouped[group_cols].astype(str).agg(" / ".join, axis=1).tolist()
+    sort_cols = []
+    if "phase" in grouped.columns:
+        grouped["_phase_sort"] = (
+            grouped["phase"].astype(str).str.strip().str.lower().map(PHASE_SORT_ORDER).fillna(99)
+        )
+        sort_cols.append("_phase_sort")
+    if "strategy" in grouped.columns:
+        grouped["_strategy_sort"] = (
+            grouped["strategy"].astype(str).str.strip().str.lower().map(STRATEGY_SORT_ORDER).fillna(99)
+        )
+        sort_cols.append("_strategy_sort")
+    if group_cols == ["evaluation_moment"] and "evaluation_moment" in grouped.columns:
+        grouped["_moment_sort"] = (
+            grouped["evaluation_moment"]
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .map(EVALUATION_MOMENT_SORT_ORDER)
+            .fillna(99)
+        )
+        sort_cols.append("_moment_sort")
+    if sort_cols:
+        grouped = grouped.sort_values(sort_cols, kind="stable").drop(columns=sort_cols)
+    if "phase" in group_cols and "strategy" in group_cols:
+        labels = [
+            format_phase_strategy_label(row["phase"], row["strategy"])
+            for _, row in grouped.iterrows()
+        ]
+    elif group_cols == ["evaluation_moment"]:
+        labels = grouped["evaluation_moment"].map(format_evaluation_moment_label).tolist()
+    else:
+        labels = grouped[group_cols].astype(str).agg(" / ".join, axis=1).map(format_chart_label).tolist()
     values = grouped[metric].astype(float).tolist()
     draw_bar_chart(ChartSeries(labels, values, title, y_label, output_path))
 
@@ -729,12 +820,11 @@ def draw_dashboard(chart_dir: Path, output_path: Path) -> None:
         "evaluation_engagement_by_moment.png",
         "creative_confidence_by_moment.png",
         "vocal_activation_by_phase_strategy.png",
-        "connection_cue_score_by_phase_strategy.png",
+        "connection_cue_rate_by_phase_strategy.png",
         "response_delay_by_phase_strategy.png",
         "speaking_time_by_phase_strategy.png",
         "speech_rate_by_phase_strategy.png",
         "long_pause_burden_by_phase_strategy.png",
-        "connection_cues_per_minute_by_phase_strategy.png",
         "idea_fluency_by_phase_strategy.png",
         "elaboration_units_by_phase_strategy.png",
         "elaboration_units_per_idea_by_phase_strategy.png",
@@ -744,16 +834,16 @@ def draw_dashboard(chart_dir: Path, output_path: Path) -> None:
     if not chart_paths:
         return
 
-    thumb_w, thumb_h = 700, 450
+    thumb_w, thumb_h = 850, 540
     cols = 2
     rows = int(np.ceil(len(chart_paths) / cols))
-    title_h = 70
+    title_h = 86
     image = Image.new("RGB", (cols * thumb_w, title_h + rows * thumb_h), "white")
     draw = ImageDraw.Draw(image)
-    title_font = _font(34, bold=True)
+    title_font = _font(46, bold=True)
     title = "Pepper Elicitation Measurement Dashboard"
     tw, th = _text_size(draw, title, title_font)
-    draw.text(((image.width - tw) / 2, 20), title, fill="#111827", font=title_font)
+    draw.text(((image.width - tw) / 2, 22), title, fill="#111827", font=title_font)
 
     for idx, path in enumerate(chart_paths):
         with Image.open(path) as chart:
@@ -870,7 +960,7 @@ def save_outputs(args: argparse.Namespace) -> None:
             chart_group_means(
                 windows,
                 "elicitation_engagement_score",
-                "Mean Elicitation Engagement Score",
+                "Mean Self-Reported Engagement Score",
                 "1-100 score",
                 chart_dir / "elicitation_engagement_by_phase_strategy.png",
             )
@@ -901,7 +991,7 @@ def save_outputs(args: argparse.Namespace) -> None:
                 "adjacency_response_success",
                 "connection_cues_per_minute",
                 "vocal_activation_score",
-                "connection_cue_score",
+                "connection_cue_rate",
             ],
             ["phase", "strategy"],
         )
@@ -930,10 +1020,10 @@ def save_outputs(args: argparse.Namespace) -> None:
         )
         chart_group_means(
             transcript_metrics,
-            "connection_cue_score",
-            "Mean Connection Cue Score",
-            "0-100 index",
-            chart_dir / "connection_cue_score_by_phase_strategy.png",
+            "connection_cue_rate",
+            "Mean Connection Cue Rate",
+            "Cues per speaking minute",
+            chart_dir / "connection_cue_rate_by_phase_strategy.png",
         )
         chart_group_means(
             transcript_metrics,
@@ -949,14 +1039,6 @@ def save_outputs(args: argparse.Namespace) -> None:
             "Seconds per minute",
             chart_dir / "long_pause_burden_by_phase_strategy.png",
         )
-        chart_group_means(
-            transcript_metrics,
-            "connection_cues_per_minute",
-            "Mean Connection Cues per Minute",
-            "Cues per minute",
-            chart_dir / "connection_cues_per_minute_by_phase_strategy.png",
-        )
-
     if args.manual_measures:
         manual = load_manual_measures(args.manual_measures)
         manual.to_csv(output_dir / "manual_window_measures_cleaned.csv", index=False)
@@ -973,7 +1055,7 @@ def save_outputs(args: argparse.Namespace) -> None:
         )
         manual_summary.to_csv(output_dir / "manual_summary_by_phase_strategy.csv", index=False)
         summary_rows.append(manual_summary)
-        chart_group_means(manual, "idea_fluency", "Mean Idea Fluency", "Distinct ideas", chart_dir / "idea_fluency_by_phase_strategy.png")
+        chart_group_means(manual, "idea_fluency", "Mean Idea Count", "Distinct ideas", chart_dir / "idea_fluency_by_phase_strategy.png")
         chart_group_means(manual, "elaboration_units", "Mean Elaboration Units", "Elaborative units", chart_dir / "elaboration_units_by_phase_strategy.png")
         chart_group_means(
             manual,

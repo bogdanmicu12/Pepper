@@ -26,7 +26,7 @@ In continuous Focusrite mode:
 - Input 2 is `Participant 2`.
 - The microphones stay live and speech is segmented automatically.
 - Live mode supports experiment controls: `--elicitation-mode off|scheduled|perspective_shift|generative|elaboration_evidence`, `--style-mode off|passive|assertive|supportive`, `--initiative off|reactive|proactive`, `--role-mode off|facilitator|solutionist`, `--group-id`, `--theme-id`, and `--phase`.
-- In reactive mode, saying `Pepper` triggers the same robot intervention as the console `ROBOT` command.
+- In reactive mode, saying `Pepper` or the common transcript misrecognition `Paper` triggers the same robot intervention as the console `ROBOT` command.
 - In proactive mode, the robot triggers after `--proactive-silence-threshold` seconds of silence.
 - Full event transcripts are written to `logs/transcript.csv`.
 - Add `--evaluation_elicitation` to prompt the researcher for 1-100 evaluation

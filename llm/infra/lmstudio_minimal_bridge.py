@@ -53,7 +53,10 @@ DEFAULT_FOCUSRITE_PARTICIPANTS = (
     (1, "Participant 1"),
     (2, "Participant 2"),
 )
-DEFAULT_TRIGGER_WORDS = ("pepper",)
+DEFAULT_TRIGGER_WORDS = ("pepper", "paper")
+TRIGGER_WORD_ALIASES = {
+    "pepper": ("paper",),
+}
 DEFAULT_PROACTIVE_STRUGGLE_CUES = (
     "i don't know",
     "we're stuck",
@@ -102,6 +105,7 @@ GLOBAL_CONVERSATION_HISTORY = []
 
 DEFAULT_PEPPER_VOCABULARY = [
     "pepper",
+    "paper",
     "robot",
     "hello",
     "continue",
@@ -133,7 +137,7 @@ ELICITATION_ALIASES = {
 
 MODE_DEFAULTS = {
     "elicitation": "perspective_shift",
-    "style": "passive",
+    "style": "assertive",
     "initiative": "reactive",
     "role": "facilitator",
 }
@@ -141,24 +145,24 @@ MODE_DEFAULTS = {
 STYLE_SETUP = {
     "passive": "Use a gentle, low-pressure, non-directive tone.",
     "assertive": "Use a concise and direct facilitation tone while staying neutral.",
-    "supportive": "Use a warm, encouraging, and empathetic tone.",
+    "supportive": "Use a warm, calm, encouraging tone with natural spoken phrasing.",
 }
 
 VOCAL_DELIVERY = {
     "passive": {
-        "speed": 0.9,          # Normal to slightly slower speech rate (0.5-1.5, 1.0 is default)
-        "volume": 0.75,        # Reduced volume for gentleness (0.0-1.0, 0.7 is default)
-        "pitch": 0.95,         # Slightly lower pitch (0.5-1.5, 1.0 is default)
+        "speed": 88,           # NAOqi speech speed percentage; 100 is default
+        "volume": 0.62,        # Softer volume for low-pressure delivery
+        "pitch": 0.96,         # Best effort; ignored by NAOqi versions that do not support it
     },
     "assertive": {
-        "speed": 1.2,          # Faster speech rate
-        "volume": 1.0,         # Elevated/full volume
-        "pitch": 0.9,          # Flatter pitch (lower)
+        "speed": 108,          # Slightly quicker while still intelligible
+        "volume": 0.78,        # Clear but not harsh
+        "pitch": 0.98,
     },
     "supportive": {
-        "speed": 0.85,         # Slower speech rate
-        "volume": 0.65,        # Reduced volume
-        "pitch": 1.1,          # Dynamic pitch (higher/more varied)
+        "speed": 82,           # Slower, more soothing delivery
+        "volume": 0.58,        # Gentle default volume
+        "pitch": 0.97,
     },
 }
 
@@ -571,7 +575,15 @@ def parse_trigger_words(value):
         text = str(word).strip().lower()
         if text:
             cleaned.append(text)
-    return cleaned or list(DEFAULT_TRIGGER_WORDS)
+
+    expanded = []
+    seen = set()
+    for word in cleaned or list(DEFAULT_TRIGGER_WORDS):
+        for candidate in (word, *TRIGGER_WORD_ALIASES.get(word, ())):
+            if candidate and candidate not in seen:
+                expanded.append(candidate)
+                seen.add(candidate)
+    return expanded
 
 
 def text_contains_trigger_word(text, trigger_words=DEFAULT_TRIGGER_WORDS):
@@ -1202,28 +1214,32 @@ class PepperIO:
             except Exception:
                 pass
 
-    def set_vocal_params(self, speed=1.0, volume=0.7, pitch=1.0):
+    def set_vocal_params(self, speed=100, volume=0.7, pitch=1.0):
         """Set vocal delivery parameters for speech.
         
         Args:
-            speed: Speech rate (0.5-1.5, default 1.0)
+            speed: Speech rate percentage; 100 is Pepper's default
             volume: Volume level (0.0-1.0, default 0.7)
-            pitch: Pitch level (0.5-1.5, default 1.0)
+            pitch: Best-effort pitch level for NAOqi versions that support it
         """
         if not self.tts:
             return
         try:
-            # Set speech speed (parameter name varies by NAOqi version)
-            self.tts.setParameter("speed", speed)
-            # Set volume
-            self.tts.setVolume(volume)
-            # Set pitch
-            self.tts.setParameter("pitch", pitch)
+            speed_value = float(speed)
+            if speed_value <= 2.0:
+                speed_value *= 100.0
+            self.tts.setParameter("speed", speed_value)
+            self.tts.setVolume(float(volume))
+            try:
+                self.tts.setParameter("pitch", float(pitch))
+            except Exception:
+                if float(pitch) >= 1.0:
+                    self.tts.setParameter("pitchShift", float(pitch))
         except Exception as e:
             # Silently fail if parameters not supported in this NAOqi version
             pass
 
-    def say(self, text, style="passive"):
+    def say(self, text, style="supportive"):
         if not text:
             return
         if self.tts:
@@ -1272,7 +1288,11 @@ class PepperIO:
         return ""
 
 
-def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
+def vocal_params_for_style(style):
+    return dict(VOCAL_DELIVERY.get(style) or VOCAL_DELIVERY[MODE_DEFAULTS["style"]])
+
+
+def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd, speed=100, volume=0.7, pitch=1.0):
     if not text:
         return
 
@@ -1284,6 +1304,12 @@ def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
         str(port),
         "--say",
         text,
+        "--speed",
+        str(speed),
+        "--volume",
+        str(volume),
+        "--pitch",
+        str(pitch),
     ]
     completed = subprocess.run(command, capture_output=True, text=True)
     if completed.returncode != 0:
@@ -1304,7 +1330,7 @@ def check_tcp_port(host, port, timeout=1.5):
 def make_resilient_sender(sender, label="Pepper TTS"):
     failed_once = {"value": False}
 
-    def resilient_sender(text, style="passive"):
+    def resilient_sender(text, style="supportive"):
         try:
             sender(text, style=style)
         except Exception as error:
@@ -1335,13 +1361,15 @@ def build_pepper_tts_sender(args):
 
         print("naoqi SDK unavailable in Python 3; using Python 2.7 Pepper TTS bridge.")
 
-        def sender(text, style="passive"):
+        def sender(text, style="supportive"):
+            params = vocal_params_for_style(style)
             send_to_pepper_via_py27(
                 text=text,
                 ip=args.pepper_ip,
                 port=args.pepper_port,
                 script_path=legacy_script,
                 python_cmd=legacy_python_cmd,
+                **params,
             )
 
         return make_resilient_sender(sender), None
@@ -1355,7 +1383,7 @@ def build_pepper_tts_sender(args):
     pepper.connect()
     print(f"Connected to Pepper at {args.pepper_ip}:{args.pepper_port}")
 
-    def sender(text, style="passive"):
+    def sender(text, style="supportive"):
         pepper.say(text, style=style)
 
     return make_resilient_sender(sender), pepper
@@ -1419,7 +1447,7 @@ def get_optional_mode_value(payload, key):
 
 
 def get_delivery_style(payload):
-    return get_optional_mode_value(payload, "style") or "passive"
+    return get_optional_mode_value(payload, "style") or MODE_DEFAULTS["style"]
 
 
 def normalize_elicitation(value):
@@ -1973,7 +2001,7 @@ def run_session(session_payload):
             "timestamp": turn_timestamp,
         })
 
-        if speaker.lower() in {"robot", "pepper"}:
+        if speaker.lower() in {"robot", "pepper", "paper"}:
             continue
 
         pending_participant_turns.append({
@@ -1994,7 +2022,7 @@ def run_session(session_payload):
         if initiative_mode == "reactive":
             # Reactive: only intervene if the robot's name is called in the latest participant text
             last_text = pending_participant_turns[-1]["text"].lower() if pending_participant_turns else ""
-            if "pepper" in last_text or "robot" in last_text:
+            if "pepper" in last_text or "robot" in last_text or "paper" in last_text:
                 should_intervene = should_intervene or True
             else:
                 # If not explicitly called, skip intervention unless forced
@@ -2058,7 +2086,7 @@ def console_receive():
     return input("Participant: ").strip()
 
 
-def console_send(text, style="passive"):
+def console_send(text, style="supportive"):
     print(f"Robot: {text}")
 
 
@@ -2128,7 +2156,7 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
         })
 
         print_robot_turn(result)
-        send_fn(result["reply"], style=result.get("style", "passive"))
+        send_fn(result["reply"], style=result.get("style", MODE_DEFAULTS["style"]))
         sequence_index += 1
         append_robot_transcript_event(
             transcript_log_path,
@@ -2159,7 +2187,7 @@ def run_continuous_live_dialog(
     evaluation_elicitation=False,
 ):
     print("--- Continuous live dialog mode started ---")
-    print("Microphones are live. Say Pepper to trigger the robot. Press Ctrl+C to stop.")
+    print("Microphones are live. Say Pepper or Paper to trigger the robot. Press Ctrl+C to stop.")
 
     conversation_history = base_payload.setdefault("conversation_history", [])
     pending_participant_turns = []
@@ -2350,7 +2378,7 @@ def run_continuous_live_dialog(
 
         print_robot_trigger_reason(trigger_reason=trigger_reason, trigger_reasons=trigger_reasons)
         print_robot_turn(result)
-        send_fn(result["reply"], style=result.get("style", "passive"))
+        send_fn(result["reply"], style=result.get("style", MODE_DEFAULTS["style"]))
         robot_end_timestamp = timestamp_from_epoch()
         sequence_index += 1
         append_robot_transcript_event(
@@ -2854,7 +2882,7 @@ def main():
         dest="evaluation_elicitation",
         help="In live scheduled/fixed elicitation mode, ask the researcher for 1-100 start/end evaluation scores, including engagement and creative-confidence ratings.",
     )
-    parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="passive", help="Robot style guidance")
+    parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="assertive", help="Robot style guidance")
     parser.add_argument("--role-mode", choices=["off", "facilitator", "solutionist"], default="facilitator", help="Robot role guidance")
     parser.add_argument("--proactive-silence-threshold", type=float, default=PROACTIVE_SILENCE_THRESHOLD, help="Seconds of silence before proactive robot intervention")
     parser.add_argument("--no-live-keyboard-controls", action="store_true", help="Disable optional typed live controls while microphones run")
@@ -2893,7 +2921,7 @@ def main():
     parser.add_argument("--participant-2-channel", type=int, default=2, help="Focusrite input channel mapped to Participant 2")
     parser.add_argument("--participant-1-name", default="Participant 1", help="Speaker label for Focusrite participant 1")
     parser.add_argument("--participant-2-name", default="Participant 2", help="Speaker label for Focusrite participant 2")
-    parser.add_argument("--trigger-words", default="pepper", help="Comma-separated words that trigger the robot in continuous microphone mode")
+    parser.add_argument("--trigger-words", default="pepper,paper", help="Comma-separated words that trigger the robot in continuous microphone mode")
     parser.add_argument("--vad-start-rms", type=float, default=400.0, help="Continuous mode RMS threshold that starts a speech segment")
     parser.add_argument("--vad-stop-rms", type=float, default=220.0, help="Continuous mode RMS threshold below which audio counts as silence")
     parser.add_argument("--vad-end-silence-seconds", type=float, default=0.8, help="Continuous mode silence duration that ends a speech segment")
@@ -2942,7 +2970,7 @@ def main():
                 "log_path": DEFAULT_LOG_PATH,
                 "mode_combo": {
                     "elicitation": "perspective_shift",
-                    "style": "passive",
+                    "style": MODE_DEFAULTS["style"],
                     "initiative": "reactive",
                     "role": "facilitator",
                 },
@@ -3056,7 +3084,7 @@ def main():
             "audio_device": args.audio_device or "",
             "mode_combo": {
                 "elicitation": "perspective_shift",
-                "style": "passive",
+                "style": args.style_mode,
                 "initiative": chosen_initiative,
                 "role": "facilitator",
             },
@@ -3102,7 +3130,7 @@ def main():
             continuous_listener = build_continuous_audio_transcriber_from_args(args, participant_channel_map)
             payload["audio_device"] = continuous_listener.device_name
             continuous_listener.start()
-            print("Continuous microphone input enabled. Say Pepper to trigger the same action as the ROBOT command.")
+            print("Continuous microphone input enabled. Say Pepper or Paper to trigger the same action as the ROBOT command.")
 
         # Event queue and monitor thread for proactive silence detection
         event_queue = queue.Queue()
@@ -3254,7 +3282,7 @@ def main():
             )
             if say_from_intervene:
                 try:
-                    style = result.get("style", "passive")
+                    style = result.get("style", MODE_DEFAULTS["style"])
                     say_from_intervene(result["reply"], style=style)
                 except Exception as error:
                     print(f"Warning: Pepper TTS failed: {error}")
