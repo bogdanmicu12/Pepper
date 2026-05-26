@@ -144,8 +144,8 @@ MODE_DEFAULTS = {
 
 STYLE_SETUP = {
     "passive": "Use a gentle, low-pressure, non-directive tone.",
-    "assertive": "Use a concise and direct facilitation tone while staying neutral.",
-    "supportive": "Use a warm, calm, encouraging tone with natural spoken phrasing.",
+    "assertive": "Use a concise and direct facilitation tone while staying neutral. Be direct about ideas and suggesttions, be pushy and intervene more frequently to keep momentum. Use a more commanding tone to encourage participants to move forward and consider new directions. Don't be afraid to challenge ideas or suggest alternatives when the discussion stalls. Use words like 'You need to think about..' or 'Consider this...' to nudge participants towards new ideas.",
+    "supportive": "Use a warm, encouraging, and empathetic tone. Focus on building rapport and making participants feel comfortable sharing their ideas. Use positive reinforcement and affirmations to validate participants' contributions. Be patient and allow for more time when participants are struggling, offering gentle prompts or reframing to help them find their way without pressure. Use phrases like 'That's a great point, and it makes me think of...' or 'I see where you're coming from, and it could also be interesting to consider...' to build on participants' ideas in a supportive way.",
 }
 
 VOCAL_DELIVERY = {
@@ -1198,6 +1198,7 @@ class PepperIO:
         self.tts = ALProxy("ALTextToSpeech", self.ip, self.port)
         self.memory = ALProxy("ALMemory", self.ip, self.port)
         self.asr = ALProxy("ALSpeechRecognition", self.ip, self.port)
+        self.tts.setLanguage(self.language)
         self.asr.setLanguage(self.language)
 
         if self.vocabulary:
@@ -2887,7 +2888,7 @@ def main():
     parser.add_argument("--proactive-silence-threshold", type=float, default=PROACTIVE_SILENCE_THRESHOLD, help="Seconds of silence before proactive robot intervention")
     parser.add_argument("--no-live-keyboard-controls", action="store_true", help="Disable optional typed live controls while microphones run")
     parser.add_argument("--pepper", action="store_true", help="Use Pepper NAOqi I/O in live mode")
-    parser.add_argument("--pepper-ip", default="192.168.1.116", help="Pepper robot IP")
+    parser.add_argument("--pepper-ip", default="192.168.1.108", help="Pepper robot IP")
     parser.add_argument("--pepper-port", type=int, default=9559, help="Pepper NAOqi port")
     parser.add_argument("--pepper-language", default="English", help="Pepper ASR language")
     parser.add_argument("--pepper-vocabulary", help="Comma-separated vocabulary for Pepper ASR")
