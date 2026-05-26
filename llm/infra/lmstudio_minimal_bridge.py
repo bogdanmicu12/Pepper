@@ -36,7 +36,7 @@ DEFAULT_LOG_PATH = "logs/logs.csv"
 DEFAULT_TRANSCRIPT_LOG_PATH = "logs/transcript.csv"
 DEFAULT_DEEPGRAM_API_KEY = "1e2c44170806023c9a41217044208e89b466a040"
 DEFAULT_PEPPER_LEGACY_PYTHON = r"C:\Python27\python.exe"
-PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
+PROACTIVE_SILENCE_THRESHOLD = 7  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
 LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
 DEFAULT_AUDIO_INPUT_MODE = "focusrite"
@@ -592,7 +592,7 @@ def text_contains_trigger_word(text, trigger_words=DEFAULT_TRIGGER_WORDS):
         w = word.lower()
         # Treat common mis-hearings and stems of 'pepper' as triggers (paper, papa, peper, paperwork...)
         if w == "pepper":
-            alt = r"(?:pepper|paper|papa|peper)"
+            alt = r"(?:pepper|paper|papa|peper|piper)"
             pattern = r"\b" + alt + r"\w*\b"
         else:
             pattern = r"(?<![a-z0-9_])" + re.escape(w) + r"(?![a-z0-9_])"
