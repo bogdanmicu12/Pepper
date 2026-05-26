@@ -119,7 +119,7 @@ CONTENT_TYPE_BY_EXT = {
 }
 
 MODE_REGISTRY = {
-    "elicitation": ["perspective_shift", "generative", "elaboration_evidence"],
+    "elicitation": ["perspective_shift", "generative", "elaboration_evidence", "Neutral"],
     "style": ["passive", "assertive", "supportive"],
     "initiative": ["reactive", "proactive"],
     "role": ["facilitator", "solutionist"],
