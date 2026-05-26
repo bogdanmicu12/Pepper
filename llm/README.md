@@ -57,7 +57,7 @@ python infra/lmstudio_minimal_bridge.py --intervene --initiative reactive --pepp
 
 This keeps the same intervention logic as above:
 
-- reactive mode still triggers when the participant says Pepper or robot
+- reactive mode still triggers when the participant says Pepper, Paper, or robot
 - proactive mode still triggers after silence is detected
 - CHANGE still switches between divergence and convergence
 - the only difference is that Pepper speaks each LLM reply
@@ -79,20 +79,22 @@ python infra/lmstudio_minimal_bridge.py --live --deepgram-live
 
 This runs continuous microphone input by default. The microphones stay live, each Focusrite channel is segmented and transcribed independently, and speech is mapped as `Participant 1` on input 1 and `Participant 2` on input 2.
 
-Live mode now supports the same experiment controls as intervention mode. Defaults are `group_id=G01`, `theme_id=T1`, `phase=divergence`, scheduled elicitation every 4th robot reply, passive style, reactive initiative, and facilitator role. In reactive mode, saying `Pepper` triggers the robot. In proactive mode, the robot triggers after a silence window.
+Live mode now supports the same experiment controls as intervention mode. Defaults are `group_id=G01`, `theme_id=T1`, `phase=divergence`, scheduled elicitation every 4th robot reply, supportive style, reactive initiative, and facilitator role. In reactive mode, saying `Pepper` or `Paper` triggers the robot. In proactive mode, the robot triggers after a silence window.
 
 Pepper replies stay natural and context-aware, with a 100-word ceiling and cleanup for speaker labels, notes, markdown, multi-turn scripts, or long meta explanations before TTS.
 
 Example full run:
 ```bash
-python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --elicitation-mode scheduled --style-mode passive --initiative reactive
+python infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --elicitation-mode scheduled --style-mode supportive --initiative reactive
 ```
 
-For elicitation-window engagement evaluation, add `--evaluation_elicitation`.
-Before each new prompt-bank elicitation, the console asks for a 1-100 score for
-the previous elicitation window. The score is written to `logs/transcript.csv`
-with the previous prompt metadata for analysis. When you type `exit`, the
-console asks once more for the final open elicitation window.
+For elicitation-window evaluation, add `--evaluation_elicitation`. The console
+asks for start engagement before the first elicitation strategy, asks "How
+confident are you in your creative abilities?" at the start and end, and asks
+for 1-100 engagement before each later prompt-bank elicitation to score the
+previous window. Scores are written to `logs/transcript.csv` with evaluation
+metadata for analysis. When you type `exit`, the console asks once more for the
+final open elicitation window.
 
 Useful live toggles:
 ```bash
@@ -140,5 +142,5 @@ python infra/lmstudio_minimal_bridge.py --deepgram-audio path/to/audio.wav --dee
 
 - The LM Studio bridge runs in Python 3.
 - Pepper NAOqi TTS is available through the Python 2.7 helper at `pepper/tts.py`.
-- The bridge can speak to Pepper directly if NAOqi is installed in the Python 3 environment, or it can call the Python 2.7 relay automatically.
+- The bridge can speak to Pepper directly if NAOqi is installed in the Python 3 environment, or it can call the Python 2.7 relay automatically. Both paths apply the same softer supportive voice settings.
 - For now, Pepper input in live mode is console-based unless you add a separate ASR relay.

@@ -26,14 +26,15 @@ In continuous Focusrite mode:
 - Input 2 is `Participant 2`.
 - The microphones stay live and speech is segmented automatically.
 - Live mode supports experiment controls: `--elicitation-mode off|scheduled|perspective_shift|generative|elaboration_evidence`, `--style-mode off|passive|assertive|supportive`, `--initiative off|reactive|proactive`, `--role-mode off|facilitator|solutionist`, `--group-id`, `--theme-id`, and `--phase`.
-- In reactive mode, saying `Pepper` triggers the same robot intervention as the console `ROBOT` command.
+- In reactive mode, saying `Pepper` or the common transcript misrecognition `Paper` triggers the same robot intervention as the console `ROBOT` command.
 - In proactive mode, the robot triggers after `--proactive-silence-threshold` seconds of silence.
 - Full event transcripts are written to `logs/transcript.csv`.
-- Add `--evaluation_elicitation` to prompt the researcher for a 1-100 engagement
-  score before each new prompt-bank elicitation. The score is logged for the
-  previous elicitation window so it can be analyzed by phase and strategy. When
-  you type `exit`, the console asks once more for the final open elicitation
-  window.
+- Add `--evaluation_elicitation` to prompt the researcher for 1-100 evaluation
+  scores. It asks for start engagement before the first elicitation strategy,
+  asks "How confident are you in your creative abilities?" at the start and end,
+  and still logs mid-session engagement scores for the previous elicitation
+  window. When you type `exit`, the console asks once more for the final open
+  elicitation window.
 - The Deepgram API key is configured as the script default and can still be overridden with `--deepgram-api-key`.
 
 Example elicitation strategies: python llm/infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --phase divergence --elicitation-mode scheduled --intervention-every 4
