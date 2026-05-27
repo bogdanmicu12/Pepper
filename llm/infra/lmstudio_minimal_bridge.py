@@ -624,6 +624,7 @@ DEFAULT_NOVELTY_PREV_TURNS = 8
 DEFAULT_NOVELTY_MIN_NEW = 6
 PROACTIVE_TRIGGER_SCORE_THRESHOLD = 2.5
 PROACTIVE_TRIGGER_COOLDOWN_SECONDS = 20.0
+ROBOT_IDLE_REPLY_THRESHOLD_SECONDS = 180.0
 PROACTIVE_TRIGGER_WEIGHTS = {
     "trigger_word": 3.0,
     "struggle_cue": 2.5,
@@ -2210,6 +2211,7 @@ def run_continuous_live_dialog(
     last_elicitation_result = None
     session_start_evaluation_recorded = False
     final_evaluation_recorded = False
+    last_robot_reply_epoch = time.time()
 
     base_payload["phase"] = current_phase
     print_live_control_summary(base_payload, elicitation_mode, intervention_every, keyboard_controls)
@@ -2221,25 +2223,34 @@ def run_continuous_live_dialog(
         return base_payload.get("mode_combo", {}).get("initiative", "reactive")
 
     def maybe_trigger_proactive_silence(trigger_timestamp=None):
-        nonlocal silence_started_epoch, last_proactive_epoch
-        if current_initiative() != "proactive" or not pending_participant_turns:
+        nonlocal silence_started_epoch, last_proactive_epoch, last_robot_reply_epoch
+        if current_initiative() != "proactive":
             silence_started_epoch = None
             return False
+
+        now_epoch = float(trigger_timestamp or time.time())
+        cooldown_elapsed = now_epoch - last_proactive_epoch
 
         if listener.has_active_speech:
             silence_started_epoch = None
             return False
 
-        now_epoch = float(trigger_timestamp or time.time())
-        if silence_started_epoch is None:
-            silence_started_epoch = now_epoch
+        if pending_participant_turns:
+            if silence_started_epoch is None:
+                silence_started_epoch = now_epoch
 
-        elapsed = now_epoch - silence_started_epoch
-        cooldown_elapsed = now_epoch - last_proactive_epoch
-        if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
+            elapsed = now_epoch - silence_started_epoch
+            if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
+                last_proactive_epoch = now_epoch
+                silence_started_epoch = None
+                trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
+                return True
+            return False
+
+        if now_epoch - last_robot_reply_epoch >= float(ROBOT_IDLE_REPLY_THRESHOLD_SECONDS) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
             last_proactive_epoch = now_epoch
             silence_started_epoch = None
-            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
+            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence", allow_empty=True)
             return True
 
         return False
@@ -2340,23 +2351,24 @@ def run_continuous_live_dialog(
 
         return result
 
-    def trigger_robot(triggering_turn, trigger_reason=None, trigger_reasons=None):
-        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result
-        if not pending_participant_turns:
+    def trigger_robot(triggering_turn, trigger_reason=None, trigger_reasons=None, allow_empty=False):
+        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result, last_robot_reply_epoch, silence_started_epoch
+        if not pending_participant_turns and not allow_empty:
             return
 
         robot_turn_index += 1
+        participant_turns_for_reply = list(pending_participant_turns)
         request = dict(base_payload)
         request.update({
             "turn_index": robot_turn_index,
             "turn_timestamp": triggering_turn.get("timestamp", timestamp_from_epoch()),
             "phase": current_phase,
-            "last_user_utterance": format_participant_turns_text(pending_participant_turns),
-            "recent_participant_turns": list(pending_participant_turns),
+            "last_user_utterance": format_participant_turns_text(participant_turns_for_reply) if participant_turns_for_reply else request.get("context_fallback", "What should we focus on next from what you just said?"),
+            "recent_participant_turns": participant_turns_for_reply,
             "conversation_history": conversation_history,
         })
 
-        result = build_robot_result(request)
+        result = process_context_only(request) if allow_empty and not participant_turns_for_reply else build_robot_result(request)
         result_is_elicitation = is_elicitation_result(result)
         if evaluation_elicitation and result_is_elicitation and last_elicitation_result:
             score = prompt_previous_elicitation_engagement(
@@ -2381,6 +2393,7 @@ def run_continuous_live_dialog(
         print_robot_turn(result)
         send_fn(result["reply"], style=result.get("style", MODE_DEFAULTS["style"]))
         robot_end_timestamp = timestamp_from_epoch()
+        last_robot_reply_epoch = time.time()
         sequence_index += 1
         append_robot_transcript_event(
             transcript_log_path,
@@ -2395,7 +2408,7 @@ def run_continuous_live_dialog(
             base_payload.get("log_path"),
             request,
             result,
-            list(pending_participant_turns),
+            participant_turns_for_reply,
             robot_end_timestamp,
         )
         phase_reply_count[current_phase] += 1
