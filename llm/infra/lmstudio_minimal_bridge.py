@@ -38,7 +38,7 @@ DEFAULT_TRANSCRIPT_LOG_PATH = "logs/transcript.csv"
 DEFAULT_DEEPGRAM_API_KEY = ""
 DEEPGRAM_API_KEY_ENV_VAR = "DEEPGRAM_API_KEY"
 DEFAULT_PEPPER_LEGACY_PYTHON = r"C:\Python27\python.exe"
-PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
+PROACTIVE_SILENCE_THRESHOLD = 7  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
 LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
 DEFAULT_NAOQI_SDK_ROOT = (
@@ -60,7 +60,10 @@ DEFAULT_FOCUSRITE_PARTICIPANTS = (
     (1, "Participant 1"),
     (2, "Participant 2"),
 )
-DEFAULT_TRIGGER_WORDS = ("pepper",)
+DEFAULT_TRIGGER_WORDS = ("pepper", "paper")
+TRIGGER_WORD_ALIASES = {
+    "pepper": ("paper",),
+}
 DEFAULT_PROACTIVE_STRUGGLE_CUES = (
     "i don't know",
     "we're stuck",
@@ -96,6 +99,8 @@ TRANSCRIPT_LOG_COLUMNS = [
     "trigger_words",
     "fallback_reason",
     "elicitation_engagement_score",
+    "creative_confidence_score",
+    "evaluation_moment",
     "previous_elicitation_prompt_id",
     "previous_elicitation_strategy",
     "previous_elicitation_phase",
@@ -107,6 +112,7 @@ GLOBAL_CONVERSATION_HISTORY = []
 
 DEFAULT_PEPPER_VOCABULARY = [
     "pepper",
+    "paper",
     "robot",
     "hello",
     "continue",
@@ -137,10 +143,10 @@ ELICITATION_ALIASES = {
 }
 
 MODE_DEFAULTS = {
-    "elicitation": "Neutral",
+    "elicitation": "perspective_shift",
     "style": "assertive",
-    "initiative": "proactive",
-    "role": "solutionist",
+    "initiative": "reactive",
+    "role": "facilitator",
 }
 
 STYLE_SETUP = {
@@ -151,19 +157,19 @@ STYLE_SETUP = {
 
 VOCAL_DELIVERY = {
     "passive": {
-        "speed": 0.9,          # Normal to slightly slower speech rate (0.5-1.5, 1.0 is default)
-        "volume": 0.75,        # Reduced volume for gentleness (0.0-1.0, 0.7 is default)
-        "pitch": 0.95,         # Slightly lower pitch (0.5-1.5, 1.0 is default)
+        "speed": 88,           # NAOqi speech speed percentage; 100 is default
+        "volume": 0.62,        # Softer volume for low-pressure delivery
+        "pitch": 0.96,         # Best effort; ignored by NAOqi versions that do not support it
     },
     "assertive": {
-        "speed": 1.2,          # Faster speech rate
-        "volume": 1.0,         # Elevated/full volume
-        "pitch": 0.9,          # Flatter pitch (lower)
+        "speed": 120,          # Slightly quicker while still intelligible
+        "volume": 0.78,        # Clear but not harsh
+        "pitch": 0.98,
     },
     "supportive": {
-        "speed": 0.85,         # Slower speech rate
-        "volume": 0.65,        # Reduced volume
-        "pitch": 1.1,          # Dynamic pitch (higher/more varied)
+        "speed": 80,           # Slower, more soothing delivery
+        "volume": 0.55,        # Gentle default volume
+        "pitch": 0.97,
     },
 }
 
@@ -187,9 +193,6 @@ ELICITATION_SETUP = {
     "elaboration_evidence": (
         "Push abstract ideas into concrete, testable details and evidence checks."
     ),
-    "Neutral": (
-        "Maintain a neutral stance and avoid taking sides or making judgments."
-    )
 }
 
 BASE_SETUP = (
@@ -205,9 +208,9 @@ REPLY_CONTRACT = (
     "Prioritize the latest participant turns over older history; do not invent a new topic. "
     "No speaker labels such as Pepper: or Robot:. "
     "No notes, markdown, separators, lists, or meta-commentary. "
-    "Maximum 100 words."
+    "Maximum 35 words."
 )
-DEFAULT_REPLY_MAX_WORDS = 100
+DEFAULT_REPLY_MAX_WORDS = 35
 DEFAULT_LM_STOP_SEQUENCES = [
     "\nParticipant",
     "\nParticipant 1",
@@ -600,13 +603,27 @@ def parse_trigger_words(value):
         text = str(word).strip().lower()
         if text:
             cleaned.append(text)
-    return cleaned or list(DEFAULT_TRIGGER_WORDS)
+
+    expanded = []
+    seen = set()
+    for word in cleaned or list(DEFAULT_TRIGGER_WORDS):
+        for candidate in (word, *TRIGGER_WORD_ALIASES.get(word, ())):
+            if candidate and candidate not in seen:
+                expanded.append(candidate)
+                seen.add(candidate)
+    return expanded
 
 
 def text_contains_trigger_word(text, trigger_words=DEFAULT_TRIGGER_WORDS):
     lower_text = (text or "").lower()
     for word in parse_trigger_words(trigger_words):
-        pattern = r"(?<![a-z0-9_])" + re.escape(word.lower()) + r"(?![a-z0-9_])"
+        w = word.lower()
+        # Treat common mis-hearings and stems of 'pepper' as triggers (paper, papa, peper, paperwork...)
+        if w == "pepper":
+            alt = r"(?:pepper|paper|papa|peper|piper)"
+            pattern = r"\b" + alt + r"\w*\b"
+        else:
+            pattern = r"(?<![a-z0-9_])" + re.escape(w) + r"(?![a-z0-9_])"
         if re.search(pattern, lower_text):
             return True
     return False
@@ -634,7 +651,8 @@ DEFAULT_NOVELTY_RECENT_TURNS = 4
 DEFAULT_NOVELTY_PREV_TURNS = 8
 DEFAULT_NOVELTY_MIN_NEW = 6
 PROACTIVE_TRIGGER_SCORE_THRESHOLD = 2.5
-PROACTIVE_TRIGGER_COOLDOWN_SECONDS = 15.0
+PROACTIVE_TRIGGER_COOLDOWN_SECONDS = 20.0
+ROBOT_IDLE_REPLY_THRESHOLD_SECONDS = 180.0
 PROACTIVE_TRIGGER_WEIGHTS = {
     "trigger_word": 3.0,
     "struggle_cue": 2.5,
@@ -1047,6 +1065,10 @@ class ContinuousAudioTranscriber:
         ]
 
     @property
+    def has_active_speech(self):
+        return any(segmenter.active for segmenter in self.segmenters)
+
+    @property
     def device_name(self):
         return self.device_info.get("name", "selected input")
 
@@ -1205,6 +1227,7 @@ class PepperIO:
         self.tts = ALProxy("ALTextToSpeech", self.ip, self.port)
         self.memory = ALProxy("ALMemory", self.ip, self.port)
         self.asr = ALProxy("ALSpeechRecognition", self.ip, self.port)
+        self.tts.setLanguage(self.language)
         self.asr.setLanguage(self.language)
 
         if self.vocabulary:
@@ -1221,28 +1244,32 @@ class PepperIO:
             except Exception:
                 pass
 
-    def set_vocal_params(self, speed=1.0, volume=0.7, pitch=1.0):
+    def set_vocal_params(self, speed=100, volume=0.7, pitch=1.0):
         """Set vocal delivery parameters for speech.
         
         Args:
-            speed: Speech rate (0.5-1.5, default 1.0)
+            speed: Speech rate percentage; 100 is Pepper's default
             volume: Volume level (0.0-1.0, default 0.7)
-            pitch: Pitch level (0.5-1.5, default 1.0)
+            pitch: Best-effort pitch level for NAOqi versions that support it
         """
         if not self.tts:
             return
         try:
-            # Set speech speed (parameter name varies by NAOqi version)
-            self.tts.setParameter("speed", speed)
-            # Set volume
-            self.tts.setVolume(volume)
-            # Set pitch
-            self.tts.setParameter("pitch", pitch)
+            speed_value = float(speed)
+            if speed_value <= 2.0:
+                speed_value *= 100.0
+            self.tts.setParameter("speed", speed_value)
+            self.tts.setVolume(float(volume))
+            try:
+                self.tts.setParameter("pitch", float(pitch))
+            except Exception:
+                if float(pitch) >= 1.0:
+                    self.tts.setParameter("pitchShift", float(pitch))
         except Exception as e:
             # Silently fail if parameters not supported in this NAOqi version
             pass
 
-    def say(self, text, style="passive"):
+    def say(self, text, style="supportive"):
         if not text:
             return
         if self.tts:
@@ -1291,6 +1318,41 @@ class PepperIO:
         return ""
 
 
+def vocal_params_for_style(style):
+    return dict(VOCAL_DELIVERY.get(style) or VOCAL_DELIVERY[MODE_DEFAULTS["style"]])
+
+
+def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd, speed=100, volume=0.7, pitch=1.0):
+    if not text:
+        return
+
+    command = list(python_cmd) + [
+        str(script_path),
+        "--ip",
+        str(ip),
+        "--port",
+        str(port),
+        "--say",
+        text,
+        "--speed",
+        str(speed),
+        "--volume",
+        str(volume),
+        "--pitch",
+        str(pitch),
+    ]
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        env=build_naoqi_subprocess_env(),
+    )
+    if completed.returncode != 0:
+        stderr_text = (completed.stderr or "").strip()
+        stdout_text = (completed.stdout or "").strip()
+        details = stderr_text or stdout_text or "unknown error"
+        raise RuntimeError(f"Python 2.7 Pepper TTS bridge failed: {details}")
+
 def build_naoqi_subprocess_env():
     env = os.environ.copy()
     sdk_root = env.get("NAOQI_SDK_ROOT") or DEFAULT_NAOQI_SDK_ROOT
@@ -1311,37 +1373,6 @@ def build_naoqi_subprocess_env():
 
     return env
 
-
-def vocal_params_for_style(style):
-    return dict(VOCAL_DELIVERY.get(style) or VOCAL_DELIVERY[MODE_DEFAULTS["style"]])
-
-
-def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
-    if not text:
-        return
-
-    command = list(python_cmd) + [
-        str(script_path),
-        "--ip",
-        str(ip),
-        "--port",
-        str(port),
-        "--say",
-        text,
-    ]
-    completed = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        env=build_naoqi_subprocess_env(),
-    )
-    if completed.returncode != 0:
-        stderr_text = (completed.stderr or "").strip()
-        stdout_text = (completed.stdout or "").strip()
-        details = stderr_text or stdout_text or "unknown error"
-        raise RuntimeError(f"Python 2.7 Pepper TTS bridge failed: {details}")
-
-
 def check_tcp_port(host, port, timeout=1.5):
     try:
         with socket.create_connection((str(host), int(port)), timeout=float(timeout)):
@@ -1353,7 +1384,7 @@ def check_tcp_port(host, port, timeout=1.5):
 def make_resilient_sender(sender, label="Pepper TTS"):
     failed_once = {"value": False}
 
-    def resilient_sender(text, style="passive"):
+    def resilient_sender(text, style="supportive"):
         try:
             sender(text, style=style)
         except Exception as error:
@@ -1384,13 +1415,15 @@ def build_pepper_tts_sender(args):
 
         print("naoqi SDK unavailable in Python 3; using Python 2.7 Pepper TTS bridge.")
 
-        def sender(text, style="assertive"):
+        def sender(text, style="supportive"):
+            params = vocal_params_for_style(style)
             send_to_pepper_via_py27(
                 text=text,
                 ip=args.pepper_ip,
                 port=args.pepper_port,
                 script_path=legacy_script,
                 python_cmd=legacy_python_cmd,
+                **params,
             )
 
         return make_resilient_sender(sender), None
@@ -1404,7 +1437,7 @@ def build_pepper_tts_sender(args):
     pepper.connect()
     print(f"Connected to Pepper at {args.pepper_ip}:{args.pepper_port}")
 
-    def sender(text, style="passive"):
+    def sender(text, style="supportive"):
         pepper.say(text, style=style)
 
     return make_resilient_sender(sender), pepper
@@ -1460,10 +1493,9 @@ def format_history_window(history, window_turns):
     window = history[-window_turns:]
     lines = []
     for item in window:
-        timestamp = item.get("timestamp", "")
         speaker = item.get("speaker", "Participant")
         text = item.get("text", "")
-        lines.append(f"{timestamp} {speaker}: {text}".strip())
+        lines.append(f"{speaker}: {text}".strip())
     return "\n".join(lines)
 
 
@@ -1512,7 +1544,7 @@ def get_optional_mode_value(payload, key):
 
 
 def get_delivery_style(payload):
-    return get_optional_mode_value(payload, "style") or "passive"
+    return get_optional_mode_value(payload, "style") or MODE_DEFAULTS["style"]
 
 
 def normalize_elicitation(value):
@@ -1565,7 +1597,7 @@ def build_messages(payload, prompt_row, elicitation_key):
     history_text = format_history_window(payload.get("conversation_history", []), history_window_turns)
     pending_turns = payload.get("recent_participant_turns", [])
     pending_text = "\n".join(
-        f"{item.get('timestamp', '')} {item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
+        f"{item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
         for item in pending_turns
     ) if pending_turns else "none"
 
@@ -1609,7 +1641,7 @@ def build_messages_context_only(payload):
     history_text = format_history_window(payload.get("conversation_history", []), history_window_turns)
     pending_turns = payload.get("recent_participant_turns", [])
     pending_text = "\n".join(
-        f"{item.get('timestamp', '')} {item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
+        f"{item.get('speaker', 'Participant')}: {item.get('text', '')}".strip()
         for item in pending_turns
     ) if pending_turns else "none"
 
@@ -1712,6 +1744,8 @@ def sanitize_reply(text, max_words=DEFAULT_REPLY_MAX_WORDS):
         return ""
 
     raw = re.sub(r"^\s*(?:Pepper|Robot|Assistant)\s*:\s*", "", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"^\s*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?\s*", "", raw)
+    raw = re.sub(r"^\s*\[?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?\]?\s*", "", raw)
 
     split_patterns = [
         r"\n\s*---",
@@ -1777,11 +1811,13 @@ def process(payload):
 
     fallback_reason = ""
     try:
+        raw_reply = call_lmstudio(payload, messages)
         reply = sanitize_reply(
-            call_lmstudio(payload, messages),
+            raw_reply,
             max_words=int(payload.get("reply_max_words", DEFAULT_REPLY_MAX_WORDS)),
         )
         if not reply:
+            print(f"Debug: LM Studio raw reply before sanitization: {raw_reply!r}")
             raise ValueError("Unusable LM Studio reply")
         source = "lmstudio"
     except urllib.error.HTTPError as error:
@@ -1821,11 +1857,13 @@ def process_context_only(payload):
     )
 
     try:
+        raw_reply = call_lmstudio(payload, messages)
         reply = sanitize_reply(
-            call_lmstudio(payload, messages),
+            raw_reply,
             max_words=int(payload.get("reply_max_words", DEFAULT_REPLY_MAX_WORDS)),
         )
         if not reply:
+            print(f"Debug: LM Studio raw reply before sanitization: {raw_reply!r}")
             raise ValueError("Unusable LM Studio reply")
         source = "lmstudio"
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, KeyError, ValueError) as error:
@@ -1880,6 +1918,8 @@ def append_transcript_event(transcript_log_path, payload, event):
         "trigger_words": event.get("trigger_words", ""),
         "fallback_reason": event.get("fallback_reason", ""),
         "elicitation_engagement_score": event.get("elicitation_engagement_score", ""),
+        "creative_confidence_score": event.get("creative_confidence_score", ""),
+        "evaluation_moment": event.get("evaluation_moment", ""),
         "previous_elicitation_prompt_id": event.get("previous_elicitation_prompt_id", ""),
         "previous_elicitation_strategy": event.get("previous_elicitation_strategy", ""),
         "previous_elicitation_phase": event.get("previous_elicitation_phase", ""),
@@ -1961,6 +2001,8 @@ def append_robot_transcript_event(
             "triggered_robot": "true",
             "fallback_reason": result.get("fallback_reason", ""),
             "elicitation_engagement_score": result.get("elicitation_engagement_score", ""),
+            "creative_confidence_score": result.get("creative_confidence_score", ""),
+            "evaluation_moment": result.get("evaluation_moment", ""),
             "previous_elicitation_prompt_id": result.get("previous_elicitation_prompt_id", ""),
             "previous_elicitation_strategy": result.get("previous_elicitation_strategy", ""),
             "previous_elicitation_phase": result.get("previous_elicitation_phase", ""),
@@ -2016,6 +2058,26 @@ def print_robot_turn(result):
         print(f"[Fallback reason] {result['fallback_reason']}")
 
 
+def print_robot_trigger_reason(trigger_reason=None, trigger_reasons=None):
+    reasons = []
+    if trigger_reasons:
+        reasons.extend(str(reason).strip() for reason in trigger_reasons if str(reason).strip())
+    elif trigger_reason:
+        reason_text = str(trigger_reason).strip()
+        if reason_text:
+            reasons.append(reason_text)
+
+    if not reasons:
+        reasons = ["manual"]
+
+    deduped = []
+    for reason in reasons:
+        if reason not in deduped:
+            deduped.append(reason)
+
+    print(f"[Robot trigger] reason={', '.join(deduped)}")
+
+
 def run_session(session_payload):
     print(f"# Session {session_payload.get('session_id', 'S01')} / group {session_payload.get('group_id', 'G01')}")
     history = list(session_payload.get("conversation_history", []))
@@ -2040,7 +2102,7 @@ def run_session(session_payload):
             "timestamp": turn_timestamp,
         })
 
-        if speaker.lower() in {"robot", "pepper"}:
+        if speaker.lower() in {"robot", "pepper", "paper"}:
             continue
 
         pending_participant_turns.append({
@@ -2061,7 +2123,7 @@ def run_session(session_payload):
         if initiative_mode == "reactive":
             # Reactive: only intervene if the robot's name is called in the latest participant text
             last_text = pending_participant_turns[-1]["text"].lower() if pending_participant_turns else ""
-            if "pepper" in last_text or "robot" in last_text:
+            if "pepper" in last_text or "robot" in last_text or "paper" in last_text:
                 should_intervene = should_intervene or True
             else:
                 # If not explicitly called, skip intervention unless forced
@@ -2125,7 +2187,7 @@ def console_receive():
     return input("Participant: ").strip()
 
 
-def console_send(text, style="passive"):
+def console_send(text, style="supportive"):
     print(f"Robot: {text}")
 
 
@@ -2195,7 +2257,7 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
         })
 
         print_robot_turn(result)
-        send_fn(result["reply"], style=result.get("style", "passive"))
+        send_fn(result["reply"], style=result.get("style", MODE_DEFAULTS["style"]))
         sequence_index += 1
         append_robot_transcript_event(
             transcript_log_path,
@@ -2226,7 +2288,7 @@ def run_continuous_live_dialog(
     evaluation_elicitation=False,
 ):
     print("--- Continuous live dialog mode started ---")
-    print("Microphones are live. Say Pepper to trigger the robot. Press Ctrl+C to stop.")
+    print("Microphones are live. Say Pepper or Paper to trigger the robot. Press Ctrl+C to stop.")
 
     conversation_history = base_payload.setdefault("conversation_history", [])
     pending_participant_turns = []
@@ -2244,7 +2306,11 @@ def run_continuous_live_dialog(
     command_queue = queue.Queue()
     stop_event = threading.Event()
     last_proactive_epoch = 0.0
+    silence_started_epoch = None
     last_elicitation_result = None
+    session_start_evaluation_recorded = False
+    final_evaluation_recorded = False
+    last_robot_reply_epoch = time.time()
 
     base_payload["phase"] = current_phase
     print_live_control_summary(base_payload, elicitation_mode, intervention_every, keyboard_controls)
@@ -2255,10 +2321,92 @@ def run_continuous_live_dialog(
     def current_initiative():
         return base_payload.get("mode_combo", {}).get("initiative", "reactive")
 
+    def maybe_trigger_proactive_silence(trigger_timestamp=None):
+        nonlocal silence_started_epoch, last_proactive_epoch, last_robot_reply_epoch
+        if current_initiative() != "proactive":
+            silence_started_epoch = None
+            return False
+
+        now_epoch = float(trigger_timestamp or time.time())
+        cooldown_elapsed = now_epoch - last_proactive_epoch
+
+        if listener.has_active_speech:
+            silence_started_epoch = None
+            return False
+
+        if pending_participant_turns:
+            if silence_started_epoch is None:
+                silence_started_epoch = now_epoch
+
+            elapsed = now_epoch - silence_started_epoch
+            if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
+                last_proactive_epoch = now_epoch
+                silence_started_epoch = None
+                trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence")
+                return True
+            return False
+
+        if now_epoch - last_robot_reply_epoch >= float(ROBOT_IDLE_REPLY_THRESHOLD_SECONDS) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
+            last_proactive_epoch = now_epoch
+            silence_started_epoch = None
+            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)}, trigger_reason="silence", allow_empty=True)
+            return True
+
+        return False
+
     def refresh_strategy_sequences():
         nonlocal strategy_sequences, used_strategies
         strategy_sequences = safe_strategy_sequences(base_payload.get("group_id", ""), base_payload.get("theme_id", ""))
         used_strategies = {"divergence": [], "convergence": []}
+
+    def evaluation_input_queue():
+        return command_queue if keyboard_controls else None
+
+    def record_session_start_evaluation():
+        nonlocal sequence_index, session_start_evaluation_recorded
+        if session_start_evaluation_recorded or not evaluation_elicitation:
+            return
+        if elicitation_mode == "off":
+            return
+
+        engagement_score = prompt_start_elicitation_engagement(
+            input_queue=evaluation_input_queue(),
+            stop_event=stop_event,
+        )
+        if stop_event.is_set():
+            return
+
+        confidence_score = prompt_creative_confidence(
+            "start",
+            input_queue=evaluation_input_queue(),
+            stop_event=stop_event,
+        )
+        if stop_event.is_set() or (engagement_score == "" and confidence_score == ""):
+            session_start_evaluation_recorded = True
+            return
+
+        now = timestamp_from_epoch()
+        sequence_index += 1
+        append_transcript_event(
+            transcript_log_path,
+            base_payload,
+            {
+                "sequence_index": sequence_index,
+                "event_type": "session_start_evaluation",
+                "timestamp": now,
+                "start_timestamp": now,
+                "end_timestamp": now,
+                "speaker": "Researcher",
+                "text": "Session-start engagement and creative confidence scores",
+                "phase": current_phase,
+                "strategy": "session_start",
+                "source": "manual_evaluation",
+                "elicitation_engagement_score": engagement_score,
+                "creative_confidence_score": confidence_score,
+                "evaluation_moment": "start",
+            },
+        )
+        session_start_evaluation_recorded = True
 
     def build_robot_result(request):
         mode = (elicitation_mode or "off").strip().lower()
@@ -2302,28 +2450,29 @@ def run_continuous_live_dialog(
 
         return result
 
-    def trigger_robot(triggering_turn):
-        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result
-        if not pending_participant_turns:
+    def trigger_robot(triggering_turn, trigger_reason=None, trigger_reasons=None, allow_empty=False):
+        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result, last_robot_reply_epoch, silence_started_epoch
+        if not pending_participant_turns and not allow_empty:
             return
 
         robot_turn_index += 1
+        participant_turns_for_reply = list(pending_participant_turns)
         request = dict(base_payload)
         request.update({
             "turn_index": robot_turn_index,
             "turn_timestamp": triggering_turn.get("timestamp", timestamp_from_epoch()),
             "phase": current_phase,
-            "last_user_utterance": format_participant_turns_text(pending_participant_turns),
-            "recent_participant_turns": list(pending_participant_turns),
+            "last_user_utterance": format_participant_turns_text(participant_turns_for_reply) if participant_turns_for_reply else request.get("context_fallback", "What should we focus on next from what you just said?"),
+            "recent_participant_turns": participant_turns_for_reply,
             "conversation_history": conversation_history,
         })
 
-        result = build_robot_result(request)
+        result = process_context_only(request) if allow_empty and not participant_turns_for_reply else build_robot_result(request)
         result_is_elicitation = is_elicitation_result(result)
-        if evaluation_elicitation and result_is_elicitation:
+        if evaluation_elicitation and result_is_elicitation and last_elicitation_result:
             score = prompt_previous_elicitation_engagement(
                 last_elicitation_result,
-                input_queue=command_queue if keyboard_controls else None,
+                input_queue=evaluation_input_queue(),
                 stop_event=stop_event,
             )
             attach_previous_elicitation_engagement(result, last_elicitation_result, score)
@@ -2339,9 +2488,11 @@ def run_continuous_live_dialog(
         }
         conversation_history.append(robot_turn)
 
+        print_robot_trigger_reason(trigger_reason=trigger_reason, trigger_reasons=trigger_reasons)
         print_robot_turn(result)
-        send_fn(result["reply"], style=result.get("style", "passive"))
+        send_fn(result["reply"], style=result.get("style", MODE_DEFAULTS["style"]))
         robot_end_timestamp = timestamp_from_epoch()
+        last_robot_reply_epoch = time.time()
         sequence_index += 1
         append_robot_transcript_event(
             transcript_log_path,
@@ -2356,7 +2507,7 @@ def run_continuous_live_dialog(
             base_payload.get("log_path"),
             request,
             result,
-            list(pending_participant_turns),
+            participant_turns_for_reply,
             robot_end_timestamp,
         )
         phase_reply_count[current_phase] += 1
@@ -2365,18 +2516,34 @@ def run_continuous_live_dialog(
         pending_participant_turns = []
 
     def record_final_elicitation_evaluation():
-        nonlocal sequence_index, last_elicitation_result
-        if not evaluation_elicitation or not last_elicitation_result:
+        nonlocal sequence_index, last_elicitation_result, final_evaluation_recorded
+        if final_evaluation_recorded or not evaluation_elicitation:
             return
 
-        score = prompt_previous_elicitation_engagement(
-            last_elicitation_result,
-            input_queue=command_queue if keyboard_controls else None,
+        engagement_score = ""
+        event_phase = current_phase
+        event_strategy = ""
+        event_prompt_id = ""
+        if last_elicitation_result:
+            engagement_score = prompt_previous_elicitation_engagement(
+                last_elicitation_result,
+                input_queue=evaluation_input_queue(),
+                stop_event=None,
+            )
+            event_phase = last_elicitation_result.get("phase", current_phase)
+            event_strategy = last_elicitation_result.get("strategy", "")
+            event_prompt_id = last_elicitation_result.get("prompt_id", "")
+
+        confidence_score = prompt_creative_confidence(
+            "end",
+            input_queue=evaluation_input_queue(),
             stop_event=None,
         )
-        if score == "":
+        if engagement_score == "" and confidence_score == "":
+            final_evaluation_recorded = True
             return
 
+        now = timestamp_from_epoch()
         sequence_index += 1
         append_transcript_event(
             transcript_log_path,
@@ -2384,18 +2551,23 @@ def run_continuous_live_dialog(
             {
                 "sequence_index": sequence_index,
                 "robot_turn_index": robot_turn_index,
-                "event_type": "elicitation_evaluation",
-                "timestamp": timestamp_from_epoch(),
+                "event_type": "session_end_evaluation",
+                "timestamp": now,
+                "start_timestamp": now,
+                "end_timestamp": now,
                 "speaker": "Researcher",
-                "text": "Final elicitation engagement score",
-                "phase": last_elicitation_result.get("phase", current_phase),
-                "strategy": last_elicitation_result.get("strategy", ""),
-                "prompt_id": last_elicitation_result.get("prompt_id", ""),
+                "text": "Session-end engagement and creative confidence scores",
+                "phase": event_phase,
+                "strategy": event_strategy,
+                "prompt_id": event_prompt_id,
                 "source": "manual_evaluation",
-                "elicitation_engagement_score": score,
+                "elicitation_engagement_score": engagement_score,
+                "creative_confidence_score": confidence_score,
+                "evaluation_moment": "end",
             },
         )
         last_elicitation_result = None
+        final_evaluation_recorded = True
 
     def handle_command(line):
         nonlocal current_phase, elicitation_mode
@@ -2414,7 +2586,7 @@ def run_continuous_live_dialog(
             return False
 
         if upper == "ROBOT":
-            trigger_robot({"timestamp": timestamp_from_epoch()})
+            trigger_robot({"timestamp": timestamp_from_epoch()}, trigger_reason="manual")
             return True
 
         if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
@@ -2489,6 +2661,10 @@ def run_continuous_live_dialog(
         print(f"Unrecognized live control: {text}")
         return True
 
+    record_session_start_evaluation()
+    if stop_event.is_set():
+        return
+
     listener.start()
     try:
         while True:
@@ -2506,18 +2682,7 @@ def run_continuous_live_dialog(
 
             event = listener.get_event(timeout=0.2)
             if event is None:
-                if current_initiative() == "proactive" and pending_participant_turns:
-                    try:
-                        last_epoch = epoch_from_timestamp(pending_participant_turns[-1].get("timestamp"))
-                    except Exception:
-                        last_epoch = None
-                    if last_epoch:
-                        now_epoch = time.time()
-                        elapsed = now_epoch - last_epoch
-                        cooldown_elapsed = now_epoch - last_proactive_epoch
-                        if elapsed >= float(proactive_silence_threshold) and cooldown_elapsed >= float(PROACTIVE_TRIGGER_COOLDOWN_SECONDS):
-                            last_proactive_epoch = now_epoch
-                            trigger_robot({"timestamp": timestamp_from_epoch(now_epoch)})
+                maybe_trigger_proactive_silence()
                 continue
 
             event_type = event.get("type")
@@ -2547,8 +2712,12 @@ def run_continuous_live_dialog(
                     trigger_words=trigger_words,
                     robot_turn_index=robot_turn_index + 1 if (triggered or proactive_triggered) else "",
                 )
+                silence_started_epoch = None
                 if proactive_triggered or triggered:
-                    trigger_robot(turn)
+                    trigger_robot(
+                        turn,
+                        trigger_reasons=proactive_decision.get("reasons", []) if proactive_triggered else ["trigger_word"],
+                    )
                     if proactive_triggered:
                         last_proactive_epoch = turn_epoch
                 continue
@@ -2558,6 +2727,7 @@ def run_continuous_live_dialog(
                     f"[{event.get('end_timestamp', '')} {event.get('speaker', 'Participant')}] "
                     "No speech recognized."
                 )
+                maybe_trigger_proactive_silence(epoch_from_timestamp(event.get("end_timestamp")) or time.time())
                 continue
 
             if event_type in {"warning", "error"}:
@@ -2646,7 +2816,7 @@ def is_elicitation_result(result):
     return strategy in MODE_REGISTRY["elicitation"]
 
 
-def parse_engagement_score(value):
+def parse_1_100_score(value):
     text = str(value or "").strip()
     if not text or text.lower() in {"skip", "na", "n/a", "none"}:
         return ""
@@ -2658,17 +2828,11 @@ def parse_engagement_score(value):
     return round(score, 2)
 
 
-def prompt_previous_elicitation_engagement(previous_result, input_queue=None, stop_event=None):
-    if not previous_result:
-        print("[Evaluation] First elicitation prompt; the first completed window can be scored at the next elicitation prompt.")
-        return ""
+def parse_engagement_score(value):
+    return parse_1_100_score(value)
 
-    label = (
-        f"{previous_result.get('phase', '')}/{previous_result.get('strategy', '')} "
-        f"{previous_result.get('prompt_id', '')}"
-    ).strip()
-    prompt = f"[Evaluation] Engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
 
+def prompt_1_100_score(prompt, input_queue=None, stop_event=None):
     while True:
         if input_queue is None:
             try:
@@ -2693,9 +2857,34 @@ def prompt_previous_elicitation_engagement(previous_result, input_queue=None, st
                 stop_event.set()
             return ""
         try:
-            return parse_engagement_score(text)
+            return parse_1_100_score(text)
         except ValueError:
             print("Please enter a number from 1 to 100, or press Enter to skip.")
+
+
+def prompt_start_elicitation_engagement(input_queue=None, stop_event=None):
+    prompt = "[Evaluation] Engagement at start of conversation before first elicitation strategy, 1-100; Enter/skip to omit: "
+    return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
+
+
+def prompt_creative_confidence(moment, input_queue=None, stop_event=None):
+    moment_label = (moment or "").strip().lower()
+    suffix = f" ({moment_label}, 1-100; Enter/skip to omit): " if moment_label else " (1-100; Enter/skip to omit): "
+    prompt = f"[Evaluation] How confident are you in your creative abilities?{suffix}"
+    return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
+
+
+def prompt_previous_elicitation_engagement(previous_result, input_queue=None, stop_event=None):
+    if not previous_result:
+        print("[Evaluation] First elicitation prompt; the first completed window can be scored at the next elicitation prompt.")
+        return ""
+
+    label = (
+        f"{previous_result.get('phase', '')}/{previous_result.get('strategy', '')} "
+        f"{previous_result.get('prompt_id', '')}"
+    ).strip()
+    prompt = f"[Evaluation] Engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
+    return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
 
 
 def attach_previous_elicitation_engagement(result, previous_result, score):
@@ -2806,14 +2995,14 @@ def main():
         "--evaluation-elicitation",
         action="store_true",
         dest="evaluation_elicitation",
-        help="In live scheduled/fixed elicitation mode, ask the researcher for a 1-100 engagement score before each new elicitation prompt and log it for the previous elicitation window.",
+        help="In live scheduled/fixed elicitation mode, ask the researcher for 1-100 start/end evaluation scores, including engagement and creative-confidence ratings.",
     )
-    parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="supportive", help="Robot style guidance")
+    parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="assertive", help="Robot style guidance")
     parser.add_argument("--role-mode", choices=["off", "facilitator", "solutionist"], default="facilitator", help="Robot role guidance")
     parser.add_argument("--proactive-silence-threshold", type=float, default=PROACTIVE_SILENCE_THRESHOLD, help="Seconds of silence before proactive robot intervention")
     parser.add_argument("--no-live-keyboard-controls", action="store_true", help="Disable optional typed live controls while microphones run")
     parser.add_argument("--pepper", action="store_true", help="Use Pepper NAOqi I/O in live mode")
-    parser.add_argument("--pepper-ip", default="192.168.1.116", help="Pepper robot IP")
+    parser.add_argument("--pepper-ip", default="169.254.166.52", help="Pepper robot IP")
     parser.add_argument("--pepper-port", type=int, default=9559, help="Pepper NAOqi port")
     parser.add_argument("--pepper-language", default="English", help="Pepper ASR language")
     parser.add_argument("--pepper-vocabulary", help="Comma-separated vocabulary for Pepper ASR")
@@ -2851,7 +3040,7 @@ def main():
     parser.add_argument("--participant-2-channel", type=int, default=2, help="Focusrite input channel mapped to Participant 2")
     parser.add_argument("--participant-1-name", default="Participant 1", help="Speaker label for Focusrite participant 1")
     parser.add_argument("--participant-2-name", default="Participant 2", help="Speaker label for Focusrite participant 2")
-    parser.add_argument("--trigger-words", default="pepper", help="Comma-separated words that trigger the robot in continuous microphone mode")
+    parser.add_argument("--trigger-words", default="pepper,paper", help="Comma-separated words that trigger the robot in continuous microphone mode")
     parser.add_argument("--vad-start-rms", type=float, default=400.0, help="Continuous mode RMS threshold that starts a speech segment")
     parser.add_argument("--vad-stop-rms", type=float, default=220.0, help="Continuous mode RMS threshold below which audio counts as silence")
     parser.add_argument("--vad-end-silence-seconds", type=float, default=0.8, help="Continuous mode silence duration that ends a speech segment")
@@ -2900,7 +3089,7 @@ def main():
                 "log_path": DEFAULT_LOG_PATH,
                 "mode_combo": {
                     "elicitation": "perspective_shift",
-                    "style": "passive",
+                    "style": MODE_DEFAULTS["style"],
                     "initiative": "reactive",
                     "role": "facilitator",
                 },
@@ -3014,7 +3203,7 @@ def main():
             "audio_device": args.audio_device or "",
             "mode_combo": {
                 "elicitation": "perspective_shift",
-                "style": "passive",
+                "style": args.style_mode,
                 "initiative": chosen_initiative,
                 "role": "facilitator",
             },
@@ -3060,7 +3249,7 @@ def main():
             continuous_listener = build_continuous_audio_transcriber_from_args(args, participant_channel_map)
             payload["audio_device"] = continuous_listener.device_name
             continuous_listener.start()
-            print("Continuous microphone input enabled. Say Pepper to trigger the same action as the ROBOT command.")
+            print("Continuous microphone input enabled. Say Pepper or Paper to trigger the same action as the ROBOT command.")
 
         # Event queue and monitor thread for proactive silence detection
         event_queue = queue.Queue()
@@ -3072,21 +3261,27 @@ def main():
 
         def monitor_silence():
             nonlocal last_triggered_last_epoch
+            silence_started_epoch = None
             while not stop_event.is_set():
                 try:
                     initiative = payload.get("mode_combo", {}).get("initiative", "reactive")
                     if initiative == "proactive" and pending_participant_turns:
-                        last_ts = pending_participant_turns[-1].get("timestamp")
-                        if last_ts:
-                            try:
-                                last_epoch = epoch_from_timestamp(last_ts)
-                                now_epoch = time.time()
-                                elapsed = now_epoch - last_epoch
-                                if elapsed >= PROACTIVE_SILENCE_THRESHOLD and (now_epoch - last_triggered_last_epoch) >= PROACTIVE_TRIGGER_COOLDOWN_SECONDS:
-                                    event_queue.put("AUTO_ROBOT")
-                                    last_triggered_last_epoch = now_epoch
-                            except Exception:
-                                pass
+                        if continuous_listener and continuous_listener.has_active_speech:
+                            silence_started_epoch = None
+                            time.sleep(1)
+                            continue
+
+                        now_epoch = time.time()
+                        if silence_started_epoch is None:
+                            silence_started_epoch = now_epoch
+
+                        elapsed = now_epoch - silence_started_epoch
+                        if elapsed >= PROACTIVE_SILENCE_THRESHOLD and (now_epoch - last_triggered_last_epoch) >= PROACTIVE_TRIGGER_COOLDOWN_SECONDS:
+                            event_queue.put("AUTO_ROBOT")
+                            last_triggered_last_epoch = now_epoch
+                            silence_started_epoch = None
+                    else:
+                        silence_started_epoch = None
                 except Exception:
                     pass
                 time.sleep(1)
@@ -3146,7 +3341,7 @@ def main():
         input_thread.start()
 
         # Helper to perform the robot intervention; extracted to reuse for manual, auto, and reactive triggers
-        def trigger_robot():
+        def trigger_robot(trigger_reason=None, trigger_reasons=None):
             nonlocal turn_index, pending_participant_turns, sequence_index
             if not pending_participant_turns:
                 print("Robot: No participant turns buffered yet.")
@@ -3193,6 +3388,7 @@ def main():
             payload.setdefault("conversation_history", []).append(
                 {"speaker": "Robot", "text": result["reply"], "timestamp": robot_timestamp}
             )
+            print_robot_trigger_reason(trigger_reason=trigger_reason, trigger_reasons=trigger_reasons)
             print_robot_turn(result)
             sequence_index += 1
             append_robot_transcript_event(
@@ -3205,7 +3401,7 @@ def main():
             )
             if say_from_intervene:
                 try:
-                    style = result.get("style", "passive")
+                    style = result.get("style", MODE_DEFAULTS["style"])
                     say_from_intervene(result["reply"], style=style)
                 except Exception as error:
                     print(f"Warning: Pepper TTS failed: {error}")
@@ -3263,7 +3459,9 @@ def main():
                     robot_turn_index=turn_index + 1 if (triggered or proactive_triggered) else "",
                 )
                 if proactive_triggered or triggered:
-                    trigger_robot()
+                    trigger_robot(
+                        trigger_reasons=proactive_decision.get("reasons", []) if proactive_triggered else ["trigger_word"],
+                    )
                     if proactive_triggered:
                         last_triggered_last_epoch = turn_epoch
                 return
@@ -3310,7 +3508,7 @@ def main():
 
                 if ev == "AUTO_ROBOT":
                 # Auto-trigger from proactive monitor
-                    trigger_robot()
+                    trigger_robot(trigger_reason="silence")
                 # After robot prints, redraw prompt and current input buffer so user can continue typing without pressing Enter
                     try:
                         with input_lock:
@@ -3354,7 +3552,7 @@ def main():
                     continue
 
                 if upper == "ROBOT":
-                    trigger_robot()
+                    trigger_robot(trigger_reason="manual")
                     continue
 
                 participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -3383,10 +3581,15 @@ def main():
                 try:
                     initiative_now = payload.get("mode_combo", {}).get("initiative", MODE_DEFAULTS["initiative"])
                     if initiative_now == "proactive" and proactive_triggered:
-                        trigger_robot()
+                        proactive_decision = evaluate_proactive_trigger(
+                            text,
+                            trigger_words=trigger_words,
+                            conversation_events=payload.get("conversation_history", []),
+                        )
+                        trigger_robot(trigger_reasons=proactive_decision.get("reasons", []))
                         continue
                     if initiative_now == "reactive" and triggered:
-                        trigger_robot()
+                        trigger_robot(trigger_reasons=["trigger_word"])
                         continue
                 except Exception:
                     pass
