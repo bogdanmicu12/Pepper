@@ -12,14 +12,30 @@ def add_naoqi_paths():
 	if env_path:
 		candidates.extend([item for item in env_path.split(os.pathsep) if item])
 
+	user_profile = os.environ.get("USERPROFILE")
+	if user_profile:
+		candidates.append(os.path.join(
+			user_profile,
+			"Downloads",
+			"pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649",
+			"pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649",
+			"lib",
+		))
+
 	candidates.extend([
 		r"C:\naoqi-sdk\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\lib",
 		r"C:\naoqi-sdk\pynaoqi-python2.7-2.5.7.1-win32-vs2013\lib",
+		r"C:\Users\Hrsem\Downloads\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\lib",
 		r"C:\Users\jaehy\Downloads\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\lib",
 		r"C:\Python27\Lib\site-packages",
 	])
 
-	for root in [r"C:\naoqi-sdk", r"C:\Users\jaehy\Downloads", r"C:\Program Files", r"C:\Program Files (x86)"]:
+	search_roots = [r"C:\naoqi-sdk", r"C:\Program Files", r"C:\Program Files (x86)"]
+	if user_profile:
+		search_roots.insert(1, os.path.join(user_profile, "Downloads"))
+	search_roots.append(r"C:\Users\jaehy\Downloads")
+
+	for root in search_roots:
 		if not os.path.isdir(root):
 			continue
 		for current, dirs, files in os.walk(root):
