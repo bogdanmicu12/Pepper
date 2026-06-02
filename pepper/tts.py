@@ -15,11 +15,11 @@ def add_naoqi_paths():
 	candidates.extend([
 		r"C:\naoqi-sdk\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\lib",
 		r"C:\naoqi-sdk\pynaoqi-python2.7-2.5.7.1-win32-vs2013\lib",
-		r"C:\Users\bogda\Downloads\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\lib",
+		r"C:\Users\jaehy\Downloads\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\lib",
 		r"C:\Python27\Lib\site-packages",
 	])
 
-	for root in [r"C:\naoqi-sdk", r"C:\Users\bogda\Downloads", r"C:\Program Files", r"C:\Program Files (x86)"]:
+	for root in [r"C:\naoqi-sdk", r"C:\Users\jaehy\Downloads", r"C:\Program Files", r"C:\Program Files (x86)"]:
 		if not os.path.isdir(root):
 			continue
 		for current, dirs, files in os.walk(root):
