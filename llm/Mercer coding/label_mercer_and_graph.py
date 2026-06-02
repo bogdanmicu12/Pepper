@@ -21,32 +21,39 @@ DEFAULT_TRANSCRIPT = Path("llm/logs/synthetic_tu_delft_campus_experience/transcr
 DEFAULT_OUTPUT_DIR = Path("llm/Mercer coding/outputs")
 PARTICIPANT_EVENT_TYPE = "participant"
 MERCER_LABELS = ("disputational", "cumulative", "exploratory")
+TURN_RE = re.compile(r"^\[(?P<speaker>[^\]]+)\]:\s*(?P<text>.*)$")
 
 AGREEMENT_RE = re.compile(
     r"\b(?:i agree|yes|yeah|yep|exactly|that is true|that's true|that is fair|"
-    r"that's fair|good point|i like|sounds better|makes sense|fair|true)\b",
+    r"that's fair|good point|i like|sounds better|makes sense)\b",
     re.IGNORECASE,
 )
 DISAGREEMENT_RE = re.compile(
-    r"\b(?:i disagree|i partly disagree|i do not think|i don't think|but|however|"
-    r"although|not sure|i worry|risk|objection|not the same|terrible|dismiss|"
-    r"too many|only|instead|rather|without|not just|not only)\b",
+    r"\b(?:i disagree|i partly disagree|i do not think|i don't think|i am not sure|"
+    r"i'm not sure|but|however|although|objection|not the same|different|"
+    r"misunderstanding|misunderstand|not about|not just|not only|instead|rather)\b",
     re.IGNORECASE,
 )
 REASONING_RE = re.compile(
     r"\b(?:because|so|if|then|therefore|that means|which means|as a result|"
-    r"for example|like|since|the goal|the issue|the problem|the point|"
-    r"compared with|different from|depends|decides|reveals|affects)\b",
+    r"for example|such as|since|the goal|the issue|the problem|the point|"
+    r"compared with|different from|depends|reveals|affects|results in|"
+    r"would improve|will improve|to improve|in order to)\b",
     re.IGNORECASE,
 )
 COCONSTRUCTION_RE = re.compile(
-    r"\b(?:we could|we can|we need|we should|maybe|should|could|would|need|needs|"
-    r"it becomes|it should|that changes|connects back|builds on|proposal|"
-    r"solution|route|include|test|overcome|avoid|handle|maintained|available|"
-    r"first version|final framing|options|versions)\b",
+    r"\b(?:we could|we can|we need|we should|we want|our idea|our plan|"
+    r"maybe|should|could|would|need|needs|it becomes|it should|that changes|"
+    r"connects back|builds on|proposal|solution|route|include|test|"
+    r"overcome|avoid|handle|organize|create|advertise|gamify)\b",
     re.IGNORECASE,
 )
 QUESTION_RE = re.compile(r"\?")
+TASK_REQUEST_RE = re.compile(
+    r"\b(?:pepper|paper|robot)\b|^\s*(?:hello|hi|okay|ok|yo)\b|"
+    r"\b(?:did you understand|look at me|what do you think)\b",
+    re.IGNORECASE,
+)
 SHORT_CONFIRMATION_RE = re.compile(
     r"^\s*(?:yes|yeah|yep|exactly|true|fair|i agree|that is true|that's true|good point)[.! ]*$",
     re.IGNORECASE,
@@ -61,7 +68,7 @@ COUNTER_POSITION_START_RE = re.compile(
     re.IGNORECASE,
 )
 SHARED_REASONING_RE = re.compile(
-    r"\b(?:we could|we can|we need|we should|our|proposal|route|solution|"
+    r"\b(?:we could|we can|we need|we should|we want|our|proposal|route|solution|"
     r"test|overcome|avoid|what do we|how could we|how would|that changes|"
     r"good point|that is fair|then maybe)\b",
     re.IGNORECASE,
@@ -80,6 +87,39 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         raise FileNotFoundError(f"Input file not found: {path}")
     with path.open("r", newline="", encoding="utf-8") as handle:
         return [dict(row) for row in csv.DictReader(handle)]
+
+
+def read_txt(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        raise FileNotFoundError(f"Input file not found: {path}")
+
+    rows: list[dict[str, str]] = []
+    with path.open("r", encoding="utf-8-sig") as handle:
+        for sequence_index, line in enumerate(handle, start=1):
+            text = line.strip()
+            if not text:
+                continue
+            match = TURN_RE.match(text)
+            if not match:
+                print(f"Warning: skipping unparsable line {path}:{sequence_index}: {text}", file=sys.stderr)
+                continue
+            speaker = clean(match.group("speaker"))
+            rows.append(
+                {
+                    "event_type": PARTICIPANT_EVENT_TYPE if speaker.lower().startswith("participant") else "robot",
+                    "speaker": speaker,
+                    "text": clean(match.group("text")),
+                    "conversation_id": path.stem,
+                    "sequence_index": str(sequence_index),
+                }
+            )
+    return rows
+
+
+def read_transcript(path: Path) -> list[dict[str, str]]:
+    if path.suffix.lower() == ".txt":
+        return read_txt(path)
+    return read_csv(path)
 
 
 def write_csv(path: Path, rows: Sequence[dict[str, object]]) -> None:
@@ -125,33 +165,40 @@ def references_previous(text: str, previous_text: str) -> bool:
 
 
 def choose_mercer_label(text: str, previous_participant_text: str = "") -> MercerDecision:
-    """Heuristically classify a participant utterance using Mercer 2005 talk types."""
+    """Conservatively classify explicit Mercer talk types, leaving unclear utterances unlabeled."""
     utterance = clean(text)
     lower = utterance.lower()
     wc = word_count(utterance)
+
+    if has(SHORT_CONFIRMATION_RE, utterance):
+        return MercerDecision("cumulative", 0.88, "short agreement or confirmation without added reasoning")
+
+    if not utterance or wc <= 2:
+        return MercerDecision("", 0.00, "no explicit Mercer talk type")
 
     has_agreement = has(AGREEMENT_RE, utterance)
     has_disagreement = has(DISAGREEMENT_RE, utterance)
     has_reasoning = has(REASONING_RE, utterance)
     has_coconstruction = has(COCONSTRUCTION_RE, utterance)
     asks_question = has(QUESTION_RE, utterance)
+    task_or_robot_request = has(TASK_REQUEST_RE, utterance)
     refers_back = references_previous(utterance, previous_participant_text)
     starts_with_agreement = has(AGREEMENT_START_RE, utterance)
     starts_with_counter_position = has(COUNTER_POSITION_START_RE, utterance)
     has_shared_reasoning = has(SHARED_REASONING_RE, utterance)
 
-    if has(SHORT_CONFIRMATION_RE, utterance):
-        return MercerDecision("cumulative", 0.88, "short agreement or confirmation without added reasoning")
+    if task_or_robot_request and not (has_agreement or has_disagreement or has_reasoning or has_coconstruction):
+        return MercerDecision("", 0.00, "task management, robot address, or social talk without explicit Mercer talk type")
 
-    if starts_with_agreement and not has_disagreement and not has_shared_reasoning:
+    if starts_with_agreement and not has_disagreement and not (has_reasoning or has_shared_reasoning):
         return MercerDecision(
             "cumulative",
             0.78,
             "accepts a prior contribution and mainly adds compatible information without critique",
         )
 
-    if starts_with_counter_position and not has_shared_reasoning:
-        if has_reasoning or has_coconstruction:
+    if starts_with_counter_position:
+        if has_reasoning or has_coconstruction or has_shared_reasoning:
             return MercerDecision(
                 "exploratory", 0.80,
                 "opens with a counter-position but provides reasoning or a constructive alternative",
@@ -175,14 +222,7 @@ def choose_mercer_label(text: str, previous_participant_text: str = "") -> Merce
             "challenges or qualifies an idea while giving reasons or proposing a constructive refinement",
         )
 
-    if "pepper" in lower and asks_question:
-        return MercerDecision(
-            "exploratory",
-            0.72,
-            "uses Pepper to request clarification or facilitation that advances the joint task",
-        )
-
-    if (has_reasoning and has_coconstruction) or (refers_back and (has_reasoning or has_coconstruction)):
+    if (has_reasoning and has_coconstruction) or (refers_back and has_reasoning and not task_or_robot_request):
         return MercerDecision(
             "exploratory",
             0.83,
@@ -198,10 +238,13 @@ def choose_mercer_label(text: str, previous_participant_text: str = "") -> Merce
             )
         return MercerDecision("cumulative", 0.80, "mainly accepts or repeats a previous contribution")
 
-    if has_reasoning or has_coconstruction:
+    if has_reasoning and (has_coconstruction or asks_question):
         return MercerDecision("exploratory", 0.69, "adds reasons, consequences, examples, or a proposed refinement")
 
-    return MercerDecision("cumulative", 0.58, "adds task-relevant content without clear critique or explicit reasoning")
+    if lower.startswith(("and ", "also ")) and has_coconstruction and refers_back:
+        return MercerDecision("cumulative", 0.66, "adds compatible information to a prior contribution without critique")
+
+    return MercerDecision("", 0.00, "no explicit disputational, cumulative, or exploratory talk marker")
 
 
 def participant_rows(rows: Iterable[dict[str, str]]) -> list[dict[str, str]]:
@@ -242,6 +285,7 @@ def label_transcript(rows: list[dict[str, str]]) -> list[dict[str, object]]:
                 "triggered_robot": row.get("triggered_robot", ""),
                 "text": text,
                 "mercer_label": decision.label,
+                "is_coded": "yes" if decision.label else "no",
                 "label_confidence": f"{decision.confidence:.2f}",
                 "label_rationale": decision.rationale,
             }
@@ -252,18 +296,22 @@ def label_transcript(rows: list[dict[str, str]]) -> list[dict[str, object]]:
 
 def summarize_distribution(labelled: Sequence[dict[str, object]], group_cols: Sequence[str]) -> list[dict[str, object]]:
     totals: dict[tuple[str, ...], int] = {}
+    labelled_totals: dict[tuple[str, ...], int] = {}
     counts: dict[tuple[str, ...], int] = {}
 
     for row in labelled:
         group_key = tuple(clean(row.get(col)) for col in group_cols)
         label = clean(row.get("mercer_label"))
         totals[group_key] = totals.get(group_key, 0) + 1
-        counts[group_key + (label,)] = counts.get(group_key + (label,), 0) + 1
+        if label in MERCER_LABELS:
+            labelled_totals[group_key] = labelled_totals.get(group_key, 0) + 1
+            counts[group_key + (label,)] = counts.get(group_key + (label,), 0) + 1
 
     summary: list[dict[str, object]] = []
     all_group_keys = sorted(totals)
     for group_key in all_group_keys:
-        total = totals[group_key]
+        total = labelled_totals.get(group_key, 0)
+        unlabelled = totals[group_key] - total
         for label in MERCER_LABELS:
             count = counts.get(group_key + (label,), 0)
             row = {col: group_key[index] for index, col in enumerate(group_cols)}
@@ -271,7 +319,9 @@ def summarize_distribution(labelled: Sequence[dict[str, object]], group_cols: Se
                 {
                     "mercer_label": label,
                     "count": count,
-                    "percentage": round((count / total) * 100.0, 2) if total else 0.0,
+                    "percentage_of_coded": round((count / total) * 100.0, 2) if total else 0.0,
+                    "coded_utterance_count": total,
+                    "unlabelled_utterance_count": unlabelled,
                 }
             )
             summary.append(row)
@@ -388,12 +438,14 @@ def save_outputs(transcript_path: Path, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     chart_dir.mkdir(parents=True, exist_ok=True)
 
-    labelled = label_transcript(read_csv(transcript_path))
+    labelled = label_transcript(read_transcript(transcript_path))
+    unlabelled = [row for row in labelled if not clean(row.get("mercer_label"))]
     overall = summarize_distribution(labelled, [])
     by_phase = summarize_distribution(labelled, ["phase"])
     by_speaker = summarize_distribution(labelled, ["speaker"])
 
     write_csv(output_dir / "mercer_labelled_utterances.csv", labelled)
+    write_csv(output_dir / "mercer_unlabelled_utterances.csv", unlabelled)
     write_csv(output_dir / "mercer_distribution_overall.csv", overall)
     write_csv(output_dir / "mercer_distribution_by_phase.csv", by_phase)
     write_csv(output_dir / "mercer_distribution_by_speaker.csv", by_speaker)
@@ -406,8 +458,10 @@ def save_outputs(transcript_path: Path, output_dir: Path) -> None:
         "input_transcript": str(transcript_path.resolve()),
         "output_dir": str(output_dir.resolve()),
         "participant_utterances_labelled": len(labelled),
+        "participant_utterances_coded": len(labelled) - len(unlabelled),
+        "participant_utterances_unlabelled": len(unlabelled),
         "generated_files": sorted(str(path.relative_to(output_dir)) for path in output_dir.rglob("*") if path.is_file()),
-        "note": "Automatic heuristic labels. Review labels and rationales before treating them as final human-coded data.",
+        "note": "Automatic conservative heuristic labels. Blank mercer_label means no explicit disputational, cumulative, or exploratory talk marker was detected. Review labels and rationales before treating them as final human-coded data.",
     }
     with (output_dir / "run_manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2)

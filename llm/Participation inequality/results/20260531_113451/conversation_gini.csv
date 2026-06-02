@@ -1,0 +1,21 @@
+condition,conversation,metric,adjusted_gini,standard_gini,participant_count,total_value,min_participant_value,max_participant_value,interpretation
+Proactive_Assertive,group10_CONVO_STEFAN,word_count,0.4186,0.2093,2,860.0,250.0,610.0,moderate inequality
+Proactive_Assertive,group10_CONVO_STEFAN,turn_count,0.3784,0.1892,2,74.0,23.0,51.0,moderate inequality
+Proactive_Assertive,group11_CONVO_HONOURS,word_count,0.2662,0.1331,2,943.0,346.0,597.0,moderate inequality
+Proactive_Assertive,group11_CONVO_HONOURS,turn_count,0.325,0.1625,2,80.0,27.0,53.0,moderate inequality
+Proactive_Assertive,group12_CONVO,word_count,0.7756,0.3878,2,508.0,57.0,451.0,high inequality
+Proactive_Assertive,group12_CONVO,turn_count,0.7436,0.3718,2,39.0,5.0,34.0,high inequality
+Proactive_Assertive,group1_CONVO,word_count,0.0516,0.0258,2,523.0,248.0,275.0,very equal
+Proactive_Assertive,group1_CONVO,turn_count,0.0645,0.0323,2,62.0,29.0,33.0,very equal
+Proactive_Assertive,group2_CONVO,word_count,0.167,0.0835,2,1808.0,753.0,1055.0,mild inequality
+Proactive_Assertive,group2_CONVO,turn_count,0.1532,0.0766,2,111.0,47.0,64.0,mild inequality
+Proactive_Assertive,group3_CONVO,word_count,0.2731,0.1366,2,465.0,169.0,296.0,moderate inequality
+Proactive_Assertive,group3_CONVO,turn_count,0.28,0.14,2,50.0,18.0,32.0,moderate inequality
+Proactive_Assertive,group4_CONVO_LUCHO,word_count,0.2481,0.1241,2,806.0,303.0,503.0,mild inequality
+Proactive_Assertive,group4_CONVO_LUCHO,turn_count,0.2,0.1,2,85.0,34.0,51.0,mild inequality
+Proactive_Assertive,group5_CONVO,word_count,0.3854,0.1927,2,1497.0,460.0,1037.0,moderate inequality
+Proactive_Assertive,group5_CONVO,turn_count,0.232,0.116,2,125.0,48.0,77.0,mild inequality
+Proactive_Assertive,group6_CONVO,word_count,0.2333,0.1166,2,1106.0,424.0,682.0,mild inequality
+Proactive_Assertive,group6_CONVO,turn_count,0.25,0.125,2,88.0,33.0,55.0,moderate inequality
+Proactive_Assertive,group9_CONVO,word_count,0.0896,0.0448,2,804.0,366.0,438.0,very equal
+Proactive_Assertive,group9_CONVO,turn_count,0.2558,0.1279,2,129.0,48.0,81.0,moderate inequality

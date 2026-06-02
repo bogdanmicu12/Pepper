@@ -1,0 +1,7 @@
+condition,conversation,metric,adjusted_gini,standard_gini,participant_count,total_value,min_participant_value,max_participant_value,interpretation
+Proactive_Assertive,MVI_0070,word_count,0.0516,0.0258,2,523.0,248.0,275.0,very equal
+Proactive_Assertive,MVI_0070,turn_count,0.0645,0.0323,2,62.0,29.0,33.0,very equal
+Proactive_Assertive,MVI_0072,word_count,0.167,0.0835,2,1808.0,753.0,1055.0,mild inequality
+Proactive_Assertive,MVI_0072,turn_count,0.1532,0.0766,2,111.0,47.0,64.0,mild inequality
+Proactive_Assertive,MVI_0074,word_count,0.2731,0.1366,2,465.0,169.0,296.0,moderate inequality
+Proactive_Assertive,MVI_0074,turn_count,0.28,0.14,2,50.0,18.0,32.0,moderate inequality

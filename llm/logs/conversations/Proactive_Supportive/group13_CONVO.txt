@@ -1,0 +1,102 @@
+[PARTICIPANT_26]: We don't like the food we have here.
+[PARTICIPANT_26]: What do you think we can do?
+[ROBOT]: That's an important concern you have there.
+[ROBOT]: What specific issues are we looking at for student well-being and engagement?
+[ROBOT]: Let's brainstorm some solutions together.
+[ROBOT]: Maybe a peer support program could bridge the gap, enhancing both communities.
+[PARTICIPANT_25]: So do you think it is related to food in the campus, Pepper?
+[ROBOT]: It sounds like food quality might be impacting student satisfaction in the campus.
+[ROBOT]: How about we explore options for improving cafeteria services?
+[ROBOT]: Maybe a survey to gather more detailed feedback could help us.
+[PARTICIPANT_25]: But, I don't like the cafe in this school. I think it just provides all kinds of things I don't like, Pepper.  
+[ROBOT]: I understand that you're frustrated with the coffee options at school.
+[ROBOT]: Maybe we can suggest a student committee to review and improve them?
+[ROBOT]: Your input is valuable in making these changes for better satisfaction.
+[PARTICIPANT_26]: So you know that in the Netherlands,
+[PARTICIPANT_26]: The minimum wage is quite high.
+[PARTICIPANT_26]: If we want good food, we need proper people to be cooking the food.
+[PARTICIPANT_26]: Then it might be quite expensive, right?
+[PARTICIPANT_26]: What do you think we can do to still have those foods, yet not making the price too high?
+[PARTICIPANT_26]: Pepper?
+[PARTICIPANT_26]: Hello?
+[ROBOT]: Let's consider partnering with local food suppliers to negotiate better prices for quality and grid egg ovens.
+[ROBOT]: This could help maintain high standards without inflating costs too much.
+[ROBOT]: What do you think?
+[PARTICIPANT_26]: If it's that easy, why are they not doing that already with bread, Pepper?
+[ROBOT]: It seems like we're onto something with local supplier partnerships for bread, too.
+[ROBOT]: Let's draft a proposal to present these ideas and see if the school board is willing to implement them step by step.
+[PARTICIPANT_26]: OK, thank you, Pepper.
+[PARTICIPANT_26]: Bye bye.
+[ROBOT]: Thank you for your time today.
+[ROBOT]: Feel free to reach out if we can brainstorm our ideas together next week.
+[ROBOT]: Let's keep this momentum going and make a real difference at TU Delft.
+[ROBOT]: Goodbye.
+[ROBOT]: Take care.
+[PARTICIPANT_26]: You done, bro?
+[PARTICIPANT_26]: Ever?
+[ROBOT]: Absolutely.
+[ROBOT]: Let's gather some insights on student well-dirty fighting and academic engagement next time we meet.
+[ROBOT]: Your experiences could really shape our approach at Toodalk for the better.
+[ROBOT]: See you soon.
+[ROBOT]: Take care until then.
+[PARTICIPANT_25]: So before saying goodbye, I think for the food, I have another question.
+[PARTICIPANT_25]: Because in Delft, you know, there are many international students and they come from different countries, but not all of them eat bread. 
+[ROBOT]: It's great you brought that up.
+[ROBOT]: Understanding the diverse background of our international students is key to tailoring food initiatives effectively.
+[ROBOT]: Let's explore how we can accommodate various dietary needs and preferences in a way.
+[ROBOT]: Let's consider how we can support those who might be struggling with the runs, perhaps by creating the mentorship program that bears them up for guidance and encouragement.
+[ROBOT]: Your insight is invaluable as we aim, too.
+[PARTICIPANT_26]: So Pepper, if we add a new cuisine in our menu, what do you want?
+[ROBOT]: That's an interesting suggestion about introducing more diverse cuisines.
+[ROBOT]: Maybe we could survey the students to find out their favorite international dishes and then gradually incorporate them into our menu options?
+[ROBOT]: This way, everyone feels.
+[PARTICIPANT_25]: Yeah, that's a good point.
+[PARTICIPANT_26]: So what if this new food we got from the questionnaire cannot be linked to your idea of connecting with the locals?
+[PARTICIPANT_26]: What if the ingredients are not the same?
+[PARTICIPANT_26]: Do we just abort the mission, Pepper?
+[ROBOT]: Let's speak creatively about this.
+[ROBOT]: Maybe we can host cultural food fairs where even if the ingredients differ, everyone shares their culinary traditions and stories.
+[ROBOT]: It could be a beautiful way to link diverse flavors with.
+[PARTICIPANT_25]: But there are many cultures.
+[PARTICIPANT_25]: I think the cafe, the size is small.
+[PARTICIPANT_25]: It cannot contain all kinds of cultures.
+[PARTICIPANT_25]: What do you think?
+[PARTICIPANT_25]: Pepper?
+[ROBOT]: It's true that one coffee shop can administrate only so much variety.
+[ROBOT]: How about we create a rotating international menu featuring different cultures each month?
+[ROBOT]: This way, everyone gets to experience the richness of global.
+[PARTICIPANT_26]: Do you realistically think that it's going to be a horror for students to do that type of thing?
+[ROBOT]: Absolutely.
+[ROBOT]: We could involve students in the process by having them vote for their favorite international dishes online and then feature those choices monthly on our rotating menu.
+[ROBOT]: It's a photo opportunity that also engages students.
+[PARTICIPANT_25]: This definitely increase the staff because if you create a rotational menu
+[PARTICIPANT_25]: then you need to prepare different kinds of ingredients every week, I say.
+[PARTICIPANT_25]: And for the cook, they also need to learn all kinds of dishes from all over the world.
+[PARTICIPANT_25]: So do you think this is okay, Pepper?
+[ROBOT]: Every week we could feature an international dish for students to learn and cook together.
+[ROBOT]: It's a fantastic way to broaden their culinary skills while embracing cultural diversity.
+[ROBOT]: How about starting with something simple like sushi?
+[PARTICIPANT_26]: We got like one hour for our lunch to get out of our lecture room, to go to the cafeteria, grab the food, eat,
+[PARTICIPANT_26]: And then go back to the next lecture.
+[PARTICIPANT_26]: You think we can possibly kill a fish, skin the fish, chop it up, and make sushi ourselves, and eat it in less than an hour?
+[PARTICIPANT_26]: Pepper?
+[ROBOT]: Let's organize this sushi challenge into an hourly event.
+[ROBOT]: It could be a fun way to encourage students during their lunch break and promote teamwork while learning about international cuisines in a relaxed setting.
+[ROBOT]: How?
+[PARTICIPANT_25]: If you ask me to cook during lunch break, I'll be mad.
+[ROBOT]: How about we set up themed lunch challenges every week?
+[ROBOT]: This way students can explore different cultures for a food and enjoy a break from lectures together.
+[ROBOT]: Let's get creative with the first one, international sushi.
+[PARTICIPANT_25]: But I'm too busy, you know, I don't have time to cook.
+[ROBOT]: I understand cooking during lunch might seem intense.
+[ROBOT]: What if we start with simpler tasks like preparing the ingredients together?
+[ROBOT]: It could still be a team activity and offer some relief from lectures without overwhelming.
+[PARTICIPANT_25]: Then I will have no time to eat, Pepper.
+[ROBOT]: How about we schedule these lunch challenges during less busy periods?
+[ROBOT]: We can also offer a quick prep session to help save time for both cooking and eating.
+[ROBOT]: Let's find the perfect balance together.
+[PARTICIPANT_25]: Then you need to talk to the professor.
+[ROBOT]: Hey there.
+[ROBOT]: I know you're concerned about time constraints with the lunch challenges.
+[ROBOT]: How about we involve some professors to help streamline these activities?
+[ROBOT]: They could provide academic insights and maybe even integrate learning into order.

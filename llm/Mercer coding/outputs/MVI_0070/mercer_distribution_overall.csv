@@ -1,0 +1,4 @@
+mercer_label,count,percentage_of_coded,coded_utterance_count,unlabelled_utterance_count
+disputational,5,25.0,20,42
+cumulative,3,15.0,20,42
+exploratory,12,60.0,20,42

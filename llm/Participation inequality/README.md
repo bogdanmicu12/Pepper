@@ -68,6 +68,44 @@ python "llm\Participation inequality\run_adjusted_gini.py" `
 Every run creates a new run folder, so previous result tables are not
 overwritten.
 
+## Run TXT Conversation Folders By Condition
+
+Use this for real conversation exports under `llm\logs\conversations`. Each
+subfolder is treated as one condition, and every `.txt` file in that condition
+is included.
+
+```powershell
+python "llm\Participation inequality\run_condition_gini_from_txt.py"
+```
+
+To run only the current `Proactive_Assertive` condition:
+
+```powershell
+python "llm\Participation inequality\run_condition_gini_from_txt.py" `
+  --condition "Proactive_Assertive"
+```
+
+To run one individual conversation file:
+
+```powershell
+python "llm\Participation inequality\run_condition_gini_from_txt.py" `
+  --conversation-file "llm\logs\conversations\Proactive_Assertive\MVI_0074.txt"
+```
+
+When using `--conversation-file`, the condition defaults to the file's parent
+folder name. You can override it with `--condition`.
+
+The script writes:
+
+- `conversation_gini.csv`: adjusted Gini per conversation and metric.
+- `participant_totals_from_txt.csv`: participant word and turn totals per conversation.
+- `condition_average_gini.csv`: average adjusted Gini per condition.
+- `condition_average_gini.png`: chart of average adjusted Gini per condition.
+
+Because the `.txt` files do not include timestamps, this script computes
+`word_count` and `turn_count` only. Use CSV transcripts with timestamps for
+`speech_time_seconds`.
+
 ## Recommended Measure
 
 My recommendation is to treat `speech_time_seconds` as the best primary measure

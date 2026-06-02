@@ -1,0 +1,108 @@
+[PARTICIPANT_21]: Okay, so let's discuss the current state of campus life for students and how it could be potentially improved both in social aspects as well as academic aspects.
+[PARTICIPANT_21]: Do you have any points you want to start with, social or academic?
+[PARTICIPANT_22]: Yeah, I think we should start with food.
+[PARTICIPANT_21]: Food, okay.
+[PARTICIPANT_21]: Okay, I will start with my own experience.
+[PARTICIPANT_21]: I rarely buy food on campus because it is quite expensive compared to cooking at home.
+[PARTICIPANT_21]: And it's not like the food is much tastier as well.
+[PARTICIPANT_21]: So that is something that would be a lot more convenient if I found it to be a little more valuable.
+[PARTICIPANT_21]: Do you have any experience with food on campus?
+[PARTICIPANT_22]: On the TU Delft campus?
+[PARTICIPANT_22]: No, I don't have any experience.
+[PARTICIPANT_22]: However, I've encountered that food man outside the library, which pretty cool.
+[PARTICIPANT_22]: I think it's quite unique.
+[PARTICIPANT_22]: I didn't have that in my old university.
+[PARTICIPANT_22]: But Pepper, what do you think about food on campus?
+[PARTICIPANT_22]: Do you have any opinions on price or quality?
+[ROBOT]: Consider this, partnering with local vendors could create a vibrant market place that supports students well-being by making nutricious meals more accessible.
+[PARTICIPANT_21]: Would that require the university funding some of these food at like, because if you use local vendors, they obviously won't have food that's cheaper than bigger chains because they don't buy as much.
+[PARTICIPANT_21]: Would you not think that would require a university to fund it?
+[PARTICIPANT_21]: Pepper?
+[ROBOT]: Let's explore potential partnerships with local businesses for subsidized rates to keep costs low and maintain quality.
+[ROBOT]: This could alleviate the need for direct university funding while still supporting students working through accessible nutrition options.
+[PARTICIPANT_21]: Through partnerships, I feel like that would be quite difficult to make it cheaper than it already is.
+[ROBOT]: Let's consider involving student representatives in these partnerships to ensure their needs are met and the initiative feels inclusive.
+[ROBOT]: This can also foster a sense of community engagement among students while enhancing academic support through.
+[PARTICIPANT_21]: Sure, that could be a good idea.
+[PARTICIPANT_21]: Have a representative board that actually involves what the students think, both bachelor, master, and PhD students.
+[PARTICIPANT_21]: Is that just for food, though?
+[PARTICIPANT_21]: Yeah, fair enough.
+[PARTICIPANT_21]: It would be better if you could do that across all.
+[PARTICIPANT_21]: Yeah, like all sorts of student wellbeing.
+[PARTICIPANT_21]: But doesn't that already exist?
+[PARTICIPANT_21]: Well, there's stuff like board of examiners and committees.
+[PARTICIPANT_21]: But yeah, I guess they do have student representatives on campus.
+[PARTICIPANT_21]: Do you have any idea on if that exists, Pepper?
+[ROBOT]: Consider establishing an LACOMP-I student wellbeing and academic engagement committee with representatives from each level of study to address diverse needs.
+[ROBOT]: This could streamline initiatives across campus services more effectively, including but not limited to.
+[PARTICIPANT_21]: Could you continue on your suggestion, Pepper?
+[ROBOT]: Let's expand on that idea of an all-encompassing committee.
+[ROBOT]: We could also integrate a mentorship program where senior students support first years to foster community and reduce feelings of isolation among the student body, enhancing.
+[PARTICIPANT_21]: I think that already exists here, especially in my course.
+[PARTICIPANT_21]: They have mentoring groups where you have to attend it in the first year to ensure that you're integrated properly.
+[PARTICIPANT_21]: But yeah, we've diverged a little bit from food.
+[PARTICIPANT_21]: But yeah, we could talk more about integrating new students into the campus.
+[PARTICIPANT_21]: Is there anything that happened in your old campus that was a good idea, or do you think required improving?
+[PARTICIPANT_21]: Because in my opinion, it's fine here as it is.
+[PARTICIPANT_21]: Is this still about food?
+[PARTICIPANT_22]: No, just integrating first year students.
+[PARTICIPANT_22]: No, I think it was pretty good in my
+[PARTICIPANT_22]: old university where the first years when they wanted to, I mean, during orientation and stuff.
+[ROBOT]: Let's focus on enhancing the mentorship program by incorporating specific work-shaping sessions for first years to improve their academic engagement and sense of belonging at TU Delft.
+[ROBOT]: This could be a game-changer in supporting.
+[PARTICIPANT_21]: Yeah, well, that already exists here, so what were you saying earlier?
+[PARTICIPANT_22]: Yeah, I was saying
+[PARTICIPANT_22]: If you want to join the university, there's no random person who gives you the tour of the university.
+[PARTICIPANT_22]: It's a student.
+[PARTICIPANT_22]: The student has their own experience, personal experience by which they can, you feel more like you're part of the university already.
+[PARTICIPANT_22]: Otherwise, when you're in a class or you want to find new friends, maybe you're living alone and you want to find new roommates for the next semester, et cetera,
+[PARTICIPANT_22]: There's plenty of resources online and some things like in-person meetings or hangouts that you can do to meet other people with whom you want to find places to live with so you're not alone.
+[PARTICIPANT_21]: Yeah, especially I think they could hear.
+[PARTICIPANT_21]: They do have student committees, but it's very geared towards Dutch people.
+[PARTICIPANT_21]: And one of the few international committees, which is called DISS, it's very small, I think less than like 100 members.
+[PARTICIPANT_21]: And yeah, that could be something that could be encouraged to improve student life for international students, especially since we are also international students.
+[PARTICIPANT_21]: Yeah, I think.
+[PARTICIPANT_22]: Pepper, how could this be targeted towards international students,
+[PARTICIPANT_22]: integrating into a university program.
+[ROBOT]: Let's consider establishing an international student integration program that pairs local and international students for mentorship opportunities during orientation week to foster a sense of belonging from the start.
+[ROBOT]: This initiative could include language exchange.
+[PARTICIPANT_22]: OK.
+[PARTICIPANT_22]: But what would this initiative be exactly, Pepper?
+[ROBOT]: Let's focus on initiative and brainstorm some specific activities for the International Student Integration Program, perhaps a buddy system with local students to help ease their transition.
+[ROBOT]: We should also consider language which should operate through weekly.
+[PARTICIPANT_22]: Would it be better to provide them with an online resource as compared to it being something that they have to attend physically, Pepper?
+[ROBOT]: Consider developing an online platform specifically for international students that offers virtual mentorship and language exchange programs.
+[ROBOT]: This could complement the physical initiatives we're discussing to enhance their engagement without adding extra attendance pressure.
+[ROBOT]: Let's?
+[PARTICIPANT_21]: Yeah, let's.
+[PARTICIPANT_21]: I think online workshops and stuff would be better, because it's more convenient, especially towards the beginning.
+[PARTICIPANT_21]: And we do have like a chatting platform for first years, then they can connect to existing students, I think.
+[PARTICIPANT_21]: To be honest, I think that's done pretty well here.
+[PARTICIPANT_21]: And I wanna kind of move on to talking about the biggest problem on campus.
+[PARTICIPANT_21]: Well, specifically for our campus is accommodation.
+[PARTICIPANT_21]: There are very little accommodation on or near campus.
+[PARTICIPANT_21]: So I feel like that detaches a lot of people from
+[PARTICIPANT_21]: campus life to say.
+[PARTICIPANT_21]: So would there be any way to encourage more accommodation on or near campus?
+[PARTICIPANT_21]: How would that work, do you reckon?
+[PARTICIPANT_22]: I think the university should invest more in exclusive accommodations for students
+[PARTICIPANT_22]: building them around campus or investing in infrastructure that makes it easier to travel between campus and to this student village that I'm proposing.
+[PARTICIPANT_22]: I think it's very important because again I've seen your situation with finding houses and just for students generally how difficult it can be but again there's tons of financial problems that come with this so
+[PARTICIPANT_22]: I don't think the university would invest into a project like this.
+[PARTICIPANT_22]: What do you think about this, Pepper?
+[ROBOT]: Let's consider collaborating with local real estate developers to create affordable housing options near campus.
+[ROBOT]: This can alleviate the issue and foster a stronger sense of community among students.
+[ROBOT]: What are your thoughts on potential?
+[PARTICIPANT_21]: I don't know.
+[PARTICIPANT_21]: It feels like there's lots of things we can consider.
+[PARTICIPANT_21]: Like, yeah, we could reach out and try to do sponsorships.
+[PARTICIPANT_21]: But to be realistic, why would real estate companies want to work with the university?
+[ROBOT]: Consider partnering with local businesses for sponsorships to fund affordable housing projects near campus.
+[ROBOT]: This could enhance both student well-being and academic engagement by reducing commute stress.
+[ROBOT]: What do you think about leveraging community resources?
+[PARTICIPANT_21]: such as, could you give an example, Pepper?
+[ROBOT]: Consider reaching out to local businesses and real estate developers for potential sponsorships.
+[ROBOT]: Their involvement could provide a win.
+[ROBOT]: Win situation by supporting student housing while also enhancing the university's reputation in community engagement initiatives.
+[ROBOT]: What?
+[PARTICIPANT_21]: All right.

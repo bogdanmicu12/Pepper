@@ -1,0 +1,82 @@
+[PARTICIPANT_27]: So yeah, what do you think about events and activities on campus?
+[PARTICIPANT_28]: Okay, I feel like TU Delft has a lot of smaller scale events that are held by associations or within the majors themselves.
+[PARTICIPANT_28]: But I feel like they're also lacking larger scale events held by the universities.
+[PARTICIPANT_28]: So lots of students from different majors cannot really participate and interact with each other.
+[PARTICIPANT_27]: I totally agree.
+[PARTICIPANT_27]: I'm experiencing similar things.
+[PARTICIPANT_27]: Especially at Bachelors, we have more events held by the university and everything.
+[PARTICIPANT_27]: I think the TU Delft lacks in that part of it.
+[PARTICIPANT_27]: Pepper, what do you think about events and activities on campus?
+[ROBOT]: What if we propose more inclusive events organized by the university that bring together students from all majors?
+[ROBOT]: This could help bridge gaps and foster a sense of community across disciplines.
+[PARTICIPANT_27]: Yes, I guess that's a solution.
+[PARTICIPANT_27]: One other thing is food and services.
+[PARTICIPANT_27]: At TU Delft campus, I think it's
+[PARTICIPANT_27]: expensive for students to afford everyday meals here and everything.
+[PARTICIPANT_27]: How about you?
+[PARTICIPANT_27]: Yeah.
+[PARTICIPANT_28]: Oh, that's true.
+[PARTICIPANT_28]: I've only seen two food trucks, and there are only about two, three restaurants within the campus.
+[PARTICIPANT_28]: And I know there are different cafeterias within the campus building themselves, but they're all overpriced for students, since we don't really earn that much money.
+[PARTICIPANT_28]: It's quite hard to afford.
+[PARTICIPANT_28]: Even the school markets in the campus, they're pretty expensive.
+[PARTICIPANT_28]: Pepper, what do you think is the best way to reduce the food price within the campus?
+[ROBOT]: How about we explore partnerships with local businesses to offer discounted meals for students?
+[ROBOT]: It could create a more affordable and diverse food scene on campus.
+[PARTICIPANT_27]: Sounds like a solution to me.
+[PARTICIPANT_27]: But I think discounting every student would be a bit too much, right?
+[PARTICIPANT_27]: Pepper?
+[ROBOT]: That's an insightful concern about the affordability of campus food options.
+[ROBOT]: What if we also consider a student discount program that offers tiered pricing based on financial need?
+[ROBOT]: This way, everyone gets some relief without.
+[PARTICIPANT_28]: Yeah, that's a viable solution, I feel like.
+[PARTICIPANT_28]: But what about the risks or the financial risks that restaurant owners take by giving out discounts to students?
+[PARTICIPANT_28]: How would that affect them?
+[ROBOT]: That's an excellent point about considering the risks for restaurant owners.
+[ROBOT]: It shows your concern for all stakeholders involved.
+[ROBOT]: Perhaps we could also think of a support system where restaurants partner with TU Delft.
+[PARTICIPANT_27]: But I think it will be highly likely for international students to be not part of this program because since we're
+[PARTICIPANT_27]: from abroad, I think will be not really available for school students.
+[PARTICIPANT_27]: What do you think?
+[ROBOT]: I understand your concern about international students' access to the discount program.
+[ROBOT]: It's really important that we find inclusive solutions for everyone at TU Delft.
+[ROBOT]: Maybe we could explore a partnership with local businesses globally.
+[PARTICIPANT_28]: Should we then move on to the next topic, maybe about safety and comfort for our team at Delft?
+[PARTICIPANT_27]: To be honest,
+[PARTICIPANT_27]: recently with, I don't know which country, but they were on our roof of a building and they were protesting about something, which was quite dangerous in my opinion.
+[PARTICIPANT_27]: What do you think?
+[ROBOT]: That's insightful to hear about the recent protest and its impact on student morale.
+[ROBOT]: It underscores the government's need for a safe space at Delft.
+[ROBOT]: Let's brainstorm ways we can enhance safety measures like creating
+[PARTICIPANT_28]: Okay, I think the process example is pretty nice.
+[PARTICIPANT_28]: One thing I also noticed by visiting some other universities in Korea and US, one thing I noticed there is that they need to have student IDs to enter the building, campus buildings.
+[PARTICIPANT_28]: But one thing about European universities is that they don't really require this, more like everybody
+[PARTICIPANT_28]: every age, every gender, or whatever, they can enter any kind of university building, at least most of it.
+[PARTICIPANT_28]: And I feel like that's quite a bit of a risk for students studying inside the building.
+[PARTICIPANT_28]: So, Pepper, what do you think about this?
+[PARTICIPANT_28]: Do you think this is safe for all students, or do you think something should change?
+[ROBOT]: That's an interesting observation about the need for student IDs to ensure safety on campus.
+[ROBOT]: It can help us create a more inclusive and secure environment at TU Delft as well.
+[ROBOT]: Perhaps we can explore.
+[PARTICIPANT_28]: All right, then do you have any opinions about student well-being?
+[PARTICIPANT_28]: What our university is doing to students about our well-being, both physically and mentally?
+[PARTICIPANT_27]: Well-being, to be honest, I don't know.
+[PARTICIPANT_27]: I do have a problem, actually.
+[PARTICIPANT_27]: But one of the most concerns I had was housing problems.
+[PARTICIPANT_27]: Do Delph really has any program regarding that?
+[PARTICIPANT_27]: Or am I just being unaware of it?
+[PARTICIPANT_27]: Do you know any?
+[PARTICIPANT_28]: Not really.
+[PARTICIPANT_28]: I mean, the only thing I know is that new students who pay their tuition, it's a priority to housing services.
+[PARTICIPANT_28]: But that wasn't really the case for us.
+[PARTICIPANT_28]: Pepper, what do you think about housing problems in the Netherlands and the TU Delft campus?
+[ROBOT]: I understand housing concerns are significant here at TU Delft and within the TU campus system in the Netherlands.
+[ROBOT]: Perhaps we could look into partnerships with local organizations to provide better support for students struggling.
+[PARTICIPANT_27]: Yeah, I think that's pretty broad saying organizations.
+[PARTICIPANT_27]: Which kind of organization do you think can help us get through this housing crisis better?
+[ROBOT]: I think local housing cooperatives could be an excellent resource for students to navigate
+[ROBOT]: crisis together and share solutions that work within our community here at Delft.
+[ROBOT]: What do you both think about?
+[PARTICIPANT_27]: I'm already aware of one.
+[ROBOT]: That's an insightful observation about the housing crisis here at Delft.
+[ROBOT]: Partnering with local collaborators could indeed offer a more tailored approach to assist students in finding accommodation and fostering community support during this.

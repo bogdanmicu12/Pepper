@@ -1,0 +1,7 @@
+speaker,mercer_label,count,percentage_of_coded,coded_utterance_count,unlabelled_utterance_count
+PARTICIPANT_5,disputational,1,20.0,5,27
+PARTICIPANT_5,cumulative,0,0.0,5,27
+PARTICIPANT_5,exploratory,4,80.0,5,27
+PARTICIPANT_6,disputational,1,20.0,5,13
+PARTICIPANT_6,cumulative,1,20.0,5,13
+PARTICIPANT_6,exploratory,3,60.0,5,13

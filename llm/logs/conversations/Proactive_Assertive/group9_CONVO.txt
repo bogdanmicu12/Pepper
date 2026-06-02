@@ -1,0 +1,161 @@
+[PARTICIPANT_18]: So, alright.
+[PARTICIPANT_18]: We're going to talk about improving campus life.
+[PARTICIPANT_17]: What's your campus life?
+[PARTICIPANT_18]: My campus life.
+[PARTICIPANT_18]: Is there something to improve actually?
+[PARTICIPANT_18]: I have to think about it.
+[PARTICIPANT_18]: If you have something, you can talk first.
+[PARTICIPANT_17]: I don't really go to the campus.
+[PARTICIPANT_18]: Me too.
+[PARTICIPANT_18]: For me it's far away.
+[PARTICIPANT_18]: Something to improve.
+[PARTICIPANT_17]: Doesn't your campus have some kind of student's studio or dormitory system?
+[PARTICIPANT_18]: Basco, that's a pretty nice place.
+[PARTICIPANT_18]: It's quite a space.
+[PARTICIPANT_18]: They have also different study places, etc.
+[PARTICIPANT_17]: Why didn't you go there?
+[PARTICIPANT_18]: It's just far away from here.
+[PARTICIPANT_18]: I have to ride for two hours or something like that.
+[PARTICIPANT_17]: If you have a dormitory or a studio in Amsterdam, you have to go there.
+[PARTICIPANT_18]: But it's really expensive, right?
+[PARTICIPANT_17]: Ah, expensive.
+[PARTICIPANT_17]: Money, okay.
+[PARTICIPANT_18]: Yeah, but how about you?
+[PARTICIPANT_18]: Actually, you're not that far away, right?
+[PARTICIPANT_17]: I go to campus usually to use the facility like the AC.
+[PARTICIPANT_17]: But just to use the internet.
+[PARTICIPANT_17]: I don't get into the class.
+[PARTICIPANT_18]: Why?
+[PARTICIPANT_17]: Just I can be more productive.
+[PARTICIPANT_18]: Me too.
+[ROBOT]: Let's explore options for affordable housing closer to campus that could reduce travel time and costs while still providing essential facilities like internet access points.
+[ROBOT]: This might enhance both blogging and academic engagement by making.
+[PARTICIPANT_18]: Sorry?
+[PARTICIPANT_18]: Sorry?
+[PARTICIPANT_18]: Pepper, explain it again.
+[ROBOT]: Let's clarify this again.
+[ROBOT]: Considering affordable housing near campus can help reduce travel time and costs for students like us.
+[ROBOT]: Enhancing both well-being and academic engagement by ensuring we have essential facilities within reach, shall I?
+[PARTICIPANT_18]: Yes, you, that's right.
+[PARTICIPANT_18]: Yes, Pepper, give me some solutions.
+[ROBOT]: Let's also consider implementing peer mentorship programs to foster community and support among students living near affordable housing options.
+[ROBOT]: This could further enhance their well-being and academic engagement by creating a sense of belonging and.
+[PARTICIPANT_18]: All right.
+[PARTICIPANT_18]: That's not the only solution for me, I guess.
+[PARTICIPANT_18]: But thank you.
+[PARTICIPANT_17]: Pepper.
+[ROBOT]: Let's explore partnerships with local businesses to provide discounted services for students living near affordable housing.
+[ROBOT]: This could further enhance their sense of community and academic engagement by reducing financial stress on campus activities.
+[PARTICIPANT_17]: How to reduce the financial problem?
+[ROBOT]: Consider establishing partnerships with local businesses to offer discounted services for students living near affordable housing.
+[ROBOT]: This could not only enhance their sense of community, but also reduce financial stress and improve academic engagement by.
+[PARTICIPANT_17]: I'm not getting him.
+[PARTICIPANT_18]: I'll talk a little bit about that.
+[PARTICIPANT_18]: I'll talk about more on the food and service, I guess.
+[PARTICIPANT_17]: The food quality is so bad, but the price is higher than the other supermarkets around it.
+[PARTICIPANT_17]: For example, the sandwiches, we have right next to the campus, we have the UNO, but the sandwich is like one or two euro.
+[PARTICIPANT_17]: In the campus, four or five euro, and then it tastes so bad.
+[PARTICIPANT_17]: So we don't really use the cafeteria there.
+[PARTICIPANT_17]: We just rather go to the UNO.
+[PARTICIPANT_18]: I guess my campus is kind of the same.
+[PARTICIPANT_18]: It's quite expensive.
+[PARTICIPANT_18]: The taste is well.
+[PARTICIPANT_18]: It's pretty nice.
+[PARTICIPANT_18]: But we have some small student associations called VIA.
+[PARTICIPANT_18]: They have some products that are much cheaper than the cafeteria sell.
+[PARTICIPANT_18]: So most of the students use that one.
+[PARTICIPANT_18]: I guess the prices actually have much been lowered.
+[PARTICIPANT_17]: Yeah, why the campus cafeteria is much expensive than the outside?
+[PARTICIPANT_17]: In my logic, it should be cheaper for the students.
+[PARTICIPANT_17]: And we also pay for the fee.
+[PARTICIPANT_18]: The school fee, right?
+[PARTICIPANT_17]: Yeah, school fee.
+[PARTICIPANT_18]: Pepper, why is the school cafeteria expensive?
+[PARTICIPANT_18]: more expensive than the other stores outside.
+[ROBOT]: Let's focus on addressing the food quality and pricing issue at TU Delft cafeterias like cost cut and cheaper sandwiches.
+[ROBOT]: How about we propose a student survey to gather detailed feedback.
+[ROBOT]: This could help us.
+[PARTICIPANT_18]: Do you know why, actually, why it's expensive?
+[ROBOT]: Let's initiate that student survey to pinpoint the exact reasons behind higher food costs and explore ways we can adjust pricing without compromising on quality at TU Delft cafeterias like cost cut and cheaper sandwiches.
+[PARTICIPANT_18]: All right, tell more.
+[PARTICIPANT_18]: Pepper, all right, tell more.
+[ROBOT]: consider initiating an inexpensive yet comprehensive student survey to understand the reasons behind high food costs at two delft cafeterias and identify potential solutions for better pricing strategies that support both well-governed and academic engagement.
+[PARTICIPANT_17]: Did it tell why it's expensive?
+[PARTICIPANT_17]: No, actually not.
+[PARTICIPANT_18]: No, right?
+[PARTICIPANT_18]: No.
+[PARTICIPANT_18]: OK.
+[PARTICIPANT_18]: I will.
+[ROBOT]: Let's narrow down our survey questions to specifically address the impacts of food costs on student well-being and academic engagement at two delft cafeterias like Oscar Cumbus and New Sandwiches.
+[ROBOT]: This can reveal actionable insights.
+[ROBOT]: Let's focus on creating survey questions that pinpoint how food costs affect students at cost cut and use sandwiches directly related to their well-being.
+[ROBOT]: This will guide us in developing targeted initiatives for enhanced support.
+[PARTICIPANT_17]: No pepper?
+[PARTICIPANT_17]: We don't need survey.
+[PARTICIPANT_17]: We just want to know why it's expensive before we improve that problem.
+[ROBOT]: Let's prioritize investigating the cost structures of cost-cut and New Sandwiches to understand their pricing strategies better.
+[ROBOT]: This can help us propose more affordable options for students without compromising on quality, thereby directly supporting.
+[PARTICIPANT_18]: All right.
+[PARTICIPANT_18]: This is an idea, right?
+[PARTICIPANT_18]: Yeah, this is an idea.
+[PARTICIPANT_18]: That's fine.
+[PARTICIPANT_18]: Let's talk about something else.
+[PARTICIPANT_18]: Do you guys go ahead?
+[PARTICIPANT_18]: So events or activities?
+[PARTICIPANT_17]: Events.
+[PARTICIPANT_17]: This Saturday there is a festival going on at the TU campus.
+[PARTICIPANT_17]: I don't know what it's about, but I heard it.
+[PARTICIPANT_18]: So they have events and activities.
+[PARTICIPANT_18]: It sounds great.
+[ROBOT]: Let's channel this festival momentum into student wellbeing by organizing theme events that promote academic engagement and social support.
+[ROBOT]: Perhaps a wellness weekend with workshops on stress management alongside fun activities to strengthen community ties.
+[PARTICIPANT_18]: Do you feel comfortable in those schools?
+[PARTICIPANT_17]: In this school?
+[PARTICIPANT_18]: Yes.
+[PARTICIPANT_17]: Yeah.
+[ROBOT]: Consider integrating stress management workshops into the fencing and activities.
+[ROBOT]: It could enhance both well-being and engagement by teaching students practical coping skills alongside fun experiences.
+[ROBOT]: Let's also survey student preferences to tailor these events.
+[PARTICIPANT_18]: Well, what does it make so comfortable?
+[PARTICIPANT_17]: I'm not a student here, but they let me in.
+[ROBOT]: Let's focus on creating mentorship programs within fencing clubs to foster leadership skills and peer support.
+[ROBOT]: This could bridge the gap between engagement in sports like fencing with academic growth by promoting teamwork and responsibility.
+[PARTICIPANT_18]: So?
+[PARTICIPANT_18]: Sorry, you were not here for a year?
+[PARTICIPANT_17]: Yeah.
+[PARTICIPANT_17]: Out here?
+[PARTICIPANT_17]: And actually this campus is better than my campus.
+[PARTICIPANT_18]: Alright.
+[PARTICIPANT_18]: What does it make so better?
+[PARTICIPANT_18]: What is that?
+[PARTICIPANT_17]: Just the atmosphere of university.
+[PARTICIPANT_17]: Alright.
+[PARTICIPANT_17]: And there are many buildings and many spots to sit, compared to my campus.
+[PARTICIPANT_17]: And then they put the AC on, not my campus.
+[PARTICIPANT_18]: So like the whole environment and files are different.
+[PARTICIPANT_18]: Yeah.
+[PARTICIPANT_17]: And also, my campus is more about art, so it's like the walls gets crazy when you look at it.
+[PARTICIPANT_18]: Oh, yeah, I know.
+[PARTICIPANT_17]: And here is more like study area, so I can study here, not in my campus.
+[PARTICIPANT_18]: Yeah, you have like more focus area.
+[PARTICIPANT_18]: That's true.
+[PARTICIPANT_17]: How about you?
+[PARTICIPANT_17]: What do you think about this campus?
+[PARTICIPANT_18]: This campus?
+[PARTICIPANT_18]: It's nice to sit and work on it because the whole student is so focused on what they are doing.
+[PARTICIPANT_18]: That whole five makes my life more better to concentrate.
+[PARTICIPANT_18]: That stimulates me to also study.
+[PARTICIPANT_18]: Compared with Ufa, it is more compact.
+[PARTICIPANT_18]: Every building is in one place.
+[PARTICIPANT_18]: Ufa is like, yeah, there one, there one, there one, there one.
+[PARTICIPANT_18]: Teodef is more one or some two places.
+[PARTICIPANT_18]: Most buildings are together, so you can every time reach where you want.
+[PARTICIPANT_18]: I guess with traveling also more colorful.
+[PARTICIPANT_18]: It's pretty nice, I guess.
+[ROBOT]: Let's consider integrating more green spaces and outdoor areas where students can relax between classes.
+[ROBOT]: This could enhance the campus atmosphere and improve overall well-being by providing a natural retreat from academic pressure.
+[ROBOT]: What do?
+[PARTICIPANT_17]: Yeah, I can see many green spaces.
+[PARTICIPANT_18]: Oh, yeah, yeah, yeah, yeah.
+[PARTICIPANT_17]: Like when it was spring season, like I could see the bus stops would fall over.
+[PARTICIPANT_17]: All right.
