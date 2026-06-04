@@ -1,0 +1,170 @@
+[PARTICIPANT_33]: All right.
+[PARTICIPANT_33]: Hello, hello.
+[PARTICIPANT_34]: Hi.
+[PARTICIPANT_33]: Nice to meet you.
+[PARTICIPANT_33]: Good to see you here.
+[PARTICIPANT_34]: Thank you.
+[PARTICIPANT_33]: OK. Any questions from your side?
+[PARTICIPANT_34]: My side, yeah.
+[PARTICIPANT_33]: So my question is, how can we improve the experience of students on campus?
+[PARTICIPANT_34]: What should I be?
+[PARTICIPANT_33]: Of improving students' life here.
+[PARTICIPANT_33]: Good question.
+[PARTICIPANT_33]: Pepper, what do you think?
+[ROBOT]: Hey there.
+[ROBOT]: I'm glad we're discussing this important aspect of student life at Delft.
+[ROBOT]: What if we explore creating the mentorship program where upperclassmen support freshmen?
+[ROBOT]: It could really foster that sense of community.
+[PARTICIPANT_33]: All right.
+[PARTICIPANT_33]: Good answers.
+[PARTICIPANT_33]: What do you think, PARTICIPANT_34?
+[PARTICIPANT_34]: No.
+[ROBOT]: I don't agree about it.
+[PARTICIPANT_34]: I'm sorry.
+[ROBOT]: I think we could pair students with clubs that align with their interests to improve campus life and engagement.
+[ROBOT]: What do you both reckon about this idea?
+[ROBOT]: It's all about connecting them in.
+[PARTICIPANT_33]: What do you think?
+[PARTICIPANT_33]: I think being a part of club is really nice, but at the same time, I think the amount of studies is quite busy.
+[PARTICIPANT_34]: So what do you think about the clubs?
+[PARTICIPANT_34]: So it's really good for interaction, social interaction.
+[PARTICIPANT_34]: But we are also students in TU Delft and we know that we have a lot of things to do.
+[PARTICIPANT_34]: And for me, and I'm not as smart as other guys, so I have to study more than other people.
+[PARTICIPANT_34]: So for me, it's quite hard to do it, I think.
+[PARTICIPANT_34]: It's quite busy.
+[PARTICIPANT_34]: And I'm also introverted, so it's also really hard to
+[PARTICIPANT_34]: Yeah, I agree.
+[PARTICIPANT_33]: I think it differs by person to person.
+[PARTICIPANT_33]: Because some people have different experiences, some people have different personalities.
+[PARTICIPANT_33]: So I think this might be a difference.
+[PARTICIPANT_33]: Tough question to answer.
+[PARTICIPANT_33]: Improving the experiences for students, I think.
+[PARTICIPANT_33]: Maybe if we really want to do that, and we can differentiate by years, or first and second, by how students are, then maybe we can answer that.
+[PARTICIPANT_34]: What do you think, Pepper?
+[PARTICIPANT_33]: Pepper, what do you think?
+[ROBOT]: Hey there.
+[ROBOT]: What if we create mentorship pairings based on students' interests and academic focus?
+[ROBOT]: This way, they can engage more deeply in clubs that align with their personal goals while still having the social.
+[PARTICIPANT_33]: Can you give some more examples, Pepper?
+[PARTICIPANT_33]: Pepper, can you give more examples of all these?
+[ROBOT]: Sure thing.
+[ROBOT]: However, we also consider setting up interest groups within clubs.
+[ROBOT]: This way, students can connect with peers who share their passions and potentially form study buddies outside of class hours for eight.
+[PARTICIPANT_33]: Isn't Peppermore focused only on clothes?
+[ROBOT]: Absolutely.
+[ROBOT]: Imagine we also established thematic work share-giver groups where students can share their projects and ideas in a supportive environment, like an incubator for both academic growth and social connections within specific years of study or.
+[PARTICIPANT_34]: Well, I think it can also be really overwhelming for students who are really introverted like me.
+[PARTICIPANT_34]: What do you think about that, Pepper?
+[PARTICIPANT_33]: Why is Pepper already looking at me?
+[ROBOT]: Pepper, answer me.
+[ROBOT]: All right, Pepper.
+[ROBOT]: Let's change the topic, I think, at this moment.
+[ROBOT]: What do you think about the safety in genome?
+[PARTICIPANT_33]: Because one of the factors I heard about safety in the adult is that people ride with a big black motor with an electric bike, and they harass people.
+[ROBOT]: Let's pivot to safety concerns.
+[PARTICIPANT_33]: Heather, can you not interrupt me?
+[ROBOT]: How about we brainstorm ways to help and enhance the security and well-being of students on campus?
+[ROBOT]: Maybe a dedicated liaison role can help address these issues directly, ensuring
+[PARTICIPANT_33]: Okay, what do you think?
+[PARTICIPANT_33]: Safety?
+[PARTICIPANT_33]: Yeah.
+[ROBOT]: Let's consider implementing safety work schedule or programs that address these concerns directly.
+[ROBOT]: Perhaps involving electric bike riders and ensuring everyone feels secure on campus.
+[ROBOT]: What specific measures do you think could be effective?
+[PARTICIPANT_34]: What do you think?
+[PARTICIPANT_34]: I have no clue.
+[PARTICIPANT_34]: What do you think?
+[PARTICIPANT_34]: I think safety is really good until you tell me.
+[PARTICIPANT_34]: Is it?
+[PARTICIPANT_34]: From my side, I do agree, but I hear people being
+[PARTICIPANT_33]: I'm insecure about things in QDELF as well, because not just around QDELF, like the roads, but at the same time, like the examinations of QDELF, like how TAs are flooding with ladies in first year students, and TAs do check their gradings, and it's not that easy for them to say those stuff to professors.
+[PARTICIPANT_33]: Like those kind of safety.
+[PARTICIPANT_33]: Oh yeah, I never heard about it, so I didn't know.
+[PARTICIPANT_33]: I mean not me, but like some people do have those experiences.
+[PARTICIPANT_33]: And maybe like kids do have some amount of power to be great students.
+[PARTICIPANT_33]: So they just use that thing as a controlling people with that.
+[PARTICIPANT_33]: I don't know, what do you think about this?
+[PARTICIPANT_34]: First of all, it's not good to...
+[ROBOT]: I appreciate your observations about safety concerns and the unique challenges faced by first-year students in interacting with professors.
+[ROBOT]: Let's explore how we can develop a mentorship program that pairs upperclassmen with newcomers to foster.
+[PARTICIPANT_33]: Have you never experienced something like that?
+[ROBOT]: It's important to invest power dynamics in mentorship programs too.
+[ROBOT]: Perhaps we could include training for both students and faculty on respectful communication.
+[ROBOT]: This might help create a more supportive environment where everyone feels valued.
+[PARTICIPANT_34]: Yeah.
+[PARTICIPANT_34]: How can we make that?
+[PARTICIPANT_34]: It's quite hard to do that.
+[ROBOT]: Let's explore how we can empower mentorship programs by creating works for these sessions where students and faculty alike share their experiences on power dynamics.
+[ROBOT]: This could really strengthen our approach to student well-being.
+[ROBOT]: What do you?
+[PARTICIPANT_33]: Well, I think when they're feeling unconcerned, when they're concerned about something or they're being harassed with something, it's not that easy for them to actually save those experiences.
+[PARTICIPANT_33]: Yeah, it's really hard to say that.
+[PARTICIPANT_33]: Maybe if they could, it'd be, I don't know where to actually say all these experiences to, but I think it's hard for them to actually say all this.
+[PARTICIPANT_33]: What do you think?
+[PARTICIPANT_33]: You were saying something, right?
+[ROBOT]: What if we started with smaller groups to ease into these discussions?
+[ROBOT]: Beginning with 10 sessions could help build trust and openness as everyone feels more comfortable sharing their experiences on Power Dynamics in A.
+[PARTICIPANT_34]: or give me the form support or something, because in fact, professors are creating their grades.
+[PARTICIPANT_34]: So everyone's, I think, scared to say something about that.
+[PARTICIPANT_34]: Yeah, maybe.
+[PARTICIPANT_33]: And you were saying something about it, right?
+[PARTICIPANT_33]: You were saying something, but you hesitated to say something.
+[PARTICIPANT_34]: No, no, it's not that important.
+[PARTICIPANT_34]: I think it's not that important in this conversation.
+[PARTICIPANT_34]: OK, all right.
+[ROBOT]: Let's explore creating an anonymous reporting system for safety concerns that can be easily accessed by students and faculty alike to encourage more open dialogue about these issues without fear of judgment.
+[ROBOT]: This could help.
+[ROBOT]: You know, what I thought was that maybe, I think students, like the ASU didn't check their... What if we implemented peer support groups that facilitate sharing experiences anonymously?
+[ROBOT]: This could build a community of trust and understanding around safety concerns that developed.
+[PARTICIPANT_34]: And it has to be anonymous.
+[PARTICIPANT_33]: Yeah, but he says that if you do that, maybe it might not take it as a serious concern.
+[PARTICIPANT_33]: Or maybe like any random people can just say something with that, using that, because their names are not gonna be exposed.
+[PARTICIPANT_34]: Also, they can exaggerate their experience.
+[PARTICIPANT_33]: Maybe, I don't know, maybe those are my... No, it's possible, it's possible.
+[PARTICIPANT_33]: Yeah, it's possible, right?
+[PARTICIPANT_34]: Yeah, they can exaggerate their experience and say something bad to you.
+[ROBOT]: How about we consider implementing regular workshop opening sessions where students can voice their concerns in a structured environment.
+[ROBOT]: This way, everyone's worries are taken seriously and addressed constructively by both peers and faculty.
+[ROBOT]: It could
+[PARTICIPANT_34]: or we talk about social interactions, so we can make a club or something, or we can say our experience or something.
+[PARTICIPANT_33]: To be honest, this kind of work is being done at the teaching academy called SPICE.
+[PARTICIPANT_33]: Really?
+[PARTICIPANT_33]: Yeah.
+[PARTICIPANT_33]: The students' team, they're getting paid for saying about the students' perspectives.
+[PARTICIPANT_33]: So they collect students' perspectives, they do safety and stuff.
+[PARTICIPANT_33]: They gain experiences from students' perspective, and they make a document about it or make
+[PARTICIPANT_33]: or radio or something.
+[PARTICIPANT_33]: Those are like their kind of shops.
+[PARTICIPANT_33]: Yeah, it isn't good.
+[PARTICIPANT_33]: I didn't know that.
+[PARTICIPANT_33]: Alright, let's change to the new topic.
+[PARTICIPANT_34]: Food and services?
+[PARTICIPANT_34]: Yeah, food and services.
+[PARTICIPANT_34]: First of all, it's too expensive.
+[PARTICIPANT_34]: There are only students here.
+[PARTICIPANT_34]: With rich people?
+[PARTICIPANT_34]: Okay.
+[PARTICIPANT_34]: You know, I think all the students are not that rich, I think.
+[PARTICIPANT_34]: So for example, I went to a spa and compared it to normal price and hour time, it was too expensive.
+[PARTICIPANT_34]: Yeah, that's true, that's right.
+[PARTICIPANT_34]: And I also talked with my friend like, why is it so expensive here?
+[PARTICIPANT_34]: Because there's only students and they have to eat.
+[PARTICIPANT_34]: Yeah, that's true.
+[PARTICIPANT_34]: It would be really nice if the foods or activities are more cheaper.
+[PARTICIPANT_34]: compared with other supermarkets.
+[PARTICIPANT_33]: Yeah, I agree.
+[PARTICIPANT_33]: I mean, it's really the campus side.
+[PARTICIPANT_33]: You know, I agree it should be cheaper.
+[PARTICIPANT_33]: But I think sparse, like in Korea, we say convenience store.
+[PARTICIPANT_33]: So I think that's why it's a bit expensive compared to other times.
+[PARTICIPANT_33]: But I think, yeah, it should be cheaper for students, I think, for them to actually study there and save their time.
+[PARTICIPANT_33]: Right?
+[PARTICIPANT_34]: What do you think, Pepper?
+[PARTICIPANT_34]: Pepper, he's talking with him like regular employees.
+[PARTICIPANT_33]: He's so weird.
+[PARTICIPANT_33]: Why is he always looking at me?
+[ROBOT]: That's an interesting suggestion about regular sessions for students to share their experiences constructively.
+[ROBOT]: How about we also explore an idea of student committees that can directly influence pricing and services within these facilities.
+[ROBOT]: This.
+[PARTICIPANT_33]: Oh, thank you Pepper.
+[PARTICIPANT_33]: We had a good discussion.

@@ -1,7 +1,0 @@
-dataset,analysis_group,speaker,word_count,turn_count,speech_time_seconds
-test4,convergence,Participant 1,336,15,206.0
-test4,convergence,Participant 2,336,15,210.0
-test4,divergence,Participant 1,491,17,237.0
-test4,divergence,Participant 2,413,16,210.0
-test4,overall,Participant 1,827,32,443.0
-test4,overall,Participant 2,749,31,420.0

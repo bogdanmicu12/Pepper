@@ -1,3 +1,0 @@
-condition,metric,conversation_count,mean_adjusted_gini,mean_standard_gini,min_adjusted_gini,max_adjusted_gini
-Proactive_Assertive,turn_count,2,0.105,0.0525,0.0492,0.1607
-Proactive_Assertive,word_count,2,0.1075,0.0538,0.048,0.167

@@ -1,0 +1,110 @@
+[PARTICIPANT_39]: Should we start with maybe student well-being?
+[PARTICIPANT_39]: Start talking about that?
+[PARTICIPANT_40]: Yeah.
+[PARTICIPANT_40]: By well-being, is that like mental health stuff?
+[PARTICIPANT_40]: Or maybe... Yeah, that's also...
+[PARTICIPANT_40]: This is a pretty broad topic.
+[PARTICIPANT_39]: Actually, let's just start with safety and comfort, because I have an idea for that.
+[ROBOT]: Hey there.
+[ROBOT]: What if we explore creating more peer support groups focused on mental health?
+[ROBOT]: It could really enhance our sense of community and well-being here at Delft.
+[ROBOT]: Thoughts?
+[PARTICIPANT_40]: I like that idea, yeah.
+[PARTICIPANT_39]: Yeah, that's a good idea.
+[PARTICIPANT_39]: I actually haven't really looked into that, so I don't know if they already have stuff like that.
+[PARTICIPANT_39]: Yeah, same.
+[PARTICIPANT_39]: Support.
+[PARTICIPANT_39]: Oh, but they do have counselors already.
+[ROBOT]: Let's dive deeper into your idea about safety and comfort by considering how we can integrate it with existing peer support initiatives to create a more cohesive well-being program for students that developed.
+[ROBOT]: What?
+[PARTICIPANT_40]: Well, I guess that can tie in with safety and stuff.
+[PARTICIPANT_40]: Because if everyone feels more mentally well, then there's less safety to worry about, maybe.
+[PARTICIPANT_39]: Also, I don't know if this is super important, but in the Netherlands, they ride a lot of bikes.
+[ROBOT]: Let's build on this by suggesting we develop workshops that connect the existing counseling services with peer support groups to enhance both safety and mental well-being at Delft.
+[ROBOT]: What do you think?
+[PARTICIPANT_39]: As I said, I think in that area, it's already pretty good.
+[PARTICIPANT_39]: Something else I was trying to talk about was having crosswalks, little crosswalks.
+[PARTICIPANT_39]: It's not really clear where people should walk because everyone's on bikes.
+[PARTICIPANT_40]: I noticed that today on the way in.
+[PARTICIPANT_39]: Sometimes you just have to go.
+[PARTICIPANT_40]: Pepper, what do you think about adding crosswalks across bike lanes?
+[ROBOT]: How about we propose an initiative for clearer crosswalk markers and also integrate them with local bike community events to promote safety awareness?
+[ROBOT]: It could really tie in well-being by reducing accidents, true.
+[PARTICIPANT_40]: How is the food here?
+[PARTICIPANT_39]: I haven't really tried much, but they have some restaurants here and there, but every building sometimes they have a small food corner kind of restaurant thing.
+[PARTICIPANT_39]: So they do have a lot of variety, but there's a main building called Aula.
+[PARTICIPANT_39]: But the only thing I dislike there is it's all vegan.
+[PARTICIPANT_39]: Oh, interesting.
+[PARTICIPANT_40]: Just like more variety would be good, maybe.
+[PARTICIPANT_39]: Yeah, maybe like something with more meat.
+[PARTICIPANT_39]: I don't know if this is controversial, but that's what I would prefer.
+[PARTICIPANT_39]: But other than that, they do have food stalls, food trucks.
+[ROBOT]: That's an interesting perspective on food variety.
+[ROBOT]: What if we had also surveyed students to understand their dietary preferences better?
+[ROBOT]: To Delft could tailor the dining options across campuses more effectively for everyone's satisfaction.
+[PARTICIPANT_39]: Yeah, that's actually a really good idea.
+[ROBOT]: I like that idea.
+[PARTICIPANT_40]: Because it's interesting where you just kind of go lowest common denominator with vegan, but that does cut out a larger portion of the campus.
+[PARTICIPANT_39]: events and activities, maybe.
+[ROBOT]: Let's consider organizing monthly food festivals with diverse options to cater to all dietary preferences and encourage more student participation in campus life.
+[ROBOT]: This could really boost the sense of community among students with two.
+[PARTICIPANT_40]: Yeah, I like that.
+[PARTICIPANT_40]: I like eating different kinds of food from around the world, so I think it would be nice.
+[PARTICIPANT_39]: Maybe like food culture, like maybe once a year or something.
+[PARTICIPANT_40]: Yeah, yeah.
+[PARTICIPANT_40]: Or like have a different group each month.
+[PARTICIPANT_40]: Because are there country-based societies here?
+[PARTICIPANT_40]: I think, yeah.
+[PARTICIPANT_40]: I know there's a Korean one.
+[PARTICIPANT_40]: So maybe those student groups could head up like, oh, this is like Korean appreciation month where they do a Korean food and have the Tamil Student Society if there is one.
+[PARTICIPANT_40]: That's just me.
+[PARTICIPANT_39]: I think that's also great for social interaction.
+[PARTICIPANT_39]: You can learn about other people's cultures and things like that.
+[PARTICIPANT_40]: Be a truly international university.
+[PARTICIPANT_39]: Also very international school.
+[PARTICIPANT_40]: Pepper, how would you encourage social interaction for new international students?
+[ROBOT]: How about organizing an international food festival on campus?
+[ROBOT]: It could be held quarterly to allow students from various backgrounds to share their culinary traditions and foster a sense of community through food exploration.
+[PARTICIPANT_40]: or maybe like cultural events too.
+[PARTICIPANT_40]: It doesn't have to be food.
+[PARTICIPANT_40]: Because I know at Trinity up in Dublin there's like the global room so I wonder if there could be something like that here where it's a space specifically for new international students to host various events so that there's always food but also like events in a specific space so I don't know if there's something like that here or we could implement something like that here.
+[PARTICIPANT_39]: Pepper, do you have any other ideas for improving social interaction?
+[ROBOT]: What if we create a mentorship program pairing international students with local ones?
+[ROBOT]: This could provide ongoing support and friendship opportunities beyond the events.
+[PARTICIPANT_39]: What do you mean by mentorship program?
+[PARTICIPANT_39]: Could you expand on it, maybe?
+[PARTICIPANT_39]: Pepper, could you expand on what you mean by the mentorship program?
+[ROBOT]: Absolutely.
+[ROBOT]: However, we also organize regular cultural exchange Fridays where students can share their traditions and learn from each other through food tasting sessions.
+[ROBOT]: This could enhance both social bonds and cultural understanding within.
+[PARTICIPANT_39]: Expanding on the mentorship program thing, like at least in first year we have like a thing called Mentorship, literally called Mentorate Mentorate and you basically like, there's like a second year comes and they basically like help you, it's like once per week they help you out with things sometimes
+[PARTICIPANT_39]: But it's only for the first quarter.
+[PARTICIPANT_39]: So maybe if people want it, if students want it, maybe you could survey on this as well.
+[PARTICIPANT_39]: If students want it, maybe you could expand it for more quarters or things like that.
+[PARTICIPANT_40]: That would be good.
+[PARTICIPANT_40]: I know my university has something similar, but there's no way of following up on it.
+[PARTICIPANT_40]: So I got paired with the third year, and we emailed maybe twice, and then that was it.
+[PARTICIPANT_40]: But yeah, expanding it beyond the first quarter would be, I think that might be cool.
+[PARTICIPANT_39]: Yeah, also something I realized, I don't know if it was just me, but I felt like mentor it could have probably improved upon.
+[PARTICIPANT_39]: I felt like it was kind of forced on us sometimes.
+[PARTICIPANT_39]: So maybe you could also ask for students' opinions on what they struggle with and what actually they want to help with.
+[PARTICIPANT_39]: So maybe it's a more productive and not
+[ROBOT]: about the mentorship program and cultural exchange Fridays.
+[ROBOT]: What if we had also integrated a feedback system after each event to gather student insights for continuous improvement?
+[ROBOT]: This way, students feel their voices are.
+[PARTICIPANT_40]: Yeah, I think that would be good, just like a survey.
+[PARTICIPANT_40]: And if you wanted to maybe incentivize, you could add a coupon for somewhere, like a discount.
+[ROBOT]: Let's implement an anonymous suggestion box online where students can continuously submit their thoughts on well-being initiatives.
+[ROBOT]: It could really help us tailor our approach effectively.
+[PARTICIPANT_39]: Pepper, we're kind of stuck on what we should talk about.
+[PARTICIPANT_39]: Could you give us an idea of how we could improve safety and comfort on campus?
+[ROBOT]: Absolutely.
+[ROBOT]: Let's consider setting up regular safety patrol groups with student volunteers to enhance campus security and comfort.
+[ROBOT]: We could even offer recognition for their service as a way of incentivizing participation.
+[ROBOT]: How does that sound?
+[PARTICIPANT_39]: That sounds good, because it rains a lot here, and sometimes riding a bike through the rain.
+[PARTICIPANT_39]: Although it's common for Dutch people, I think.
+[PARTICIPANT_39]: It just sounds dangerous, and it is dangerous sometimes.
+[PARTICIPANT_39]: So maybe a few students volunteering for crowded places at least, for the intersection between the tram lines.
+[PARTICIPANT_39]: Give people something to do.
+[ROBOT]: Let's organize monthly Bike Buddies events where students can volunteer for safe biking routes during rainy days.

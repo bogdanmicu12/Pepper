@@ -1,0 +1,21 @@
+condition,conversation,metric,adjusted_gini,standard_gini,participant_count,total_value,min_participant_value,max_participant_value,interpretation
+Proactive_Supportive,group13_CONVO,word_count,0.0743,0.0372,2,417.0,193.0,224.0,very equal
+Proactive_Supportive,group13_CONVO,turn_count,0.122,0.061,2,41.0,18.0,23.0,mild inequality
+Proactive_Supportive,group14_CONVO,word_count,0.1879,0.0939,2,628.0,255.0,373.0,mild inequality
+Proactive_Supportive,group14_CONVO,turn_count,0.0714,0.0357,2,56.0,26.0,30.0,very equal
+Proactive_Supportive,group15_CONVO,word_count,0.145,0.0725,2,676.0,289.0,387.0,mild inequality
+Proactive_Supportive,group15_CONVO,turn_count,0.1148,0.0574,2,61.0,27.0,34.0,mild inequality
+Proactive_Supportive,group16_CONVO,word_count,0.5101,0.255,2,694.0,170.0,524.0,high inequality
+Proactive_Supportive,group16_CONVO,turn_count,0.3667,0.1833,2,60.0,19.0,41.0,moderate inequality
+Proactive_Supportive,group17_CONVO,word_count,0.2631,0.1315,2,1053.0,388.0,665.0,moderate inequality
+Proactive_Supportive,group17_CONVO,turn_count,0.1452,0.0726,2,124.0,53.0,71.0,mild inequality
+Proactive_Supportive,group18_CONVO,word_count,0.525,0.2625,2,741.0,176.0,565.0,high inequality
+Proactive_Supportive,group18_CONVO,turn_count,0.5529,0.2765,2,85.0,19.0,66.0,high inequality
+Proactive_Supportive,group19_CONVO_SUNNY,word_count,0.204,0.102,2,1098.0,437.0,661.0,mild inequality
+Proactive_Supportive,group19_CONVO_SUNNY,turn_count,0.0337,0.0169,2,89.0,43.0,46.0,very equal
+Proactive_Supportive,group20_CONVO,word_count,0.1778,0.0889,2,900.0,370.0,530.0,mild inequality
+Proactive_Supportive,group20_CONVO,turn_count,0.1688,0.0844,2,77.0,32.0,45.0,mild inequality
+Proactive_Supportive,group21_CONVO,word_count,0.1095,0.0548,2,557.0,248.0,309.0,mild inequality
+Proactive_Supportive,group21_CONVO,turn_count,0.1429,0.0714,2,42.0,18.0,24.0,mild inequality
+Proactive_Supportive,group22_CONVO,word_count,0.0234,0.0117,2,1579.0,771.0,808.0,very equal
+Proactive_Supportive,group22_CONVO,turn_count,0.0074,0.0037,2,135.0,67.0,68.0,very equal

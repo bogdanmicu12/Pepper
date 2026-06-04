@@ -1,4 +1,0 @@
-dataset,analysis_group,word_count_gini,turn_count_gini,speech_time_seconds_gini
-test4,convergence,0.0,0.0,0.0096
-test4,divergence,0.0863,0.0303,0.0604
-test4,overall,0.0495,0.0159,0.0267
