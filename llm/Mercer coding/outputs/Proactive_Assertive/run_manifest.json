@@ -1,0 +1,36 @@
+{
+  "output_dir": "C:\\Users\\Hrsem\\Documents\\University\\Y3\\RP\\Pepper\\llm\\Mercer coding\\outputs\\Proactive_Assertive",
+  "participant_utterances_labelled": 843,
+  "participant_utterances_coded": 316,
+  "participant_utterances_unlabelled": 527,
+  "generated_files": [
+    "charts\\mercer_distribution_by_condition.png",
+    "charts\\mercer_distribution_by_phase.png",
+    "charts\\mercer_distribution_by_speaker.png",
+    "charts\\mercer_distribution_overall.png",
+    "mercer_distribution_by_condition.csv",
+    "mercer_distribution_by_conversation.csv",
+    "mercer_distribution_by_phase.csv",
+    "mercer_distribution_by_speaker.csv",
+    "mercer_distribution_overall.csv",
+    "mercer_labelled_utterances.csv",
+    "mercer_unlabelled_utterances.csv"
+  ],
+  "note": "Automatic conservative heuristic labels. Blank mercer_label means no explicit disputational, cumulative, or exploratory talk marker was detected. Review labels and rationales before treating them as final human-coded data.",
+  "mode": "condition",
+  "condition": "Proactive_Assertive",
+  "condition_folder": "C:\\Users\\Hrsem\\Documents\\University\\Y3\\RP\\Pepper\\llm\\logs\\conversations\\Proactive_Assertive",
+  "conversation_file_count": 10,
+  "conversation_files": [
+    "group10_CONVO_STEFAN.txt",
+    "group11_CONVO_HONOURS.txt",
+    "group12_CONVO.txt",
+    "group1_CONVO.txt",
+    "group2_CONVO.txt",
+    "group3_CONVO.txt",
+    "group4_CONVO_LUCHO.txt",
+    "group5_CONVO.txt",
+    "group6_CONVO.txt",
+    "group9_CONVO.txt"
+  ]
+}

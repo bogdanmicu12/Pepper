@@ -18,6 +18,7 @@ except ImportError as error:
 
 
 DEFAULT_TRANSCRIPT = Path("llm/logs/synthetic_tu_delft_campus_experience/transcript.csv")
+DEFAULT_CONVERSATIONS_ROOT = Path("llm/logs/conversations")
 DEFAULT_OUTPUT_DIR = Path("llm/Mercer coding/outputs")
 PARTICIPANT_EVENT_TYPE = "participant"
 MERCER_LABELS = ("disputational", "cumulative", "exploratory")
@@ -255,7 +256,7 @@ def participant_rows(rows: Iterable[dict[str, str]]) -> list[dict[str, str]]:
     ]
 
 
-def label_transcript(rows: list[dict[str, str]]) -> list[dict[str, object]]:
+def label_transcript(rows: list[dict[str, str]], condition: str = "", source_file: str = "") -> list[dict[str, object]]:
     if not rows:
         raise ValueError("Transcript is empty.")
     required = {"event_type", "speaker", "text"}
@@ -276,6 +277,8 @@ def label_transcript(rows: list[dict[str, str]]) -> list[dict[str, object]]:
             {
                 "session_id": row.get("session_id", ""),
                 "group_id": row.get("group_id", ""),
+                "condition": condition or row.get("condition", ""),
+                "source_file": source_file or row.get("source_file", ""),
                 "conversation_id": row.get("conversation_id", ""),
                 "sequence_index": row.get("sequence_index", ""),
                 "timestamp": row.get("timestamp", ""),
@@ -291,6 +294,29 @@ def label_transcript(rows: list[dict[str, str]]) -> list[dict[str, object]]:
             }
         )
         previous_text = text
+    return labelled
+
+
+def label_condition_folder(condition_dir: Path) -> list[dict[str, object]]:
+    if not condition_dir.exists():
+        raise FileNotFoundError(f"Condition folder not found: {condition_dir}")
+    if not condition_dir.is_dir():
+        raise NotADirectoryError(f"Condition path is not a folder: {condition_dir}")
+
+    txt_files = sorted(condition_dir.glob("*.txt"))
+    if not txt_files:
+        raise FileNotFoundError(f"No .txt files found in condition folder: {condition_dir}")
+
+    labelled: list[dict[str, object]] = []
+    for transcript_path in txt_files:
+        file_rows = read_transcript(transcript_path)
+        labelled.extend(
+            label_transcript(
+                file_rows,
+                condition=condition_dir.name,
+                source_file=transcript_path.name,
+            )
+        )
     return labelled
 
 
@@ -433,29 +459,36 @@ def draw_bar_chart(summary: Sequence[dict[str, object]], title: str, output_path
     image.save(output_path)
 
 
-def save_outputs(transcript_path: Path, output_dir: Path) -> None:
+def save_labelled_outputs(
+    labelled: list[dict[str, object]],
+    output_dir: Path,
+    manifest_extra: dict[str, object],
+) -> None:
     chart_dir = output_dir / "charts"
     output_dir.mkdir(parents=True, exist_ok=True)
     chart_dir.mkdir(parents=True, exist_ok=True)
 
-    labelled = label_transcript(read_transcript(transcript_path))
     unlabelled = [row for row in labelled if not clean(row.get("mercer_label"))]
     overall = summarize_distribution(labelled, [])
+    by_condition = summarize_distribution(labelled, ["condition"])
+    by_conversation = summarize_distribution(labelled, ["condition", "conversation_id"])
     by_phase = summarize_distribution(labelled, ["phase"])
     by_speaker = summarize_distribution(labelled, ["speaker"])
 
     write_csv(output_dir / "mercer_labelled_utterances.csv", labelled)
     write_csv(output_dir / "mercer_unlabelled_utterances.csv", unlabelled)
     write_csv(output_dir / "mercer_distribution_overall.csv", overall)
+    write_csv(output_dir / "mercer_distribution_by_condition.csv", by_condition)
+    write_csv(output_dir / "mercer_distribution_by_conversation.csv", by_conversation)
     write_csv(output_dir / "mercer_distribution_by_phase.csv", by_phase)
     write_csv(output_dir / "mercer_distribution_by_speaker.csv", by_speaker)
 
     draw_bar_chart(overall, "Mercer Talk Type Distribution", chart_dir / "mercer_distribution_overall.png")
+    draw_bar_chart(by_condition, "Mercer Talk Type Distribution by Condition", chart_dir / "mercer_distribution_by_condition.png", group_col="condition")
     draw_bar_chart(by_phase, "Mercer Talk Type Distribution by Phase", chart_dir / "mercer_distribution_by_phase.png", group_col="phase")
     draw_bar_chart(by_speaker, "Mercer Talk Type Distribution by Speaker", chart_dir / "mercer_distribution_by_speaker.png", group_col="speaker")
 
     manifest = {
-        "input_transcript": str(transcript_path.resolve()),
         "output_dir": str(output_dir.resolve()),
         "participant_utterances_labelled": len(labelled),
         "participant_utterances_coded": len(labelled) - len(unlabelled),
@@ -463,8 +496,35 @@ def save_outputs(transcript_path: Path, output_dir: Path) -> None:
         "generated_files": sorted(str(path.relative_to(output_dir)) for path in output_dir.rglob("*") if path.is_file()),
         "note": "Automatic conservative heuristic labels. Blank mercer_label means no explicit disputational, cumulative, or exploratory talk marker was detected. Review labels and rationales before treating them as final human-coded data.",
     }
+    manifest.update(manifest_extra)
     with (output_dir / "run_manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2)
+
+
+def save_outputs(transcript_path: Path, output_dir: Path) -> None:
+    labelled = label_transcript(read_transcript(transcript_path))
+    save_labelled_outputs(
+        labelled,
+        output_dir,
+        {"input_transcript": str(transcript_path.resolve()), "mode": "transcript"},
+    )
+
+
+def save_condition_outputs(conversations_root: Path, condition: str, output_dir: Path) -> None:
+    condition_dir = conversations_root / condition
+    labelled = label_condition_folder(condition_dir)
+    source_files = sorted({clean(row.get("source_file")) for row in labelled if clean(row.get("source_file"))})
+    save_labelled_outputs(
+        labelled,
+        output_dir,
+        {
+            "mode": "condition",
+            "condition": condition_dir.name,
+            "condition_folder": str(condition_dir.resolve()),
+            "conversation_file_count": len(source_files),
+            "conversation_files": source_files,
+        },
+    )
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
@@ -472,13 +532,18 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         description="Label participant utterances as Mercer 2005 disputational, cumulative, or exploratory talk and graph the distribution."
     )
     parser.add_argument("--transcript", default=str(DEFAULT_TRANSCRIPT), help="Input transcript CSV.")
+    parser.add_argument("--conversations-root", default=str(DEFAULT_CONVERSATIONS_ROOT), help="Folder containing condition subfolders.")
+    parser.add_argument("--condition", default="", help="Analyze every .txt file in one condition folder, for example Proactive_Assertive.")
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Output directory for CSVs and charts.")
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
-    save_outputs(Path(args.transcript), Path(args.output_dir))
+    if args.condition:
+        save_condition_outputs(Path(args.conversations_root), args.condition, Path(args.output_dir))
+    else:
+        save_outputs(Path(args.transcript), Path(args.output_dir))
     print(f"Wrote Mercer coding outputs to {Path(args.output_dir).resolve()}")
     return 0
 

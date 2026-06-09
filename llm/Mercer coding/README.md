@@ -40,6 +40,14 @@ python "llm\Mercer coding\label_mercer_and_graph.py" `
   --output-dir "llm\Mercer coding\outputs\MVI_0074"
 ```
 
+To code every `.txt` file in a condition folder and aggregate the totals:
+
+```powershell
+python "llm\Mercer coding\label_mercer_and_graph.py" `
+  --condition "Proactive_Assertive" `
+  --output-dir "llm\Mercer coding\outputs\Proactive_Assertive"
+```
+
 ## Outputs
 
 The script writes:
@@ -47,9 +55,12 @@ The script writes:
 - `outputs/mercer_labelled_utterances.csv`
 - `outputs/mercer_unlabelled_utterances.csv`
 - `outputs/mercer_distribution_overall.csv`
+- `outputs/mercer_distribution_by_condition.csv`
+- `outputs/mercer_distribution_by_conversation.csv`
 - `outputs/mercer_distribution_by_phase.csv`
 - `outputs/mercer_distribution_by_speaker.csv`
 - `outputs/charts/mercer_distribution_overall.png`
+- `outputs/charts/mercer_distribution_by_condition.png`
 - `outputs/charts/mercer_distribution_by_phase.png`
 - `outputs/charts/mercer_distribution_by_speaker.png`
 - `outputs/run_manifest.json`

@@ -1,4 +1,5 @@
 activate_naoqi.ps1
 .env
 /llm/infra/__pycache__/
+/llm/Mercer coding/__pycache__/
 .venv/

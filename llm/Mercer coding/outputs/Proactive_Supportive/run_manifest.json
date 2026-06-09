@@ -1,0 +1,37 @@
+{
+  "output_dir": "C:\\Users\\Hrsem\\Documents\\University\\Y3\\RP\\Pepper\\llm\\Mercer coding\\outputs\\Proactive_Supportive",
+  "participant_utterances_labelled": 770,
+  "participant_utterances_coded": 284,
+  "participant_utterances_unlabelled": 486,
+  "generated_files": [
+    "charts\\mercer_distribution_by_condition.png",
+    "charts\\mercer_distribution_by_phase.png",
+    "charts\\mercer_distribution_by_speaker.png",
+    "charts\\mercer_distribution_overall.png",
+    "mercer_distribution_by_condition.csv",
+    "mercer_distribution_by_conversation.csv",
+    "mercer_distribution_by_phase.csv",
+    "mercer_distribution_by_speaker.csv",
+    "mercer_distribution_overall.csv",
+    "mercer_labelled_utterances.csv",
+    "mercer_unlabelled_utterances.csv",
+    "run_manifest.json"
+  ],
+  "note": "Automatic conservative heuristic labels. Blank mercer_label means no explicit disputational, cumulative, or exploratory talk marker was detected. Review labels and rationales before treating them as final human-coded data.",
+  "mode": "condition",
+  "condition": "Proactive_Supportive",
+  "condition_folder": "C:\\Users\\Hrsem\\Documents\\University\\Y3\\RP\\Pepper\\llm\\logs\\conversations\\Proactive_Supportive",
+  "conversation_file_count": 10,
+  "conversation_files": [
+    "group13_CONVO.txt",
+    "group14_CONVO.txt",
+    "group15_CONVO.txt",
+    "group16_CONVO.txt",
+    "group17_CONVO.txt",
+    "group18_CONVO.txt",
+    "group19_CONVO_SUNNY.txt",
+    "group20_CONVO.txt",
+    "group21_CONVO.txt",
+    "group22_CONVO.txt"
+  ]
+}
