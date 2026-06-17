@@ -31,6 +31,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROMPT_BANK = ROOT / "prompts" / "prompt_bank.csv"
 COUNTERBALANCING = ROOT / "design" / "counterbalancing_elicitation.csv"
 THEMES_FILE = ROOT / "design" / "themes.json"
+BUNDLED_PY27 = ROOT.parent / ".tools" / "Python27" / "python.exe"
 DEFAULT_LOG_PATH = "logs/logs.csv"
 PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
@@ -46,6 +47,12 @@ DEFAULT_PEPPER_VOCABULARY = [
     "idea",
     "budget",
 ]
+
+
+def default_py27_command():
+    if BUNDLED_PY27.exists():
+        return str(BUNDLED_PY27)
+    return "py -2.7"
 
 CONTENT_TYPE_BY_EXT = {
     ".wav": "audio/wav",
@@ -82,19 +89,22 @@ STYLE_SETUP = {
 
 VOCAL_DELIVERY = {
     "passive": {
-        "speed": 0.9,          # Normal to slightly slower speech rate (0.5-1.5, 1.0 is default)
-        "volume": 0.75,        # Reduced volume for gentleness (0.0-1.0, 0.7 is default)
-        "pitch": 0.95,         # Slightly lower pitch (0.5-1.5, 1.0 is default)
+        "speed": 110.0,        # Project default speech rate percent
+        "volume": 0.8,
+        "pitch": 1.0,
+        "pause_ms": 220,
     },
     "assertive": {
-        "speed": 1.2,          # Faster speech rate
-        "volume": 1.0,         # Elevated/full volume
-        "pitch": 0.9,          # Flatter pitch (lower)
+        "speed": 110.0,
+        "volume": 0.8,
+        "pitch": 1.0,
+        "pause_ms": 220,
     },
     "supportive": {
-        "speed": 0.85,         # Slower speech rate
-        "volume": 0.65,        # Reduced volume
-        "pitch": 1.1,          # Dynamic pitch (higher/more varied)
+        "speed": 110.0,
+        "volume": 0.8,
+        "pitch": 1.0,
+        "pause_ms": 220,
     },
 }
 
@@ -125,6 +135,82 @@ BASE_SETUP = (
     "Respond naturally and conversationally, as if speaking aloud. "
     "Keep responses brief (1-3 sentences) and focused on one key idea or question."
 )
+
+
+def normalize_tts_speed(value):
+    try:
+        speed = float(value)
+    except Exception:
+        return 110.0
+    if speed <= 3.0:
+        speed *= 100.0
+    return max(50.0, min(140.0, speed))
+
+
+def clamp_float(value, minimum, maximum, fallback):
+    try:
+        number = float(value)
+    except Exception:
+        return fallback
+    return max(minimum, min(maximum, number))
+
+
+def bool_from_value(value, fallback=True):
+    if value is None:
+        return fallback
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "on"}:
+        return True
+    if text in {"0", "false", "no", "off"}:
+        return False
+    return fallback
+
+
+def soften_tts_text(text, pause_ms=220):
+    if not text or not pause_ms:
+        return text
+    try:
+        pause_value = int(pause_ms)
+    except Exception:
+        pause_value = 220
+    if pause_value <= 0:
+        return text
+    pause = "\\pau=%d\\" % pause_value
+    cleaned = " ".join(str(text).split())
+    return re.sub(r"([.!?:])\s+", lambda match: match.group(1) + " " + pause + " ", cleaned)
+
+
+def tts_overrides_from_args(args):
+    overrides = {}
+    for attr, key in [
+        ("tts_speed", "speed"),
+        ("tts_volume", "volume"),
+        ("tts_pitch", "pitch"),
+        ("tts_pause_ms", "pause_ms"),
+        ("tts_voice", "voice"),
+        ("look_at_people", "look_at_people"),
+    ]:
+        value = getattr(args, attr, None)
+        if value not in (None, ""):
+            overrides[key] = value
+    return overrides
+
+
+def resolve_vocal_delivery(style="passive", overrides=None):
+    params = dict(VOCAL_DELIVERY.get(style) or VOCAL_DELIVERY["passive"])
+    if overrides:
+        params.update(overrides)
+    params["speed"] = normalize_tts_speed(params.get("speed", 110.0))
+    params["volume"] = clamp_float(params.get("volume", 1.0), 0.0, 1.0, 1.0)
+    params["pitch"] = clamp_float(params.get("pitch", 1.0), 0.7, 1.3, 1.0)
+    try:
+        params["pause_ms"] = int(params.get("pause_ms", 220))
+    except Exception:
+        params["pause_ms"] = 280
+    params["look_at_people"] = bool_from_value(params.get("look_at_people"), True)
+    return params
 
 
 def parse_phrase_list(value):
@@ -190,7 +276,87 @@ def deepgram_transcribe_file(audio_path, api_key, endpoint="https://api.eu.deepg
     )
 
 
-def record_audio_from_mic(duration=6.0, samplerate=16000, channels=1):
+def parse_audio_input_device(device):
+    if device in (None, ""):
+        return None
+    try:
+        return int(device)
+    except Exception:
+        return device
+
+
+def resolve_audio_samplerate(input_device=None, samplerate=None):
+    if samplerate not in (None, "", 0, "0"):
+        try:
+            return int(float(samplerate))
+        except Exception:
+            pass
+    try:
+        import sounddevice as sd
+        device = parse_audio_input_device(input_device)
+        if device is None:
+            device = sd.default.device[0] if isinstance(sd.default.device, (list, tuple)) else sd.default.device
+        info = sd.query_devices(device, "input")
+        default_rate = int(round(float(info.get("default_samplerate") or 48000)))
+        print(f"[Audio] Using input sample rate {default_rate} Hz.")
+        return default_rate
+    except Exception:
+        return 48000
+
+
+def audio_stats(recording):
+    try:
+        peak = int(abs(recording).max())
+        rms = float(((recording.astype("float32") ** 2).mean()) ** 0.5)
+        return {
+            "peak": peak,
+            "rms": rms,
+            "peak_percent": round((peak / 32767.0) * 100.0, 1),
+            "rms_percent": round((rms / 32767.0) * 100.0, 1),
+        }
+    except Exception:
+        return {"peak": 0, "rms": 0.0, "peak_percent": 0.0, "rms_percent": 0.0}
+
+
+def wav_bytes_from_recording(recording, samplerate, channels):
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as wf:
+        wf.setnchannels(channels)
+        wf.setsampwidth(2)
+        wf.setframerate(samplerate)
+        wf.writeframes(recording.tobytes())
+    return buffer.getvalue()
+
+
+def parse_channel_names(value, count=2):
+    if isinstance(value, str):
+        names = [item.strip() for item in re.split(r"[,;]+", value) if item.strip()]
+    elif value:
+        names = [str(item).strip() for item in value if str(item).strip()]
+    else:
+        names = []
+    while len(names) < count:
+        names.append(f"Participant {len(names) + 1}")
+    return names[:count]
+
+
+def resolve_audio_separate_channels(separate_channels, channels):
+    try:
+        channel_count = int(channels or 1)
+    except Exception:
+        channel_count = 1
+    if separate_channels is None:
+        return channel_count >= 2
+    if isinstance(separate_channels, str):
+        value = separate_channels.strip().lower()
+        if value in {"1", "true", "yes", "on"}:
+            return True
+        if value in {"0", "false", "no", "off"}:
+            return False
+    return bool(separate_channels)
+
+
+def record_audio_from_mic(duration=6.0, samplerate=None, channels=1, input_device=None, include_stats=False, include_channel_audio=False):
     try:
         import sounddevice as sd
     except Exception as error:
@@ -198,22 +364,267 @@ def record_audio_from_mic(duration=6.0, samplerate=16000, channels=1):
             "sounddevice is required for live microphone capture. Install it with `pip install sounddevice`."
         ) from error
 
-    print(f"Recording microphone audio for up to {duration:.1f} seconds...")
-    recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=channels, dtype="int16")
+    device = parse_audio_input_device(input_device)
+    samplerate = resolve_audio_samplerate(device, samplerate)
+    if device is not None:
+        try:
+            selected = sd.query_devices(device, "input")
+            print(f"Recording microphone audio for up to {duration:.1f} seconds from {selected.get('name', device)}...")
+        except Exception:
+            print(f"Recording microphone audio for up to {duration:.1f} seconds from device {device}...")
+    else:
+        print(f"Recording microphone audio for up to {duration:.1f} seconds from the default input...")
+    recording = sd.rec(
+        int(duration * samplerate),
+        samplerate=samplerate,
+        channels=channels,
+        dtype="int16",
+        device=device,
+    )
     sd.wait()
-    buffer = io.BytesIO()
-    with wave.open(buffer, "wb") as wf:
-        wf.setnchannels(channels)
-        wf.setsampwidth(2)
-        wf.setframerate(samplerate)
-        wf.writeframes(recording.tobytes())
-    return buffer.getvalue(), samplerate, channels
+    stats = audio_stats(recording)
+    audio_bytes = wav_bytes_from_recording(recording, samplerate, channels)
+    channel_audio = []
+    if include_channel_audio:
+        for idx in range(channels):
+            channel_recording = recording[:, idx:idx + 1]
+            channel_audio.append({
+                "index": idx,
+                "audio": wav_bytes_from_recording(channel_recording, samplerate, 1),
+                "stats": audio_stats(channel_recording),
+            })
+    if include_stats:
+        if include_channel_audio:
+            return audio_bytes, samplerate, channels, stats, channel_audio
+        return audio_bytes, samplerate, channels, stats
+    if include_channel_audio:
+        return audio_bytes, samplerate, channels, channel_audio
+    return audio_bytes, samplerate, channels
 
 
-def build_deepgram_live_receiver(api_key, endpoint, record_seconds=6.0):
+def record_audio_until_silence(
+    max_seconds=10.0,
+    samplerate=None,
+    channels=1,
+    input_device=None,
+    silence_seconds=1.6,
+    idle_seconds=1.0,
+    min_record_seconds=0.8,
+    speech_peak_threshold=180,
+    frame_seconds=0.2,
+    on_speech_start=None,
+    on_speech_end=None,
+    include_stats=False,
+    include_channel_audio=False,
+):
+    try:
+        import sounddevice as sd
+        import numpy as np
+    except Exception as error:
+        raise RuntimeError(
+            "sounddevice and numpy are required for live microphone capture. Install them with `pip install sounddevice numpy`."
+        ) from error
+
+    device = parse_audio_input_device(input_device)
+    samplerate = resolve_audio_samplerate(device, samplerate)
+    if device is not None:
+        try:
+            selected = sd.query_devices(device, "input")
+            print(f"Listening from {selected.get('name', device)}; waiting for speech...")
+        except Exception:
+            print(f"Listening from device {device}; waiting for speech...")
+    else:
+        print("Listening from the default input; waiting for speech...")
+
+    blocksize = max(256, int(float(frame_seconds) * samplerate))
+    max_seconds = max(1.0, float(max_seconds))
+    silence_seconds = max(0.2, float(silence_seconds))
+    idle_seconds = max(0.2, float(idle_seconds))
+    min_record_seconds = max(0.0, float(min_record_seconds))
+    threshold = max(1, int(speech_peak_threshold))
+
+    frames = []
+    speech_started = False
+    speech_start = None
+    silence_started = None
+    listen_start = time.monotonic()
+
+    with sd.InputStream(samplerate=samplerate, channels=channels, dtype="int16", device=device, blocksize=blocksize) as stream:
+        while True:
+            now = time.monotonic()
+            if not speech_started and now - listen_start >= idle_seconds:
+                break
+            if speech_started and now - speech_start >= max_seconds:
+                break
+
+            data, _overflowed = stream.read(blocksize)
+            peak = int(abs(data).max()) if data.size else 0
+            has_speech = peak >= threshold
+
+            if has_speech and not speech_started:
+                speech_started = True
+                speech_start = now
+                silence_started = None
+                print("[Audio] speech started")
+                if on_speech_start:
+                    try:
+                        on_speech_start()
+                    except Exception:
+                        pass
+
+            if speech_started:
+                frames.append(data.copy())
+                if has_speech:
+                    silence_started = None
+                else:
+                    if silence_started is None:
+                        silence_started = now
+                    if (now - speech_start) >= min_record_seconds and (now - silence_started) >= silence_seconds:
+                        break
+
+    if frames:
+        recording = np.concatenate(frames, axis=0)
+    else:
+        recording = np.zeros((0, channels), dtype="int16")
+
+    if speech_started and on_speech_end:
+        try:
+            on_speech_end()
+        except Exception:
+            pass
+
+    stats = audio_stats(recording)
+    audio_bytes = wav_bytes_from_recording(recording, samplerate, channels)
+    channel_audio = []
+    if include_channel_audio:
+        for idx in range(channels):
+            channel_recording = recording[:, idx:idx + 1]
+            channel_audio.append({
+                "index": idx,
+                "audio": wav_bytes_from_recording(channel_recording, samplerate, 1),
+                "stats": audio_stats(channel_recording),
+            })
+    if include_stats:
+        if include_channel_audio:
+            return audio_bytes, samplerate, channels, stats, channel_audio
+        return audio_bytes, samplerate, channels, stats
+    if include_channel_audio:
+        return audio_bytes, samplerate, channels, channel_audio
+    return audio_bytes, samplerate, channels
+
+
+def build_deepgram_live_receiver(
+    api_key,
+    endpoint,
+    record_seconds=6.0,
+    input_device=None,
+    channels=1,
+    sample_rate=None,
+    wait_for_enter=False,
+    separate_channels=None,
+    channel_names=None,
+    channel_min_peak=250,
+    channel_relative_peak=0.25,
+    channel_relative_rms=0.20,
+    endpointing=True,
+    endpoint_silence_seconds=1.6,
+    endpoint_idle_seconds=1.0,
+    speech_peak_threshold=180,
+    on_speech_start=None,
+    on_speech_end=None,
+):
+    announced = [False]
+    separate_channels = resolve_audio_separate_channels(separate_channels, channels)
+    input_channels = max(2, int(channels or 1)) if separate_channels else int(channels or 1)
+    speaker_names = parse_channel_names(channel_names, count=input_channels)
+
     def receive():
-        input("Press Enter to record your next response, then speak clearly: ")
-        audio_bytes, samplerate, channels = record_audio_from_mic(duration=record_seconds)
+        if wait_for_enter:
+            input("Press Enter to record your next response, then speak clearly: ")
+        elif not announced[0]:
+            print("[Deepgram] Continuous listening is on. Speak naturally; audio is processed in short chunks.")
+            if separate_channels:
+                print(f"[Deepgram] Separate channel mode: channel 1 = {speaker_names[0]}, channel 2 = {speaker_names[1]}")
+            announced[0] = True
+        if endpointing and not wait_for_enter:
+            result = record_audio_until_silence(
+                max_seconds=record_seconds,
+                input_device=input_device,
+                channels=input_channels,
+                samplerate=sample_rate,
+                silence_seconds=endpoint_silence_seconds,
+                idle_seconds=endpoint_idle_seconds,
+                speech_peak_threshold=speech_peak_threshold,
+                on_speech_start=on_speech_start,
+                on_speech_end=on_speech_end,
+                include_stats=True,
+                include_channel_audio=separate_channels,
+            )
+        else:
+            result = record_audio_from_mic(
+                duration=record_seconds,
+                input_device=input_device,
+                channels=input_channels,
+                samplerate=sample_rate,
+                include_stats=True,
+                include_channel_audio=separate_channels,
+            )
+        if separate_channels:
+            audio_bytes, samplerate, recorded_channels, stats, channel_audio = result
+        else:
+            audio_bytes, samplerate, recorded_channels, stats = result
+        print(
+            "[Audio] level peak={peak_percent}% rms={rms_percent}% channels={channels}".format(
+                peak_percent=stats.get("peak_percent", 0.0),
+                rms_percent=stats.get("rms_percent", 0.0),
+                channels=recorded_channels,
+            )
+        )
+        if stats.get("peak", 0) < 250:
+            print("[Audio] Very low input level. Check Focusrite gain, input, cable, and phantom power if needed.")
+        if endpointing and stats.get("peak", 0) < int(speech_peak_threshold):
+            return [] if separate_channels else ""
+
+        if separate_channels:
+            lines = []
+            channel_stats_list = [channel["stats"] for channel in channel_audio[:2]]
+            max_channel_peak = max([stats.get("peak", 0) for stats in channel_stats_list] or [0])
+            max_channel_rms = max([stats.get("rms", 0.0) for stats in channel_stats_list] or [0.0])
+            for channel in channel_audio[:2]:
+                idx = channel["index"]
+                speaker = speaker_names[idx]
+                channel_stats = channel["stats"]
+                print(
+                    "[Audio] {speaker} level peak={peak_percent}% rms={rms_percent}%".format(
+                        speaker=speaker,
+                        peak_percent=channel_stats.get("peak_percent", 0.0),
+                        rms_percent=channel_stats.get("rms_percent", 0.0),
+                    )
+                )
+                peak = channel_stats.get("peak", 0)
+                rms = channel_stats.get("rms", 0.0)
+                relative_peak_floor = max_channel_peak * max(0.0, float(channel_relative_peak or 0.0))
+                relative_rms_floor = max_channel_rms * max(0.0, float(channel_relative_rms or 0.0))
+                if peak < int(channel_min_peak):
+                    print(f"[Deepgram] {speaker}: <skipped, very low channel level>")
+                    continue
+                if max_channel_peak > 0 and peak < relative_peak_floor and rms < relative_rms_floor:
+                    print(f"[Deepgram] {speaker}: <skipped, likely bleed from the other microphone>")
+                    continue
+                print(f"Sending {speaker} audio to Deepgram...")
+                transcript = deepgram_transcribe_bytes(
+                    audio_data=channel["audio"],
+                    content_type="audio/wav",
+                    api_key=api_key,
+                    endpoint=endpoint,
+                )
+                if transcript:
+                    print(f"[Deepgram] {speaker}: {transcript}")
+                    lines.append(f"{speaker}: {transcript}")
+                else:
+                    print(f"[Deepgram] {speaker}: <empty>")
+            return lines
+
         print("Sending audio to Deepgram for transcription...")
         content_type = "audio/wav"
         transcript = deepgram_transcribe_bytes(
@@ -222,7 +633,10 @@ def build_deepgram_live_receiver(api_key, endpoint, record_seconds=6.0):
             api_key=api_key,
             endpoint=endpoint,
         )
-        print(f"[Deepgram] Recognized speech: {transcript}")
+        if transcript:
+            print(f"[Deepgram] Transcript: {transcript}")
+        else:
+            print("[Deepgram] Transcript: <empty>")
         return transcript
 
     return receive
@@ -246,14 +660,17 @@ def build_audio_turn_request(payload, transcript):
 
 
 class PepperIO:
-    def __init__(self, ip, port=9559, language="English", vocabulary=None):
+    def __init__(self, ip, port=9559, language="English", vocabulary=None, vocal_overrides=None):
         self.ip = ip
         self.port = int(port)
         self.language = language
         self.vocabulary = vocabulary or []
+        self.vocal_overrides = vocal_overrides or {}
         self.tts = None
         self.asr = None
         self.memory = None
+        self.awareness = None
+        self.motion = None
         self.subscriber_name = f"lmstudio_bridge_{int(time.time())}"
         self._last_word = ""
         self._last_word_time = 0.0
@@ -267,6 +684,18 @@ class PepperIO:
         self.tts = ALProxy("ALTextToSpeech", self.ip, self.port)
         self.memory = ALProxy("ALMemory", self.ip, self.port)
         self.asr = ALProxy("ALSpeechRecognition", self.ip, self.port)
+        try:
+            self.awareness = ALProxy("ALBasicAwareness", self.ip, self.port)
+        except Exception:
+            self.awareness = None
+        try:
+            self.motion = ALProxy("ALMotion", self.ip, self.port)
+        except Exception:
+            self.motion = None
+        try:
+            self.tts.setLanguage(self.language)
+        except Exception:
+            pass
         self.asr.setLanguage(self.language)
 
         if self.vocabulary:
@@ -283,38 +712,96 @@ class PepperIO:
             except Exception:
                 pass
 
-    def set_vocal_params(self, speed=1.0, volume=0.7, pitch=1.0):
+    def set_vocal_params(self, speed=110.0, volume=0.8, pitch=1.0, voice=None, **_ignored):
         """Set vocal delivery parameters for speech.
         
         Args:
-            speed: Speech rate (0.5-1.5, default 1.0)
-            volume: Volume level (0.0-1.0, default 0.7)
-            pitch: Pitch level (0.5-1.5, default 1.0)
+            speed: Speech rate percent (100 is default; 80-90 is calmer)
+            volume: Volume level (0.0-1.0, default 0.8)
+            pitch: Pitch shift (0.7-1.3, default 1.0)
         """
         if not self.tts:
             return
         try:
-            # Set speech speed (parameter name varies by NAOqi version)
-            self.tts.setParameter("speed", speed)
-            # Set volume
-            self.tts.setVolume(volume)
-            # Set pitch
-            self.tts.setParameter("pitch", pitch)
-        except Exception as e:
-            # Silently fail if parameters not supported in this NAOqi version
+            if voice:
+                self.tts.setVoice(voice)
+        except Exception:
             pass
+        try:
+            self.tts.setParameter("speed", normalize_tts_speed(speed))
+        except Exception:
+            pass
+        for name in ("doubleVoice", "doubleVoiceLevel", "doubleVoiceTimeShift"):
+            try:
+                self.tts.setParameter(name, 0.0)
+            except Exception:
+                pass
+        try:
+            self.tts.setVolume(clamp_float(volume, 0.0, 1.0, 1.0))
+        except Exception:
+            pass
+        try:
+            self.tts.setParameter("pitchShift", clamp_float(pitch, 0.7, 1.3, 1.0))
+        except Exception:
+            try:
+                self.tts.setParameter("pitch", clamp_float(pitch, 0.7, 1.3, 1.0))
+            except Exception:
+                pass
+
+    def reset_vocal_params(self):
+        if not self.tts:
+            return
+        try:
+            self.tts.setParameter("speed", 100.0)
+        except Exception:
+            pass
+        try:
+            self.tts.setVolume(1.0)
+        except Exception:
+            pass
+        try:
+            self.tts.setParameter("pitchShift", 1.0)
+        except Exception:
+            pass
+
+    def look_at_people(self):
+        if self.motion:
+            try:
+                self.motion.wakeUp()
+            except Exception:
+                pass
+            try:
+                self.motion.setStiffnesses("Head", 1.0)
+            except Exception:
+                pass
+            try:
+                self.motion.angleInterpolationWithSpeed(["HeadYaw", "HeadPitch"], [0.0, -0.05], 0.35)
+            except Exception:
+                pass
+            return
+
+        if self.awareness:
+            for call in [
+                lambda: self.awareness.setStimulusDetectionEnabled("People", True),
+                lambda: self.awareness.setTrackingMode("Head"),
+                lambda: self.awareness.setEngagementMode("SemiEngaged"),
+                lambda: self.awareness.startAwareness(),
+            ]:
+                try:
+                    call()
+                except Exception:
+                    pass
 
     def say(self, text, style="passive"):
         if not text:
             return
         if self.tts:
-            # Apply vocal parameters based on style
-            if style in VOCAL_DELIVERY:
-                params = VOCAL_DELIVERY[style]
-                self.set_vocal_params(**params)
-            self.tts.say(text)
-            # Reset to default after speaking
-            self.set_vocal_params()
+            params = resolve_vocal_delivery(style, self.vocal_overrides)
+            self.set_vocal_params(**params)
+            if params.get("look_at_people", True):
+                self.look_at_people()
+            self.tts.say(soften_tts_text(text, params.get("pause_ms", 220)))
+            self.reset_vocal_params()
 
     def listen(self, timeout_seconds=12.0, min_confidence=0.45):
         if not self.memory:
@@ -353,19 +840,36 @@ class PepperIO:
         return ""
 
 
-def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
+def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd, vocal_params=None, language="English"):
     if not text:
         return
 
+    vocal_params = vocal_params or {}
     command = list(python_cmd) + [
         str(script_path),
         "--ip",
         str(ip),
         "--port",
         str(port),
+        "--language",
+        str(language or "English"),
         "--say",
         text,
     ]
+    for key, option in [
+        ("speed", "--speed"),
+        ("volume", "--volume"),
+        ("pitch", "--pitch"),
+        ("pause_ms", "--pause-ms"),
+        ("voice", "--voice"),
+    ]:
+        value = vocal_params.get(key)
+        if value not in (None, ""):
+            command.extend([option, str(value)])
+    if bool_from_value(vocal_params.get("look_at_people"), True):
+        command.append("--look-at-people")
+    else:
+        command.append("--no-look-at-people")
     completed = subprocess.run(command, capture_output=True, text=True)
     if completed.returncode != 0:
         stderr_text = (completed.stderr or "").strip()
@@ -375,6 +879,7 @@ def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd):
 
 
 def build_pepper_tts_sender(args):
+    vocal_overrides = tts_overrides_from_args(args)
     if ALProxy is None:
         legacy_python_cmd = args.pepper_legacy_python.strip().split()
         legacy_script = pathlib.Path(args.pepper_legacy_tts_script)
@@ -387,12 +892,15 @@ def build_pepper_tts_sender(args):
         print("naoqi SDK unavailable in Python 3; using Python 2.7 Pepper TTS bridge.")
 
         def sender(text, style="passive"):
+            vocal_params = resolve_vocal_delivery(style, vocal_overrides)
             send_to_pepper_via_py27(
                 text=text,
                 ip=args.pepper_ip,
                 port=args.pepper_port,
                 script_path=legacy_script,
                 python_cmd=legacy_python_cmd,
+                vocal_params=vocal_params,
+                language=args.pepper_language,
             )
 
         return sender, None
@@ -402,6 +910,7 @@ def build_pepper_tts_sender(args):
         port=args.pepper_port,
         language=args.pepper_language,
         vocabulary=parse_phrase_list(args.pepper_vocabulary) or DEFAULT_PEPPER_VOCABULARY,
+        vocal_overrides=vocal_overrides,
     )
     pepper.connect()
     print(f"Connected to Pepper at {args.pepper_ip}:{args.pepper_port}")
@@ -586,9 +1095,13 @@ def call_lmstudio(payload, messages):
         "messages": messages,
         "temperature": payload.get("temperature", 0.35),
         "max_tokens": payload.get("max_tokens", 600),
-        "thinking": False,
-        "enable_thinking": False,
     }
+
+    # Optional experimental thinking support.
+    # Do not send these fields to LM Studio/Phi unless explicitly enabled.
+    if payload.get("enable_thinking") is True:
+        body["thinking"] = True
+        body["enable_thinking"] = True
 
     request = urllib.request.Request(
         payload.get("server_url", "http://127.0.0.1:1234/v1/chat/completions"),
@@ -598,8 +1111,18 @@ def call_lmstudio(payload, messages):
     )
 
     timeout = float(payload.get("timeout_seconds", 30.0))
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        decoded = json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            decoded = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        details = ""
+        try:
+            details = error.read().decode("utf-8", errors="replace").strip()
+        except Exception:
+            details = ""
+        if details:
+            raise RuntimeError(f"HTTP {error.code}: {details}") from error
+        raise RuntimeError(f"HTTP {error.code}: {error.reason}") from error
 
     choice = decoded.get("choices", [{}])[0]
     message = choice.get("message", {})
@@ -615,7 +1138,6 @@ def call_lmstudio(payload, messages):
         raise ValueError("Empty LM Studio reply")
 
     return content
-
 
 def fallback_reply(payload, prompt_row):
     return payload.get("fallback_prompt") or prompt_row["text"]
@@ -903,50 +1425,60 @@ def run_live_dialog(base_payload, receive_fn, send_fn):
     turn_index = 0
 
     while True:
-        participant_text = (receive_fn() or "").strip()
-        if not participant_text:
+        received = receive_fn()
+        participant_items = received if isinstance(received, (list, tuple)) else [received]
+        participant_items = [str(item).strip() for item in participant_items if str(item or "").strip()]
+        if not participant_items:
             continue
 
-        if participant_text.lower() in LIVE_EXIT_WORDS:
-            print("--- Live dialog stopped ---")
-            break
+        for participant_text in participant_items:
+            speaker = "Participant"
+            if ":" in participant_text:
+                left, right = participant_text.split(":", 1)
+                if left.strip() and right.strip():
+                    speaker = left.strip()
+                    participant_text = right.strip()
 
-        participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
-        participant_turn = {
-            "speaker": "Participant",
-            "text": participant_text,
-            "timestamp": participant_timestamp,
-        }
-        conversation_history.append(participant_turn)
+            if participant_text.lower() in LIVE_EXIT_WORDS:
+                print("--- Live dialog stopped ---")
+                return
 
-        turn_index += 1
-        request = dict(base_payload)
-        request.update({
-            "turn_index": turn_index,
-            "turn_timestamp": participant_timestamp,
-            "last_user_utterance": participant_text,
-            "recent_participant_turns": [participant_turn],
-            "conversation_history": conversation_history,
-        })
+            participant_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+            participant_turn = {
+                "speaker": speaker,
+                "text": participant_text,
+                "timestamp": participant_timestamp,
+            }
+            conversation_history.append(participant_turn)
 
-        result = process_context_only(request)
-        robot_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+            turn_index += 1
+            request = dict(base_payload)
+            request.update({
+                "turn_index": turn_index,
+                "turn_timestamp": participant_timestamp,
+                "last_user_utterance": participant_text,
+                "recent_participant_turns": [participant_turn],
+                "conversation_history": conversation_history,
+            })
 
-        conversation_history.append({
-            "speaker": "Robot",
-            "text": result["reply"],
-            "timestamp": robot_timestamp,
-        })
+            result = process_context_only(request)
+            robot_timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
 
-        print_robot_turn(result)
-        send_fn(result["reply"], style=result.get("style", "passive"))
-        append_log_turn_block(
-            base_payload.get("log_path"),
-            request,
-            result,
-            [participant_turn],
-            robot_timestamp,
-        )
+            conversation_history.append({
+                "speaker": "Robot",
+                "text": result["reply"],
+                "timestamp": robot_timestamp,
+            })
+
+            print_robot_turn(result)
+            send_fn(result["reply"], style=result.get("style", "passive"))
+            append_log_turn_block(
+                base_payload.get("log_path"),
+                request,
+                result,
+                [participant_turn],
+                robot_timestamp,
+            )
 
 
 
@@ -963,15 +1495,34 @@ def main():
     parser.add_argument("--pepper-port", type=int, default=9559, help="Pepper NAOqi port")
     parser.add_argument("--pepper-language", default="English", help="Pepper ASR language")
     parser.add_argument("--pepper-vocabulary", help="Comma-separated vocabulary for Pepper ASR")
+    parser.add_argument("--tts-speed", type=float, default=None, help="Pepper speech speed as percent; project default is 110")
+    parser.add_argument("--tts-volume", type=float, default=None, help="Pepper speech volume from 0.0 to 1.0; project default is 0.8")
+    parser.add_argument("--tts-pitch", type=float, default=None, help="Pepper pitch shift; project default is 1.0")
+    parser.add_argument("--tts-pause-ms", type=int, default=None, help="Pause inserted after sentence punctuation in Pepper speech")
+    parser.add_argument("--tts-voice", default=None, help="Optional exact Pepper voice name")
+    parser.add_argument("--look-at-people", action=argparse.BooleanOptionalAction, default=True, help="Have Pepper look toward/track people before speaking")
     parser.add_argument("--asr-timeout", type=float, default=12.0, help="Seconds to wait for one Pepper ASR result")
     parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
-    parser.add_argument("--pepper-legacy-python", default="py -2.7", help="Python launcher command for Python 2.7 Pepper helper")
+    parser.add_argument("--pepper-legacy-python", default=default_py27_command(), help="Python launcher command for Python 2.7 Pepper helper")
     parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
     parser.add_argument("--deepgram-api-key", help="Deepgram API key for speech-to-text audio transcription")
     parser.add_argument("--deepgram-audio", help="Path to an audio file for Deepgram transcription")
     parser.add_argument("--deepgram-live", action="store_true", help="Use microphone + Deepgram for live participant speech recognition")
-    parser.add_argument("--deepgram-record-seconds", type=float, default=20.0, help="Maximum seconds to record from the microphone for each live speech turn")
+    parser.add_argument("--deepgram-record-seconds", type=float, default=10.0, help="Maximum utterance length in endpointing mode; fixed chunk length when --no-audio-endpointing is used")
     parser.add_argument("--deepgram-endpoint", default="https://api.eu.deepgram.com/v1/listen", help="Deepgram STT endpoint URL")
+    parser.add_argument("--deepgram-press-enter", action="store_true", help="Require Enter before each Deepgram recording chunk; continuous listening is the default")
+    parser.add_argument("--audio-input-device", help="Optional sounddevice input device index or name, e.g. 2 for Focusrite Analogue 1+2")
+    parser.add_argument("--audio-input-channels", type=int, default=1, help="Input channels to record; use 2 for two Focusrite microphone inputs")
+    parser.add_argument("--audio-sample-rate", type=int, default=0, help="Input sample rate; 0 uses the selected device default, useful for Focusrite devices")
+    parser.add_argument("--audio-separate-channels", action=argparse.BooleanOptionalAction, default=None, help="Split audio channels 1 and 2, transcribe separately, and label speakers; auto-enabled when --audio-input-channels is 2 or more")
+    parser.add_argument("--audio-channel-names", default="Participant 1,Participant 2", help="Comma-separated names for separate channel mode")
+    parser.add_argument("--audio-channel-min-peak", type=int, default=250, help="Skip a separated channel if its peak level is below this raw PCM value")
+    parser.add_argument("--audio-channel-relative-peak", type=float, default=0.25, help="Skip a separated channel whose peak is far below the loudest channel")
+    parser.add_argument("--audio-channel-relative-rms", type=float, default=0.20, help="Skip a separated channel whose RMS is far below the loudest channel")
+    parser.add_argument("--audio-endpointing", action=argparse.BooleanOptionalAction, default=True, help="Record until speech ends instead of fixed chunks; enabled by default for Deepgram live")
+    parser.add_argument("--audio-endpoint-silence-seconds", type=float, default=1.2, help="How long silence must last before an utterance is sent to Deepgram")
+    parser.add_argument("--audio-endpoint-idle-seconds", type=float, default=0.6, help="How long to wait for speech before returning an empty transcript")
+    parser.add_argument("--audio-speech-peak-threshold", type=int, default=120, help="Raw PCM peak threshold used to detect speech start/end")
     args = parser.parse_args()
 
     if not any([args.request, args.simulate, args.intervene, args.live, args.deepgram_audio, args.deepgram_live]):
@@ -1064,10 +1615,26 @@ def main():
 
         receive_fn = console_receive
         if args.deepgram_live:
+            separate_channels = resolve_audio_separate_channels(args.audio_separate_channels, args.audio_input_channels)
+            if separate_channels:
+                print("[Audio] Two-speaker transcript mode is on. Channel 1 and channel 2 will be transcribed separately.")
             receive_fn = build_deepgram_live_receiver(
                 api_key=args.deepgram_api_key,
                 endpoint=args.deepgram_endpoint,
                 record_seconds=args.deepgram_record_seconds,
+                input_device=args.audio_input_device,
+                channels=args.audio_input_channels,
+                sample_rate=args.audio_sample_rate,
+                wait_for_enter=args.deepgram_press_enter,
+                separate_channels=separate_channels,
+                channel_names=args.audio_channel_names,
+                channel_min_peak=args.audio_channel_min_peak,
+                channel_relative_peak=args.audio_channel_relative_peak,
+                channel_relative_rms=args.audio_channel_relative_rms,
+                endpointing=args.audio_endpointing,
+                endpoint_silence_seconds=args.audio_endpoint_silence_seconds,
+                endpoint_idle_seconds=args.audio_endpoint_idle_seconds,
+                speech_peak_threshold=args.audio_speech_peak_threshold,
             )
 
         if not args.pepper:

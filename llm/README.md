@@ -1,9 +1,9 @@
 # Pepper Elicitation Infrastructure - Implementation Summary
 
 ### 1. Test Scenarios
-All test scenarios save logs to `data/logs.csv`:
+All test scenarios save local logs to `data/logs.csv`:
 
-1. **test_scenario_budget.json** - Budget constraint focus (6 turns, divergence→convergence)
+1. **test_scenario_budget.json** - Budget constraint focus (6 turns, divergence to convergence)
    - Elicitation: constraint_reframing
    - Tests robot's ability to reframe expensive ideas into low-cost alternatives
 
@@ -102,3 +102,41 @@ python infra/lmstudio_minimal_bridge.py --deepgram-audio path/to/audio.wav --dee
 - Pepper NAOqi TTS is available through the Python 2.7 helper at `pepper/tts.py`.
 - The bridge can speak to Pepper directly if NAOqi is installed in the Python 3 environment, or it can call the Python 2.7 relay automatically.
 - For now, Pepper input in live mode is console-based unless you add a separate ASR relay.
+
+## Brainstorm study setups
+
+Two timed brainstorm runners are available in `infra/pepper_brainstorm.py` for the TU Delft wellbeing question:
+
+```bash
+python infra/pepper_brainstorm.py --session dynamic
+python infra/pepper_brainstorm.py --session pregenerated
+```
+
+- `dynamic`: setup 1, a live collaborative Pepper. It uses local `qwen/qwen3-8b`, listens through Deepgram, joins after silence/struggle/direct address, runs 10 minutes divergence and 10 minutes convergence, then gives a final synthesized plan. This setup does not use tablet or laptop infographics.
+- `pregenerated`: setup 2, a prepared intervention Pepper. The recommended study mode is `--pregenerated-static`; it uses authored speeches and hardcoded PNG infographics, intervenes 3 times in a 20-minute session, asks for final plans, then presents Pepper's final proposal. Use `--laptop-display` to show the images on this laptop screen.
+
+Setup 1 uses an assertive but slightly more patient timing profile: the speech-start threshold is raised so room noise is less likely to count as participant speech, and Pepper leaves a short beat for people to finish before joining. It no longer defers dynamic replies indefinitely. After participant input, Pepper can join after a short active-discussion pause, and a stuck speech gate is treated as noise after a brief grace period. The LLM sees a small recent-context window and must name or paraphrase the newest participant idea before adding Pepper's own mechanism, first step, metric, or stakeholder. Required structure announcements still speak: Pepper announces the start of divergence, the start of convergence, and the final-idea request even if the room is busy.
+
+Setup 2 uses shorter silence gates than setup 1: after an attention cue it continues after a short finished-sentence pause, and during final-plan collection it synthesizes after a few quiet seconds so the ending does not hang.
+
+The quick real-Pepper commands can prefer the Focusrite interface and automatically fall back to the laptop/default microphone if Focusrite is missing:
+
+```bash
+--audio-prefer-device-name Focusrite --audio-input-device 15 --audio-fallback-to-default-input --audio-fallback-channels 1 --audio-fallback-sample-rate 0
+```
+
+When the fallback activates, Deepgram still transcribes the session, but it produces one combined laptop-mic transcript instead of separate Participant 1/Participant 2 channels.
+
+For two Focusrite microphones, the current commands also filter low-level channel bleed before sending audio to Deepgram:
+
+```bash
+--audio-channel-min-peak 250 --audio-channel-relative-peak 0.25 --audio-channel-relative-rms 0.20
+```
+
+For direct Ethernet, Pepper's `169.254.x.x` IP can change between runs. Use `--pepper-ip auto` in the brainstorm runner to scan the link-local range and pick the reachable NAOqi address automatically.
+
+Full CMD commands, quick tests, normal 20-minute runs, participant briefing scripts, two-microphone Deepgram settings, voice settings, transcript logging, and troubleshooting are in `infra/brainstorm_setups.md`.
+
+## Public repository notes
+
+Local runtimes, downloaded ASR models, generated display pages, transcript logs, and API keys are intentionally ignored. Keep API keys in environment variables such as `DEEPGRAM_API_KEY`, never in committed files.

@@ -1,0 +1,163 @@
+{
+  "solution_count": 30,
+  "best_three": [
+    {
+      "name": "Delft Peer Navigator Network",
+      "why": "It gives students trusted, low-pressure support before problems become crises.",
+      "first_step": "Pilot trained peer navigators in three first-year bachelor courses and one master programme."
+    },
+    {
+      "name": "Engagement Signal Dashboard",
+      "why": "It helps staff notice disengagement early and respond with supportive outreach.",
+      "first_step": "Test a privacy-safe dashboard using tutorial attendance, submission timing, and Brightspace activity."
+    },
+    {
+      "name": "Five-Day Support Pathway",
+      "why": "It makes wellbeing help fast, visible, and easy to access when students need it.",
+      "first_step": "Reserve weekly rapid-access slots with study coaches, counsellors, and student mentors."
+    }
+  ],
+  "all_ideas": [
+    "Create a Delft Peer Navigator Network with trained students who guide peers toward study, wellbeing, and social support.",
+    "Build a privacy-safe Engagement Signal Dashboard that flags patterns such as missed tutorials, late submissions, and reduced Brightspace activity.",
+    "Launch a Five-Day Support Pathway guaranteeing students a first support conversation within five working days.",
+    "Add two-minute wellbeing and workload pulse checks inside Brightspace every second week.",
+    "Introduce course-level recovery weeks with no major deadlines and structured time to catch up.",
+    "Create study buddy matching inside faculties, pairing students by course, language preference, and study rhythm.",
+    "Offer micro-coaching booths in faculty buildings for ten-minute conversations about planning, stress, or motivation.",
+    "Train teaching assistants to recognize disengagement signals and use supportive referral scripts.",
+    "Create a Delft Study Sprint programme with supervised weekly work sessions for difficult courses.",
+    "Build an anonymous question channel where students can ask academic or wellbeing questions and receive reliable answers.",
+    "Add wellbeing check-in moments to first-year mentoring meetings and master onboarding sessions.",
+    "Create a visible map of support options in every faculty building and on Brightspace course pages.",
+    "Offer flexible deadline tokens that students can use without explaining personal details.",
+    "Run faculty-based belonging lunches for students who are new, international, commuting, or returning after absence.",
+    "Create a central academic pressure calendar to identify deadline clusters across courses.",
+    "Introduce short reflection prompts after exams to help students plan recovery and learning strategies.",
+    "Offer peer-led exam preparation circles for high-failure-rate courses.",
+    "Create a confidential support referral button in Brightspace that connects students to the right service.",
+    "Use small group check-ins during project courses to discuss workload distribution and team wellbeing.",
+    "Provide staff with a simple playbook for supportive emails after missed classes or poor early results.",
+    "Launch evening quiet study rooms with peer hosts during peak deadline weeks.",
+    "Create a student wellbeing ambassador role in each study association.",
+    "Offer practical workshops on sleep, planning, perfectionism, and dealing with academic setbacks.",
+    "Create a re-entry pathway for students returning after illness, burnout, or personal disruption.",
+    "Make mental health and academic support information part of every course introduction slide deck.",
+    "Run monthly faculty listening sessions where students propose fixes for workload and engagement barriers.",
+    "Create a digital one-stop support triage tool that recommends the best next step in under three minutes.",
+    "Add project team health checks for collaboration, workload balance, and psychological safety.",
+    "Create short staff training modules on inclusive teaching, belonging, and early supportive intervention.",
+    "Publish a semester wellbeing and engagement report showing trends, actions taken, and measurable improvements."
+  ],
+  "initial_plan": "I suggest we start with a focused pilot that connects peer navigators, early engagement signals, and rapid wellbeing support. That gives TU Delft a plan that is practical, measurable, and strong enough to test within one semester.",
+  "intervention_1_speech": "Okay, I came in with 30 prepared options, and I would put three at the top. First is the Delft Peer Navigator Network: trained students can reach peers earlier, with less pressure, than formal services. Second is an Engagement Signal Dashboard: privacy-safe patterns like missed tutorials, late submissions, and low Brightspace activity help staff notice disengagement early. Third is a Five-Day Support Pathway, so help feels visible and fast. My starting direction is a one-semester pilot where peer trust, early signals, and rapid support work as one system.",
+  "intervention_2_plan": "Right, I would tighten the plan now. The key is not three separate services; it is one connected support loop. TU Delft notices early pressure through course signals and short Brightspace pulses. Peer navigators then make the first contact in a friendly, credible way. From there, students move to the right next step: a study sprint, planning support, counselling, or a peer group. Course teams also use deadline and engagement patterns to reduce avoidable pressure. That makes the idea stronger: it supports students and improves the academic environment at the same time.",
+  "closing_speech": "Nice, thank you both. We have enough material now to land this properly. I would like each of you to share your final plan in your own words. Focus on what TU Delft should actually pilot, how it would work, and what success would look like. After both of you have shared, and the room is quiet, I will synthesize the final proposal.",
+  "final_plan": "Here is my final proposal: the Delft Wellbeing and Engagement Loop. It connects peer support, early academic engagement signals, and low-barrier wellbeing help into one visible route for students. The pilot runs for one semester in selected courses or faculties. Course teams track simple engagement signals, such as missed tutorials, delayed submissions, low Brightspace activity, and short wellbeing pulse responses. Those signals are used for care-focused outreach, not punishment. The first contact comes from trained peer navigators, because students may respond more openly to another student who understands the study context. The navigator helps the student choose a useful next step, such as a study sprint, planning conversation, counsellor appointment, or peer support group. TU Delft also reserves rapid support slots, so students can get a first conversation within five working days. At the course level, staff use deadline clustering and workload patterns to redesign avoidable academic pressure. Success should be measured through tutorial attendance, faster help-seeking after warning signs, stronger belonging, better workload manageability, and course continuation. For me, this is the cleanest plan because it is practical, respectful, measurable, and strong enough to test before scaling.",
+  "infographics": {
+    "intervention_1": {
+      "title": "30 Prepared Solutions",
+      "subtitle": "Three strong ideas create a practical starting point.",
+      "sections": [
+        {
+          "label": "Peer",
+          "headline": "Peer Navigators",
+          "body": "Trained students offer trusted check-ins and guide peers to the right support."
+        },
+        {
+          "label": "Signal",
+          "headline": "Early Warning",
+          "body": "Course data helps staff notice disengagement before students disappear."
+        },
+        {
+          "label": "Access",
+          "headline": "Fast Support",
+          "body": "Students receive a first support conversation within five working days."
+        },
+        {
+          "label": "Pilot",
+          "headline": "One Semester",
+          "body": "The combined model can be tested in selected courses quickly."
+        }
+      ],
+      "metrics": [
+        "Tutorial attendance",
+        "Support uptake",
+        "Student belonging",
+        "Workload manageability"
+      ],
+      "footer": "The starting plan connects trust, early signals, and rapid support."
+    },
+    "intervention_2": {
+      "title": "Integrated Support Loop",
+      "subtitle": "The stronger plan links academic engagement with wellbeing action.",
+      "sections": [
+        {
+          "label": "Detect",
+          "headline": "Notice Pressure",
+          "body": "Brightspace pulses and course signals reveal stress and disengagement early."
+        },
+        {
+          "label": "Connect",
+          "headline": "Peer First",
+          "body": "Peer navigators make outreach friendly, credible, and low pressure."
+        },
+        {
+          "label": "Support",
+          "headline": "Right Next Step",
+          "body": "Students are guided to study sprints, coaching, counselling, or peer groups."
+        },
+        {
+          "label": "Improve",
+          "headline": "Better Course Design",
+          "body": "Deadline patterns help staff reduce avoidable academic pressure."
+        }
+      ],
+      "metrics": [
+        "Early outreach rate",
+        "Five-day response rate",
+        "Deadline clustering",
+        "Course continuation"
+      ],
+      "footer": "The loop turns weak signals into timely, respectful support."
+    },
+    "final": {
+      "title": "Delft Wellbeing Loop",
+      "subtitle": "A measurable pilot for support, belonging, and academic engagement.",
+      "sections": [
+        {
+          "label": "Pathway",
+          "headline": "One Clear Route",
+          "body": "Students see one visible route from pressure to practical support."
+        },
+        {
+          "label": "People",
+          "headline": "Peer Navigators",
+          "body": "Trained peers provide first contact, guidance, and social connection."
+        },
+        {
+          "label": "Data",
+          "headline": "Supportive Signals",
+          "body": "Engagement indicators trigger care-focused outreach, not punishment."
+        },
+        {
+          "label": "Measure",
+          "headline": "Pilot and Scale",
+          "body": "Results show whether the model improves attendance, help-seeking, and belonging."
+        }
+      ],
+      "metrics": [
+        "Higher attendance",
+        "Faster help-seeking",
+        "Improved belonging",
+        "Lower workload stress"
+      ],
+      "footer": "The final proposal is practical, respectful, measurable, and ready for a semester pilot."
+    }
+  },
+  "images": {
+    "intervention_1": "setup2_intervention_1.png",
+    "intervention_2": "setup2_intervention_2.png",
+    "final": "setup2_final.png"
+  }
+}

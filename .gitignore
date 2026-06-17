@@ -1,0 +1,28 @@
+# Local runtime/vendor downloads
+.tools/
+llm/asr_models/
+
+# Secrets and local environment files
+.env
+.env.*
+*.key
+
+# Python cache/build output
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Runtime logs, transcripts, and generated study state
+llm/logs/
+llm/data/logs.csv
+llm/findings/latest.*
+
+# Generated tablet/laptop display pages and state
+llm/tablet/*.html
+llm/tablet/current_display.json
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
