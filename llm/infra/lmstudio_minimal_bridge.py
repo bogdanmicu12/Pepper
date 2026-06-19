@@ -38,6 +38,8 @@ DEFAULT_TRANSCRIPT_LOG_PATH = "logs/transcript.csv"
 DEFAULT_DEEPGRAM_API_KEY = ""
 DEEPGRAM_API_KEY_ENV_VAR = "DEEPGRAM_API_KEY"
 DEFAULT_PEPPER_LEGACY_PYTHON = r"C:\Python27\python.exe"
+DEFAULT_PEPPER_LEGACY_TTS_SCRIPT = str(ROOT.parent / "pepper" / "tts.py")
+DEFAULT_PEPPER_LEGACY_ASR_SCRIPT = str(ROOT.parent / "pepper" / "asr.py")
 PROACTIVE_SILENCE_THRESHOLD = 7  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
 LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
@@ -1352,6 +1354,48 @@ def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd, speed=100, 
         stdout_text = (completed.stdout or "").strip()
         details = stderr_text or stdout_text or "unknown error"
         raise RuntimeError(f"Python 2.7 Pepper TTS bridge failed: {details}")
+
+
+def receive_from_pepper_via_py27(
+    ip,
+    port,
+    language,
+    vocabulary,
+    timeout_seconds,
+    min_confidence,
+    script_path,
+    python_cmd,
+):
+    command = list(python_cmd) + [
+        str(script_path),
+        "--ip",
+        str(ip),
+        "--port",
+        str(port),
+        "--language",
+        str(language),
+        "--timeout",
+        str(timeout_seconds),
+        "--min-confidence",
+        str(min_confidence),
+    ]
+    if vocabulary:
+        command.extend(["--vocabulary", ",".join(vocabulary)])
+
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        env=build_naoqi_subprocess_env(),
+    )
+    if completed.returncode != 0:
+        stderr_text = (completed.stderr or "").strip()
+        stdout_text = (completed.stdout or "").strip()
+        details = stderr_text or stdout_text or "unknown error"
+        raise RuntimeError(f"Python 2.7 Pepper ASR bridge failed: {details}")
+
+    return (completed.stdout or "").strip()
+
 
 def build_naoqi_subprocess_env():
     env = os.environ.copy()
@@ -3009,7 +3053,8 @@ def main():
     parser.add_argument("--asr-timeout", type=float, default=12.0, help="Seconds to wait for one Pepper ASR result")
     parser.add_argument("--asr-min-confidence", type=float, default=0.45, help="Minimum confidence for Pepper ASR result")
     parser.add_argument("--pepper-legacy-python", default=DEFAULT_PEPPER_LEGACY_PYTHON, help="Python launcher command for Python 2.7 Pepper helper")
-    parser.add_argument("--pepper-legacy-tts-script", default=str(ROOT.parent / "pepper" / "tts.py"), help="Path to Python 2.7 Pepper TTS helper script")
+    parser.add_argument("--pepper-legacy-tts-script", default=DEFAULT_PEPPER_LEGACY_TTS_SCRIPT, help="Path to Python 2.7 Pepper TTS helper script")
+    parser.add_argument("--pepper-legacy-asr-script", default=DEFAULT_PEPPER_LEGACY_ASR_SCRIPT, help="Path to Python 2.7 Pepper ASR helper script")
     parser.add_argument(
         "--deepgram-api-key",
         default=get_env_secret(DEEPGRAM_API_KEY_ENV_VAR, DEFAULT_DEEPGRAM_API_KEY),

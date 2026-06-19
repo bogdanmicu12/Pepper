@@ -207,6 +207,70 @@ def print_table(rows: Sequence[dict[str, object]], title: str) -> None:
         print("  ".join(str(row[column]).ljust(widths[column]) for column in columns))
 
 
+def save_summary_chart(summary: Sequence[dict[str, object]], dataset_name: str, chart_path: Path) -> None:
+    if not summary:
+        return
+
+    groups = sorted({str(row["analysis_group"]) for row in summary})
+    metrics = ["word_count_gini", "turn_count_gini", "speech_time_seconds_gini"]
+    x_positions = np.arange(len(metrics))
+    bar_width = 0.8 / len(groups) if groups else 0.8
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    colors = ["#2e86c1", "#d68910", "#229954", "#e74c3c", "#9b59b6"]
+    for group_index, group in enumerate(groups):
+        values = [
+            next(
+                (
+                    float(row[metric])
+                    for row in summary
+                    if row["analysis_group"] == group
+                ),
+                0.0,
+            )
+            for metric in metrics
+        ]
+        offsets = x_positions + group_index * bar_width - bar_width * (len(groups) - 1) / 2
+        bars = ax.bar(
+            offsets,
+            values,
+            bar_width,
+            color=colors[group_index % len(colors)],
+            edgecolor="black",
+            linewidth=0.5,
+            label=group,
+        )
+
+        for bar, value in zip(bars, values):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.01,
+                f"{value:.3f}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold",
+                color="black",
+            )
+
+    ax.set_xlabel("Participation Metrics", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Adjusted Gini Coefficient", fontsize=14, fontweight="bold")
+    ax.set_title(f"{dataset_name}: Participation Inequality Analysis", fontsize=16, fontweight="bold", pad=20)
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels([metric.replace("_gini", "").replace("_", " ").title() for metric in metrics], fontsize=12)
+    ax.set_ylim(0, 1.1)
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    if len(groups) > 1:
+        ax.legend(frameon=False)
+
+    chart_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(chart_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
 def analyze_one(transcript: Path, dataset_name: str, phase_mode: str, run_dir: Path) -> Path:
     table, totals, summary = compute_table(read_csv(transcript), dataset_name, phase_mode)
     dataset_safe = safe_name(dataset_name)
@@ -226,39 +290,10 @@ def analyze_one(transcript: Path, dataset_name: str, phase_mode: str, run_dir: P
     for row in summary:
         print(f"{row['analysis_group']}: word_count_gini={row['word_count_gini']}, turn_count_gini={row['turn_count_gini']}, speech_time_seconds_gini={row['speech_time_seconds_gini']}")
 
-    # Create bar chart
+    chart_path = run_dir / f"{dataset_safe}_gini_chart.png"
+    save_summary_chart(summary, dataset_name, chart_path)
     if summary:
-        groups = list(set(row['analysis_group'] for row in summary))
-        metrics = ['word_count_gini', 'turn_count_gini', 'speech_time_seconds_gini']
-        x = np.arange(len(metrics))
-        width = 0.8 / len(groups) if groups else 0.8
-
-        fig, ax = plt.subplots(figsize=(12, 8))
-        colors = ['#2e86c1', '#d68910', '#229954', '#e74c3c', '#9b59b6']  # blue, orange, green, red, purple
-        for i, group in enumerate(groups):
-            values = [next((row[m] for row in summary if row['analysis_group'] == group), 0) for m in metrics]
-            bars = ax.bar(x + i * width - width * (len(groups) - 1) / 2, values, width, color=colors[i % len(colors)], edgecolor='black', linewidth=0.5)
-
-            # Annotate bars with exact values
-            for bar, val in zip(bars, values):
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2, height + 0.01, f'{val:.3f}', ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
-
-        ax.set_xlabel('Participation Metrics', fontsize=14, fontweight='bold')
-        ax.set_ylabel('Adjusted Gini Coefficient', fontsize=14, fontweight='bold')
-        ax.set_title(f'{dataset_name}: Participation Inequality Analysis', fontsize=16, fontweight='bold', pad=20)
-        ax.set_xticks(x)
-        ax.set_xticklabels([m.replace('_gini', '').replace('_', ' ').title() for m in metrics], fontsize=12)
-        ax.set_ylim(0, 1.1)  # Since Gini is 0-1
-        ax.grid(True, alpha=0.3, axis='y')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-
-        chart_path = run_dir / f"{dataset_safe}_gini_chart.png"
-        plt.tight_layout()
-        plt.savefig(chart_path, dpi=150, bbox_inches='tight')
         print(f"Saved chart: {chart_path}")
-        plt.close(fig)
 
     return table_path
 

@@ -2,30 +2,13 @@
 from __future__ import print_function
 
 import argparse
-import os
 import sys
 import time
 
-
-def configure_naoqi_sdk():
-	sdk_root = os.environ.get("NAOQI_SDK_ROOT")
-	if not sdk_root:
-		return
-
-	sdk_lib = os.path.join(sdk_root, "lib")
-	sdk_bin = os.path.join(sdk_root, "bin")
-
-	if os.path.exists(os.path.join(sdk_lib, "naoqi.py")) and sdk_lib not in sys.path:
-		sys.path.insert(0, sdk_lib)
-
-	path_parts = os.environ.get("PATH", "").split(os.pathsep)
-	for path in (sdk_bin, sdk_lib):
-		if os.path.isdir(path) and path not in path_parts:
-			path_parts.insert(0, path)
-	os.environ["PATH"] = os.pathsep.join(path_parts)
+from naoqi_paths import add_naoqi_paths
 
 
-configure_naoqi_sdk()
+add_naoqi_paths()
 from naoqi import ALProxy
 
 
