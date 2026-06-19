@@ -80,8 +80,8 @@ While live keyboard controls are enabled, typed commands include `ROBOT`,
 - Pepper direct NAOqi access is attempted from Python 3 first.
 - If Python 3 cannot import NAOqi, Pepper TTS/ASR falls back to the Python 2.7
   helpers in `pepper/tts.py` and `pepper/asr.py`.
-- Set `NAOQI_SDK_ROOT` or `NAOQI_PYTHONPATH` when the SDK is not in a default
-  location.
+- Set `NAOQI_SDK_ROOT` in `.env` to your NAOqi SDK root, or use
+  `NAOQI_PYTHONPATH` for the SDK `lib` folder.
 
 ## Analysis Commands
 

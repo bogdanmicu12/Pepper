@@ -23,10 +23,7 @@ try:
     import msvcrt
 except Exception:
     msvcrt = None
-try:
-    from naoqi import ALProxy
-except Exception:
-    ALProxy = None
+ALProxy = None
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -43,11 +40,6 @@ DEFAULT_PEPPER_LEGACY_ASR_SCRIPT = str(ROOT.parent / "pepper" / "asr.py")
 PROACTIVE_SILENCE_THRESHOLD = 7  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
 LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
-DEFAULT_NAOQI_SDK_ROOT = (
-    r"C:\Users\Hrsem\Downloads"
-    r"\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649"
-    r"\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649"
-)
 DEFAULT_AUDIO_INPUT_MODE = "focusrite"
 DEFAULT_AUDIO_CAPTURE_MODE = "continuous"
 FOCUSRITE_DEVICE_PATTERNS = ("focusrite", "scarlett")
@@ -335,6 +327,49 @@ def load_local_env_file(env_path=None):
 
 def get_env_secret(name, default=""):
     return os.environ.get(name) or default
+
+
+def configure_naoqi_paths_from_env(env=None):
+    env = env or os.environ
+    candidates = []
+
+    env_pythonpath = env.get("NAOQI_PYTHONPATH")
+    if env_pythonpath:
+        candidates.extend([item for item in env_pythonpath.split(os.pathsep) if item])
+
+    sdk_root = env.get("NAOQI_SDK_ROOT")
+    if sdk_root:
+        candidates.extend([
+            str(pathlib.Path(sdk_root) / "lib"),
+            str(pathlib.Path(sdk_root) / "bin"),
+        ])
+
+    path_parts = [item for item in env.get("PATH", "").split(os.pathsep) if item]
+    for candidate in reversed(candidates):
+        if not candidate or not pathlib.Path(candidate).exists():
+            continue
+        if env is os.environ and candidate not in sys.path:
+            sys.path.insert(0, candidate)
+        if candidate not in path_parts:
+            path_parts.insert(0, candidate)
+
+    if candidates:
+        env["PATH"] = os.pathsep.join(path_parts)
+
+
+def resolve_alproxy():
+    global ALProxy
+    if ALProxy is not None:
+        return ALProxy
+
+    configure_naoqi_paths_from_env()
+    try:
+        from naoqi import ALProxy as resolved_alproxy
+    except Exception:
+        return None
+
+    ALProxy = resolved_alproxy
+    return ALProxy
 
 
 def load_sounddevice():
@@ -1399,22 +1434,7 @@ def receive_from_pepper_via_py27(
 
 def build_naoqi_subprocess_env():
     env = os.environ.copy()
-    sdk_root = env.get("NAOQI_SDK_ROOT") or DEFAULT_NAOQI_SDK_ROOT
-    sdk_lib = str(pathlib.Path(sdk_root) / "lib")
-
-    env.setdefault("NAOQI_SDK_ROOT", sdk_root)
-    if pathlib.Path(sdk_lib).exists():
-        existing_pythonpath = env.get("NAOQI_PYTHONPATH", "")
-        pythonpath_parts = [item for item in existing_pythonpath.split(os.pathsep) if item]
-        if sdk_lib not in pythonpath_parts:
-            pythonpath_parts.insert(0, sdk_lib)
-        env["NAOQI_PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
-
-        path_parts = [item for item in env.get("PATH", "").split(os.pathsep) if item]
-        if sdk_lib not in path_parts:
-            path_parts.insert(0, sdk_lib)
-        env["PATH"] = os.pathsep.join(path_parts)
-
+    configure_naoqi_paths_from_env(env)
     return env
 
 def check_tcp_port(host, port, timeout=1.5):
@@ -1448,7 +1468,7 @@ def build_pepper_tts_sender(args):
             "The live listener will keep running; use --pepper-ip if Pepper has a different address."
         )
 
-    if ALProxy is None:
+    if resolve_alproxy() is None:
         legacy_python_cmd = args.pepper_legacy_python.strip().split()
         legacy_script = pathlib.Path(args.pepper_legacy_tts_script)
         if not legacy_script.is_absolute():

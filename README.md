@@ -46,8 +46,10 @@ python "llm\Mercer coding\label_mercer_and_graph.py" --condition "Proactive_Asse
 
 - The main bridge runs on Python 3.
 - Pepper NAOqi helpers run on Python 2.7.
-- Set `DEEPGRAM_API_KEY` in `.env` or your shell for live/audio transcription.
-- Set `NAOQI_SDK_ROOT` or `NAOQI_PYTHONPATH` if NAOqi is installed outside the default SDK locations.
+- Copy `.env.example` to `.env` and set `DEEPGRAM_API_KEY` for live/audio
+  transcription.
+- Set `NAOQI_SDK_ROOT` in `.env` to your NAOqi SDK root, or use
+  `NAOQI_PYTHONPATH` for the SDK `lib` folder.
 
 More detailed command references are in [llm/README.md](llm/README.md),
 [llm/infra/README.md](llm/infra/README.md),

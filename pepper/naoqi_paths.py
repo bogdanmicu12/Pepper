@@ -6,9 +6,24 @@ import os
 import sys
 
 
-DEFAULT_SDK_DOWNLOAD_DIR = (
-    "pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649"
-)
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
+
+def load_local_env_file(env_path=None):
+    path = env_path or os.path.join(ROOT, ".env")
+    if not os.path.exists(path):
+        return
+
+    with open(path, "r") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
 
 
 def _candidate_paths():
@@ -25,19 +40,7 @@ def _candidate_paths():
             os.path.join(sdk_root, "bin"),
         ])
 
-    user_profile = os.environ.get("USERPROFILE")
-    if user_profile:
-        candidates.append(os.path.join(
-            user_profile,
-            "Downloads",
-            DEFAULT_SDK_DOWNLOAD_DIR,
-            DEFAULT_SDK_DOWNLOAD_DIR,
-            "lib",
-        ))
-
     candidates.extend([
-        r"C:\naoqi-sdk\pynaoqi-python2.7-2.8.6.23-win64-vs2015-20191127_152649\lib",
-        r"C:\naoqi-sdk\pynaoqi-python2.7-2.5.7.1-win32-vs2013\lib",
         r"C:\Python27\Lib\site-packages",
     ])
     return candidates
@@ -53,6 +56,7 @@ def _search_roots():
 
 def add_naoqi_paths(max_depth=4):
     """Add likely NAOqi SDK locations to sys.path and PATH for Python 2.7 helpers."""
+    load_local_env_file()
     candidates = list(_candidate_paths())
 
     for root in _search_roots():

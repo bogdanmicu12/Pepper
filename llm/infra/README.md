@@ -122,8 +122,8 @@ Override helper paths if needed:
 python llm\infra\lmstudio_minimal_bridge.py --live --pepper --pepper-legacy-tts-script pepper\tts.py --pepper-legacy-asr-script pepper\asr.py
 ```
 
-Set `NAOQI_SDK_ROOT` to the SDK root or `NAOQI_PYTHONPATH` to the SDK `lib`
-folder when NAOqi is installed outside the default search locations.
+Set `NAOQI_SDK_ROOT` in `.env` to the SDK root, or use `NAOQI_PYTHONPATH` for
+the SDK `lib` folder.
 
 ## Logging
 
