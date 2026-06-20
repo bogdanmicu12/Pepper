@@ -3,12 +3,14 @@ import argparse
 import csv
 import io
 import json
+import os
 import pathlib
 import re
 import time
 import threading
 import queue
 import urllib.error
+import urllib.parse
 import urllib.request
 import wave
 import sys
@@ -34,8 +36,12 @@ COUNTERBALANCING = ROOT / "design" / "counterbalancing_elicitation.csv"
 THEMES_FILE = ROOT / "design" / "themes.json"
 DEFAULT_LOG_PATH = "logs/logs.csv"
 DEFAULT_TRANSCRIPT_LOG_PATH = "logs/transcript.csv"
-DEFAULT_DEEPGRAM_API_KEY = "1e2c44170806023c9a41217044208e89b466a040"
+DEFAULT_DEEPGRAM_API_KEY = os.environ.get("DEEPGRAM_API_KEY", "")
+DEFAULT_DEEPGRAM_ENDPOINT = "https://api.eu.deepgram.com/v1/listen"
+DEFAULT_DEEPGRAM_MODEL = "nova-3"
 DEFAULT_PEPPER_LEGACY_PYTHON = r"C:\Python27\python.exe"
+DEFAULT_PEPPER_TTS_VOICE = "naoenu"
+DEFAULT_PEPPER_VOICE_CANDIDATES = (DEFAULT_PEPPER_TTS_VOICE, "naoeng")
 PROACTIVE_SILENCE_THRESHOLD = 10  # seconds of silence to trigger proactive intervention
 ASR_MEMORY_KEY = "WordRecognized"
 LIVE_EXIT_WORDS = {"quit", "exit", "stop", "stop conversation"}
@@ -67,6 +73,12 @@ DEFAULT_PROACTIVE_STRUGGLE_CUES = (
     "we are stuck",
     "we need help",
 )
+NONVERBAL_TRANSCRIPT_RE = re.compile(
+    r"\b(?:ha+ha+|hehe+|laugh(?:ing|s)?|chuckle|giggle|mhm|mmhm|hm+|uh huh|uh uh)\b",
+    re.IGNORECASE,
+)
+BACKCHANNEL_TRANSCRIPT_RE = re.compile(r"^(?:mhm|mmhm|hm+|uh huh|uh uh|yeah|yep|right|okay|ok)$", re.IGNORECASE)
+FILLER_TRANSCRIPT_RE = re.compile(r"^(?:um+|uh+|erm+|ehm+|eh+)$", re.IGNORECASE)
 TRANSCRIPT_LOG_COLUMNS = [
     "session_id",
     "group_id",
@@ -78,6 +90,7 @@ TRANSCRIPT_LOG_COLUMNS = [
     "start_timestamp",
     "end_timestamp",
     "speaker",
+    "evaluation_participant",
     "text",
     "phase",
     "strategy",
@@ -97,6 +110,11 @@ TRANSCRIPT_LOG_COLUMNS = [
     "previous_elicitation_prompt_id",
     "previous_elicitation_strategy",
     "previous_elicitation_phase",
+    "nonverbal_event",
+    "nonverbal_intensity",
+    "nonverbal_source",
+    "speech_overlap",
+    "acoustic_confidence",
 ]
 
 # In-memory recent conversation buffer used for lightweight novelty detection
@@ -131,15 +149,11 @@ MODE_REGISTRY = {
     "role": ["facilitator", "solutionist"],
 }
 
-ELICITATION_ALIASES = {
-    "constraint_reframing": "generative",
-}
-
 MODE_DEFAULTS = {
     "elicitation": "perspective_shift",
-    "style": "assertive",
+    "style": "supportive",
     "initiative": "reactive",
-    "role": "facilitator",
+    "role": "off",
 }
 
 STYLE_SETUP = {
@@ -150,19 +164,22 @@ STYLE_SETUP = {
 
 VOCAL_DELIVERY = {
     "passive": {
-        "speed": 88,           # NAOqi speech speed percentage; 100 is default
-        "volume": 0.62,        # Softer volume for low-pressure delivery
-        "pitch": 0.96,         # Best effort; ignored by NAOqi versions that do not support it
+        "speed": 96,           # NAOqi speech speed percentage; 100 is default
+        "volume": 0.68,        # Softer volume for low-pressure delivery
+        "pitch": 1.0,          # Best effort; ignored by NAOqi versions that do not support it
+        "voice": DEFAULT_PEPPER_TTS_VOICE,
     },
     "assertive": {
-        "speed": 108,          # Slightly quicker while still intelligible
-        "volume": 0.78,        # Clear but not harsh
-        "pitch": 0.98,
+        "speed": 112,          # Quicker while still intelligible
+        "volume": 0.76,        # Clear but not harsh
+        "pitch": 1.01,
+        "voice": DEFAULT_PEPPER_TTS_VOICE,
     },
     "supportive": {
-        "speed": 82,           # Slower, more soothing delivery
-        "volume": 0.58,        # Gentle default volume
-        "pitch": 0.97,
+        "speed": 102,          # Clearer and less dragging than Pepper's slow default
+        "volume": 0.74,        # Audible in a small group without sounding harsh
+        "pitch": 1.02,
+        "voice": DEFAULT_PEPPER_TTS_VOICE,
     },
 }
 
@@ -192,18 +209,29 @@ BASE_SETUP = (
     "You are Pepper in a two-person brainstorming session. "
     "Respond naturally and conversationally, as if speaking aloud. "
     "Stay grounded in the latest participant turns and the recent history. "
-    "Give one fluent spoken response that moves the discussion forward. "
+    "Ask one concise, context-grounded question that nudges a more creative angle. "
+    "Avoid summarizing, deciding, or proposing a full solution unless directly asked. "
+    "Do not sound like a workshop facilitator: do not begin with Considering, Given, In light of, or Based on. "
+    "Do not mention engagement scores, metrics, or the experiment unless the participants directly ask about them. "
     "Do not write dialogue labels, notes, markdown, analysis, explanations of your behavior, or multiple possible replies. "
     "If participants are joking, testing, or using profanity, stay calm and redirect briefly without scolding."
 )
 REPLY_CONTRACT = (
     "Output only Pepper's spoken words. "
     "Prioritize the latest participant turns over older history; do not invent a new topic. "
+    "Use one short creativity-boosting question whenever possible, preferably starting with What if, What would, Which small, or How might. "
+    "Do not summarize the discussion before asking. "
     "No speaker labels such as Pepper: or Robot:. "
     "No notes, markdown, separators, lists, or meta-commentary. "
-    "Maximum 35 words."
+    "Maximum 24 words."
 )
-DEFAULT_REPLY_MAX_WORDS = 35
+DEFAULT_REPLY_MAX_WORDS = 24
+DEFAULT_PERSPECTIVE_TARGET = "a first-year student"
+PROMPT_PLACEHOLDER_GUIDANCE = (
+    "If the intervention prompt contains bracketed placeholders such as [A], [B], [X], [goal], "
+    "[output], [values], [result], [step], [problem], or [target], replace them silently with "
+    "relevant content from the recent conversation before speaking. Never say bracketed placeholders aloud. "
+)
 DEFAULT_LM_STOP_SEQUENCES = [
     "\nParticipant",
     "\nParticipant 1",
@@ -241,8 +269,46 @@ def parse_deepgram_transcript(response):
     return (response.get("transcript") or "").strip()
 
 
-def deepgram_transcribe_bytes(audio_data, content_type, api_key, endpoint="https://api.eu.deepgram.com/v1/listen", timeout=60.0):
+def endpoint_with_query_params(endpoint, params):
+    split = urllib.parse.urlsplit(endpoint.rstrip("/"))
+    query = dict(urllib.parse.parse_qsl(split.query, keep_blank_values=True))
+    for key, value in params.items():
+        if value is None or key in query:
+            continue
+        if isinstance(value, bool):
+            value = "true" if value else "false"
+        query[key] = str(value)
+    return urllib.parse.urlunsplit((
+        split.scheme,
+        split.netloc,
+        split.path,
+        urllib.parse.urlencode(query),
+        split.fragment,
+    ))
+
+
+def deepgram_transcribe_bytes(
+    audio_data,
+    content_type,
+    api_key,
+    endpoint=DEFAULT_DEEPGRAM_ENDPOINT,
+    model=DEFAULT_DEEPGRAM_MODEL,
+    timeout=60.0,
+    filler_words=True,
+    punctuate=False,
+    smart_format=False,
+):
     endpoint = endpoint.rstrip("/")
+    endpoint = endpoint_with_query_params(
+        endpoint,
+        {
+            "model": model,
+            "language": "en",
+            "filler_words": filler_words,
+            "punctuate": punctuate,
+            "smart_format": smart_format,
+        },
+    )
     headers = {
         "Authorization": f"Token {api_key}",
         "Content-Type": content_type,
@@ -262,7 +328,16 @@ def deepgram_transcribe_bytes(audio_data, content_type, api_key, endpoint="https
     return parse_deepgram_transcript(payload)
 
 
-def deepgram_transcribe_file(audio_path, api_key, endpoint="https://api.eu.deepgram.com/v1/listen", timeout=60.0):
+def deepgram_transcribe_file(
+    audio_path,
+    api_key,
+    endpoint=DEFAULT_DEEPGRAM_ENDPOINT,
+    model=DEFAULT_DEEPGRAM_MODEL,
+    timeout=60.0,
+    filler_words=True,
+    punctuate=False,
+    smart_format=False,
+):
     audio_path = pathlib.Path(audio_path)
     if not audio_path.exists():
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
@@ -275,7 +350,11 @@ def deepgram_transcribe_file(audio_path, api_key, endpoint="https://api.eu.deepg
         content_type=infer_audio_content_type(audio_path),
         api_key=api_key,
         endpoint=endpoint,
+        model=model,
         timeout=timeout,
+        filler_words=filler_words,
+        punctuate=punctuate,
+        smart_format=smart_format,
     )
 
 
@@ -505,6 +584,75 @@ def calculate_audio_rms(recording):
         return 0.0
     samples = recording.reshape(-1).astype("float32")
     return float((samples * samples).mean() ** 0.5)
+
+
+def calculate_audio_peak(recording):
+    if getattr(recording, "size", 0) == 0:
+        return 0.0
+    if not hasattr(recording, "reshape"):
+        return 0.0
+    samples = recording.reshape(-1).astype("float32")
+    return float(abs(samples).max())
+
+
+def classify_nonverbal_event(transcript, segment, nonverbal_rms_threshold=650.0, impact_rms_threshold=6000.0):
+    text = " ".join((transcript or "").strip().lower().split())
+    rms = float(segment.get("audio_rms") or 0.0)
+    duration = float(segment.get("duration_seconds") or 0.0)
+    peak = calculate_audio_peak(segment.get("audio", []))
+    crest = peak / max(rms, 1.0)
+
+    if text:
+        if re.search(r"\b(?:laugh(?:ing|s)?|chuckle|giggle|ha+ha+|hehe+)\b", text):
+            return {"nonverbal_event": "laughter", "nonverbal_intensity": "moderate", "text": ""}
+        if BACKCHANNEL_TRANSCRIPT_RE.fullmatch(text):
+            return {"nonverbal_event": "backchannel", "nonverbal_intensity": "light", "text": text}
+        if FILLER_TRANSCRIPT_RE.fullmatch(text):
+            return {"nonverbal_event": "filler", "nonverbal_intensity": "light", "text": text}
+        return None
+
+    if rms < float(nonverbal_rms_threshold):
+        return None
+    if rms >= float(impact_rms_threshold) and duration <= 1.2 and crest >= 4.0:
+        return {"nonverbal_event": "impact_noise", "nonverbal_intensity": "high", "text": ""}
+    if duration <= 1.2 and crest >= 3.2:
+        return {"nonverbal_event": "cough", "nonverbal_intensity": "moderate", "text": ""}
+    if 0.45 <= duration <= 3.5:
+        return {"nonverbal_event": "laughter", "nonverbal_intensity": "light", "text": ""}
+    if duration > 3.5:
+        return {"nonverbal_event": "sigh", "nonverbal_intensity": "light", "text": ""}
+    return {"nonverbal_event": "non_speech_vocalization", "nonverbal_intensity": "light", "text": ""}
+
+
+def build_nonverbal_event_from_segment(segment, classification):
+    if not classification:
+        return None
+    rms = float(segment.get("audio_rms") or 0.0)
+    confidence = 0.55
+    event_name = classification.get("nonverbal_event", "")
+    if event_name in {"backchannel", "filler"}:
+        confidence = 0.82
+    elif event_name == "impact_noise":
+        confidence = 0.72
+    elif event_name in {"laughter", "cough"}:
+        confidence = 0.66 if rms >= 1000 else 0.58
+    return {
+        "type": "nonverbal",
+        "speaker": segment.get("speaker", "Participant"),
+        "timestamp": segment.get("end_timestamp", timestamp_from_epoch()),
+        "start_timestamp": segment.get("start_timestamp", ""),
+        "end_timestamp": segment.get("end_timestamp", ""),
+        "audio_channel": segment.get("audio_channel", ""),
+        "audio_source": segment.get("audio_source", ""),
+        "audio_device": segment.get("audio_device", ""),
+        "audio_rms": segment.get("audio_rms", ""),
+        "text": classification.get("text", ""),
+        "nonverbal_event": event_name,
+        "nonverbal_intensity": classification.get("nonverbal_intensity", ""),
+        "nonverbal_source": "audio_heuristic",
+        "speech_overlap": "false",
+        "acoustic_confidence": round(confidence, 3),
+    }
 
 
 def parse_speaker_prefixed_text(text, default_speaker="Participant"):
@@ -760,12 +908,16 @@ def resolve_live_audio_input(
 def build_deepgram_live_receiver(
     api_key,
     endpoint,
+    model=DEFAULT_DEEPGRAM_MODEL,
     record_seconds=6.0,
     input_mode=DEFAULT_AUDIO_INPUT_MODE,
     audio_device=None,
     samplerate=None,
     silence_rms=120.0,
     participant_channel_map=DEFAULT_FOCUSRITE_PARTICIPANTS,
+    filler_words=True,
+    punctuate=False,
+    smart_format=False,
 ):
     audio_input = resolve_live_audio_input(
         input_mode=input_mode,
@@ -814,6 +966,10 @@ def build_deepgram_live_receiver(
                     content_type="audio/wav",
                     api_key=api_key,
                     endpoint=endpoint,
+                    model=model,
+                    filler_words=filler_words,
+                    punctuate=punctuate,
+                    smart_format=smart_format,
                 )
                 print(f"[Deepgram:{speaker}:input {channel_number}] {transcript or '(no speech recognized)'}")
                 if transcript:
@@ -841,6 +997,10 @@ def build_deepgram_live_receiver(
             content_type=content_type,
             api_key=api_key,
             endpoint=endpoint,
+            model=model,
+            filler_words=filler_words,
+            punctuate=punctuate,
+            smart_format=smart_format,
         )
         print(f"[Deepgram] Recognized speech: {transcript}")
         return transcript
@@ -980,6 +1140,7 @@ class ContinuousAudioTranscriber:
         self,
         api_key,
         endpoint,
+        model=DEFAULT_DEEPGRAM_MODEL,
         input_mode=DEFAULT_AUDIO_INPUT_MODE,
         audio_device=None,
         samplerate=None,
@@ -992,6 +1153,12 @@ class ContinuousAudioTranscriber:
         vad_max_segment_seconds=18.0,
         blocksize=1024,
         transcribe_workers=2,
+        deepgram_filler_words=True,
+        deepgram_punctuate=False,
+        deepgram_smart_format=False,
+        nonverbal_event_logging=True,
+        nonverbal_rms_threshold=650.0,
+        impact_rms_threshold=6000.0,
     ):
         audio_input = resolve_live_audio_input(
             input_mode=input_mode,
@@ -1001,6 +1168,7 @@ class ContinuousAudioTranscriber:
         self.sd = audio_input["sounddevice"]
         self.api_key = api_key
         self.endpoint = endpoint
+        self.model = model
         self.input_mode = audio_input["input_mode"]
         self.device_index = audio_input["device_index"]
         self.device_info = audio_input["device_info"]
@@ -1014,6 +1182,12 @@ class ContinuousAudioTranscriber:
         self.stream = None
         self.worker_threads = []
         self.transcribe_workers = max(1, int(transcribe_workers))
+        self.deepgram_filler_words = bool(deepgram_filler_words)
+        self.deepgram_punctuate = bool(deepgram_punctuate)
+        self.deepgram_smart_format = bool(deepgram_smart_format)
+        self.nonverbal_event_logging = bool(nonverbal_event_logging)
+        self.nonverbal_rms_threshold = float(nonverbal_rms_threshold)
+        self.impact_rms_threshold = float(impact_rms_threshold)
         self.segmenters = [
             ContinuousSpeechSegmenter(
                 speaker=speaker,
@@ -1130,6 +1304,10 @@ class ContinuousAudioTranscriber:
                     content_type="audio/wav",
                     api_key=self.api_key,
                     endpoint=self.endpoint,
+                    model=self.model,
+                    filler_words=self.deepgram_filler_words,
+                    punctuate=self.deepgram_punctuate,
+                    smart_format=self.deepgram_smart_format,
                 )
             except Exception as error:
                 self.transcript_queue.put({
@@ -1143,6 +1321,20 @@ class ContinuousAudioTranscriber:
                 continue
 
             transcript = (transcript or "").strip()
+            nonverbal_classification = None
+            if self.nonverbal_event_logging:
+                nonverbal_classification = classify_nonverbal_event(
+                    transcript,
+                    segment,
+                    nonverbal_rms_threshold=self.nonverbal_rms_threshold,
+                    impact_rms_threshold=self.impact_rms_threshold,
+                )
+            if nonverbal_classification and not transcript:
+                self.transcript_queue.put({
+                    **build_nonverbal_event_from_segment(segment, nonverbal_classification),
+                    "timestamp": segment["end_timestamp"],
+                })
+                continue
             if not transcript:
                 self.transcript_queue.put({
                     "type": "empty",
@@ -1167,6 +1359,12 @@ class ContinuousAudioTranscriber:
                 audio_channel=segment["audio_channel"],
                 audio_rms=segment["audio_rms"],
             )
+            if nonverbal_classification and transcript and NONVERBAL_TRANSCRIPT_RE.search(transcript):
+                turn["nonverbal_event"] = nonverbal_classification.get("nonverbal_event", "")
+                turn["nonverbal_intensity"] = nonverbal_classification.get("nonverbal_intensity", "")
+                turn["nonverbal_source"] = "deepgram_transcript"
+                turn["speech_overlap"] = "false"
+                turn["acoustic_confidence"] = "0.82"
             self.transcript_queue.put({"type": "turn", "turn": turn})
 
 
@@ -1193,6 +1391,7 @@ class PepperIO:
         self.memory = ALProxy("ALMemory", self.ip, self.port)
         self.asr = ALProxy("ALSpeechRecognition", self.ip, self.port)
         self.asr.setLanguage(self.language)
+        self.set_preferred_voice()
 
         if self.vocabulary:
             self.asr.pause(True)
@@ -1208,16 +1407,43 @@ class PepperIO:
             except Exception:
                 pass
 
-    def set_vocal_params(self, speed=100, volume=0.7, pitch=1.0):
+    def set_preferred_voice(self, voice=None):
+        """Select the preferred English Pepper voice if it is installed."""
+        if not self.tts:
+            return
+        candidates = []
+        if voice:
+            candidates.append(str(voice))
+        candidates.extend(DEFAULT_PEPPER_VOICE_CANDIDATES)
+        try:
+            available = self.tts.getAvailableVoices()
+        except Exception:
+            available = []
+        available_by_lower = {
+            str(item).lower(): item
+            for item in available
+        }
+        for candidate in candidates:
+            selected = available_by_lower.get(str(candidate).lower())
+            if selected:
+                try:
+                    self.tts.setVoice(selected)
+                except Exception:
+                    pass
+                return
+
+    def set_vocal_params(self, speed=100, volume=0.7, pitch=1.0, voice=None):
         """Set vocal delivery parameters for speech.
         
         Args:
             speed: Speech rate percentage; 100 is Pepper's default
             volume: Volume level (0.0-1.0, default 0.7)
             pitch: Best-effort pitch level for NAOqi versions that support it
+            voice: Best-effort preferred voice name for installed NAOqi voices
         """
         if not self.tts:
             return
+        self.set_preferred_voice(voice=voice)
         try:
             speed_value = float(speed)
             if speed_value <= 2.0:
@@ -1286,7 +1512,7 @@ def vocal_params_for_style(style):
     return dict(VOCAL_DELIVERY.get(style) or VOCAL_DELIVERY[MODE_DEFAULTS["style"]])
 
 
-def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd, speed=100, volume=0.7, pitch=1.0):
+def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd, speed=100, volume=0.7, pitch=1.0, voice=None):
     if not text:
         return
 
@@ -1305,6 +1531,8 @@ def send_to_pepper_via_py27(text, ip, port, script_path, python_cmd, speed=100, 
         "--pitch",
         str(pitch),
     ]
+    if voice:
+        command.extend(["--voice", str(voice)])
     completed = subprocess.run(command, capture_output=True, text=True)
     if completed.returncode != 0:
         stderr_text = (completed.stderr or "").strip()
@@ -1427,8 +1655,6 @@ def load_themes():
 
 def get_mode_value(payload, key):
     selected = payload.get("mode_combo", {}).get(key, MODE_DEFAULTS[key])
-    if key == "elicitation":
-        selected = ELICITATION_ALIASES.get(selected, selected)
     if selected not in MODE_REGISTRY[key]:
         raise ValueError(f"Invalid mode for {key}: {selected}")
     return selected
@@ -1446,7 +1672,7 @@ def get_delivery_style(payload):
 
 
 def normalize_elicitation(value):
-    return ELICITATION_ALIASES.get(value, value)
+    return str(value or "").strip()
 
 
 def get_strategy_sequence(group_id, theme_id, phase):
@@ -1468,6 +1694,47 @@ def select_first_prompt_for_strategy(prompt_bank, strategy, phase):
     return None
 
 
+def prompt_candidates_for_strategy(prompt_bank, strategy, phase):
+    normalized_strategy = normalize_elicitation(strategy)
+    return [
+        row for row in prompt_bank
+        if normalize_elicitation(row.get("strategy", "")) == normalized_strategy
+        and row.get("phase") == phase
+    ]
+
+
+def counterbalance_ordinal(value):
+    text = str(value or "").strip()
+    match = re.search(r"(\d+)$", text)
+    if match:
+        return max(0, int(match.group(1)) - 1)
+    return sum(ord(char) for char in text)
+
+
+def prompt_counterbalance_index(payload, strategy, phase, candidate_count):
+    if candidate_count <= 1:
+        return 0
+
+    strategy = normalize_elicitation(strategy)
+    try:
+        strategy_offset = MODE_REGISTRY["elicitation"].index(strategy)
+    except ValueError:
+        strategy_offset = 0
+
+    phase_offset = 0 if phase == "divergence" else len(MODE_REGISTRY["elicitation"])
+    group_offset = counterbalance_ordinal(payload.get("group_id", ""))
+    theme_offset = counterbalance_ordinal(payload.get("theme_id", ""))
+    return (group_offset + theme_offset + phase_offset + strategy_offset) % candidate_count
+
+
+def select_counterbalanced_prompt_for_strategy(prompt_bank, strategy, phase, payload=None):
+    candidates = prompt_candidates_for_strategy(prompt_bank, strategy, phase)
+    if not candidates:
+        return None
+    index = prompt_counterbalance_index(payload or {}, strategy, phase, len(candidates))
+    return candidates[index]
+
+
 def select_prompt(payload, prompt_bank):
     elicitation_key = get_mode_value(payload, "elicitation")
     phase = payload.get("phase", "divergence")
@@ -1478,11 +1745,21 @@ def select_prompt(payload, prompt_bank):
             if row["prompt_id"] == requested:
                 return row, elicitation_key
 
-    for row in prompt_bank:
-        if row["strategy"] == elicitation_key and row["phase"] == phase:
-            return row, elicitation_key
+    row = select_counterbalanced_prompt_for_strategy(prompt_bank, elicitation_key, phase, payload)
+    if row:
+        return row, elicitation_key
 
     raise ValueError(f"No prompt found for {elicitation_key} / {phase}")
+
+
+def materialize_prompt_text(prompt_row, payload=None):
+    text = prompt_row.get("text", "")
+    if prompt_row.get("strategy") != "perspective_shift":
+        return text
+    target = DEFAULT_PERSPECTIVE_TARGET
+    if payload:
+        target = (payload.get("perspective_target") or target).strip() or target
+    return text.replace("[target]", target).replace("[their]", "their")
 
 
 def build_messages(payload, prompt_row, elicitation_key):
@@ -1518,8 +1795,9 @@ def build_messages(payload, prompt_row, elicitation_key):
         f"Latest uninterrupted participant turns:\n{pending_text}\n"
         f"Last participant utterance: {payload.get('last_user_utterance', '')}\n"
         f"Seed ideas: {seed_text}\n"
-        f"Intervention prompt to adapt briefly to this moment: {prompt_row['text']}\n"
-        f"Bridge from what the participants just said before using the intervention.\n"
+        f"Intervention prompt to adapt briefly to this moment: {materialize_prompt_text(prompt_row, payload)}\n"
+        f"{PROMPT_PLACEHOLDER_GUIDANCE}"
+        f"Use what the participants just said to ask the intervention as a natural creativity-boosting question.\n"
         f"{REPLY_CONTRACT}"
     )
 
@@ -1560,7 +1838,7 @@ def build_messages_context_only(payload):
         f"Latest uninterrupted participant turns:\n{pending_text}\n"
         f"Last participant utterance: {payload.get('last_user_utterance', '')}\n"
         f"Seed ideas: {seed_text}\n"
-        f"Respond directly to the latest participant request or question.\n"
+        f"Ask a short question that responds to the latest participant turns and keeps their idea development moving.\n"
         f"{REPLY_CONTRACT}"
     )
 
@@ -1626,12 +1904,15 @@ def truncate_reply(line, max_words=DEFAULT_REPLY_MAX_WORDS):
     line = " ".join((line or "").strip().split())
     if not line:
         return ""
+    first_question = re.match(r"(.+?\?)", line)
+    if first_question:
+        line = first_question.group(1).strip()
 
     words = line.split()
     if len(words) > int(max_words):
-        line = " ".join(words[:int(max_words)]).rstrip(" ,;:")
+        line = " ".join(words[:int(max_words)]).rstrip(" ,;:.?")
         if line and line[-1] not in ".!?":
-            line += "."
+            line += "?"
 
     return line.strip()
 
@@ -1661,6 +1942,8 @@ def sanitize_reply(text, max_words=DEFAULT_REPLY_MAX_WORDS):
     line = re.sub(r"[#/]{2,}", " ", line)
     line = re.sub(r"[=]{1,}/\w+", "", line)
     line = " ".join(line.split())
+    line = re.sub(r"^(?:considering|given|in light of|based on)\b[^?]*?,\s*", "", line, flags=re.IGNORECASE)
+    line = re.sub(r"\bfacilitate\b", "support", line, flags=re.IGNORECASE)
     lower = line.lower()
     
     reasoning_markers = [
@@ -1703,6 +1986,8 @@ def sanitize_reply(text, max_words=DEFAULT_REPLY_MAX_WORDS):
 def process(payload):
     prompt_bank = load_prompt_bank()
     prompt_row, elicitation_key = select_prompt(payload, prompt_bank)
+    prompt_row = dict(prompt_row)
+    prompt_row["text"] = materialize_prompt_text(prompt_row, payload)
     messages = build_messages(payload, prompt_row, elicitation_key)
 
     fallback_reason = ""
@@ -1777,13 +2062,19 @@ def process_context_only(payload):
     }
 
 
+def write_transcript_log_row(path, row):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    needs_header = (not path.exists()) or path.stat().st_size == 0
+    with path.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=TRANSCRIPT_LOG_COLUMNS)
+        if needs_header:
+            writer.writeheader()
+        writer.writerow(row)
+
+
 def append_transcript_event(transcript_log_path, payload, event):
     if not transcript_log_path:
         return
-
-    path = resolve_log_path(transcript_log_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    needs_header = (not path.exists()) or path.stat().st_size == 0
 
     row = {
         "session_id": payload.get("session_id", "S01"),
@@ -1796,6 +2087,7 @@ def append_transcript_event(transcript_log_path, payload, event):
         "start_timestamp": event.get("start_timestamp", ""),
         "end_timestamp": event.get("end_timestamp", ""),
         "speaker": event.get("speaker", ""),
+        "evaluation_participant": event.get("evaluation_participant", ""),
         "text": event.get("text", ""),
         "phase": event.get("phase", payload.get("phase", "")),
         "strategy": event.get("strategy", ""),
@@ -1815,25 +2107,27 @@ def append_transcript_event(transcript_log_path, payload, event):
         "previous_elicitation_prompt_id": event.get("previous_elicitation_prompt_id", ""),
         "previous_elicitation_strategy": event.get("previous_elicitation_strategy", ""),
         "previous_elicitation_phase": event.get("previous_elicitation_phase", ""),
+        "nonverbal_event": event.get("nonverbal_event", ""),
+        "nonverbal_intensity": event.get("nonverbal_intensity", ""),
+        "nonverbal_source": event.get("nonverbal_source", ""),
+        "speech_overlap": event.get("speech_overlap", ""),
+        "acoustic_confidence": event.get("acoustic_confidence", ""),
     }
 
-    with path.open("a", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=TRANSCRIPT_LOG_COLUMNS)
-        if needs_header:
-            writer.writeheader()
-        writer.writerow(row)
+    transcript_path = resolve_log_path(transcript_log_path)
+    write_transcript_log_row(transcript_path, row)
 
-        # Update in-memory conversation history for novelty detection (bounded)
-        try:
-            GLOBAL_CONVERSATION_HISTORY.append({
-                "speaker": row.get("speaker", ""),
-                "text": row.get("text", ""),
-                "timestamp": row.get("timestamp", ""),
-            })
-            if len(GLOBAL_CONVERSATION_HISTORY) > 500:
-                del GLOBAL_CONVERSATION_HISTORY[: len(GLOBAL_CONVERSATION_HISTORY) - 500]
-        except Exception:
-            pass
+    # Update in-memory conversation history for novelty detection (bounded).
+    try:
+        GLOBAL_CONVERSATION_HISTORY.append({
+            "speaker": row.get("speaker", ""),
+            "text": row.get("text", ""),
+            "timestamp": row.get("timestamp", ""),
+        })
+        if len(GLOBAL_CONVERSATION_HISTORY) > 500:
+            del GLOBAL_CONVERSATION_HISTORY[: len(GLOBAL_CONVERSATION_HISTORY) - 500]
+    except Exception:
+        pass
 
 
 def append_participant_transcript_event(transcript_log_path, payload, turn, sequence_index, triggered_robot=False, trigger_words=DEFAULT_TRIGGER_WORDS, robot_turn_index=""):
@@ -1856,6 +2150,47 @@ def append_participant_transcript_event(transcript_log_path, payload, turn, sequ
             "audio_rms": turn.get("audio_rms", ""),
             "triggered_robot": "true" if triggered_robot else "false",
             "trigger_words": ",".join(parse_trigger_words(trigger_words)),
+            "nonverbal_event": turn.get("nonverbal_event", ""),
+            "nonverbal_intensity": turn.get("nonverbal_intensity", ""),
+            "nonverbal_source": turn.get("nonverbal_source", ""),
+            "speech_overlap": turn.get("speech_overlap", ""),
+            "acoustic_confidence": turn.get("acoustic_confidence", ""),
+        },
+    )
+
+
+def append_nonverbal_transcript_event(
+    transcript_log_path,
+    payload,
+    event,
+    sequence_index,
+    robot_turn_index="",
+):
+    append_transcript_event(
+        transcript_log_path,
+        payload,
+        {
+            "sequence_index": sequence_index,
+            "robot_turn_index": robot_turn_index,
+            "event_type": "nonverbal",
+            "timestamp": event.get("timestamp", ""),
+            "start_timestamp": event.get("start_timestamp", event.get("timestamp", "")),
+            "end_timestamp": event.get("end_timestamp", event.get("timestamp", "")),
+            "speaker": event.get("speaker", "Participant"),
+            "text": event.get("text", ""),
+            "phase": event.get("phase", payload.get("phase", "")),
+            "audio_input_mode": payload.get("audio_input_mode", ""),
+            "audio_device": event.get("audio_device", payload.get("audio_device", "")),
+            "audio_source": event.get("audio_source", ""),
+            "audio_channel": event.get("audio_channel", ""),
+            "audio_rms": event.get("audio_rms", ""),
+            "triggered_robot": "false",
+            "trigger_words": ",".join(parse_trigger_words(DEFAULT_TRIGGER_WORDS)),
+            "nonverbal_event": event.get("nonverbal_event", ""),
+            "nonverbal_intensity": event.get("nonverbal_intensity", ""),
+            "nonverbal_source": event.get("nonverbal_source", "manual_observation"),
+            "speech_overlap": event.get("speech_overlap", ""),
+            "acoustic_confidence": event.get("acoustic_confidence", ""),
         },
     )
 
@@ -1916,8 +2251,8 @@ def append_log_turn_block(log_path, payload, result, participant_turns, robot_ti
     session_id = payload.get("session_id", "S01")
     group_id = payload.get("group_id", "G01")
     conversation_id = payload.get("conversation_id", session_id)
-    prompt_text = result["prompt_text"]
-    robot_reply = result["reply"]
+    prompt_text = result.get("prompt_text", "")
+    robot_reply = result.get("reply", "")
     turn_timestamp = payload.get("turn_timestamp")
     if not turn_timestamp and participant_turns:
         turn_timestamp = participant_turns[0].get("timestamp", "")
@@ -1933,7 +2268,7 @@ def append_log_turn_block(log_path, payload, result, participant_turns, robot_ti
                 handle.write("\n")
             append_log_conversation_header(handle, session_id, group_id, conversation_id)
 
-        writer.writerow([turn_timestamp, result["phase"], result["strategy"], result["prompt_id"], "", prompt_text])
+        writer.writerow([turn_timestamp, result.get("phase", ""), result.get("strategy", ""), result.get("prompt_id", ""), "", prompt_text])
         for participant_turn in participant_turns:
             writer.writerow([
                 participant_turn.get("timestamp", turn_timestamp),
@@ -2199,6 +2534,7 @@ def run_continuous_live_dialog(
     stop_event = threading.Event()
     last_proactive_epoch = 0.0
     last_elicitation_result = None
+    last_elicitation_phase_reply_index = None
     session_start_evaluation_recorded = False
     final_evaluation_recorded = False
 
@@ -2219,6 +2555,110 @@ def run_continuous_live_dialog(
     def evaluation_input_queue():
         return command_queue if keyboard_controls else None
 
+    def evaluation_participants():
+        configured = base_payload.get("evaluation_participants") or []
+        if isinstance(configured, str):
+            configured = [part.strip() for part in configured.split(",")]
+        participants = [str(part).strip() for part in configured if str(part).strip()]
+        if not participants:
+            participants = [
+                str(base_payload.get("participant_1_name", "Participant 1")).strip() or "Participant 1",
+                str(base_payload.get("participant_2_name", "Participant 2")).strip() or "Participant 2",
+            ]
+        return participants[:2]
+
+    def score_text(score):
+        return str(score).strip() if score != "" else ""
+
+    def prompt_individual_start_engagement():
+        rows = []
+        for participant in evaluation_participants():
+            score = prompt_start_elicitation_engagement(
+                participant,
+                input_queue=evaluation_input_queue(),
+                stop_event=stop_event,
+            )
+            if stop_event.is_set():
+                return rows
+            rows.append({"participant": participant, "elicitation_engagement_score": score})
+        return rows
+
+    def prompt_individual_creative_confidence(moment):
+        rows = []
+        for participant in evaluation_participants():
+            score = prompt_creative_confidence(
+                moment,
+                participant,
+                input_queue=evaluation_input_queue(),
+                stop_event=stop_event,
+            )
+            if stop_event.is_set():
+                return rows
+            rows.append({"participant": participant, "creative_confidence_score": score})
+        return rows
+
+    def prompt_individual_previous_engagement(previous_result):
+        rows = []
+        for participant in evaluation_participants():
+            score = prompt_previous_elicitation_engagement(
+                previous_result,
+                participant,
+                input_queue=evaluation_input_queue(),
+                stop_event=stop_event,
+            )
+            if stop_event.is_set():
+                return rows
+            rows.append({"participant": participant, "elicitation_engagement_score": score})
+        return rows
+
+    def merge_participant_score_rows(*row_sets):
+        merged = {participant: {"participant": participant} for participant in evaluation_participants()}
+        for row_set in row_sets:
+            for row in row_set:
+                participant = row.get("participant", "")
+                if not participant:
+                    continue
+                merged.setdefault(participant, {"participant": participant}).update(row)
+        return list(merged.values())
+
+    def append_evaluation_rows(rows, event_type, moment, phase, strategy="", prompt_id="", text_label="Evaluation score"):
+        nonlocal sequence_index
+        now = timestamp_from_epoch()
+        for row in rows:
+            engagement_score = row.get("elicitation_engagement_score", "")
+            confidence_score = row.get("creative_confidence_score", "")
+            if engagement_score == "" and confidence_score == "":
+                continue
+            participant = row.get("participant", "")
+            text_values = []
+            if score_text(engagement_score):
+                text_values.append(f"engagement {score_text(engagement_score)}")
+            if score_text(confidence_score):
+                text_values.append(f"creative confidence {score_text(confidence_score)}")
+            sequence_index += 1
+            append_transcript_event(
+                transcript_log_path,
+                base_payload,
+                {
+                    "sequence_index": sequence_index,
+                    "robot_turn_index": robot_turn_index,
+                    "event_type": event_type,
+                    "timestamp": now,
+                    "start_timestamp": now,
+                    "end_timestamp": now,
+                    "speaker": participant,
+                    "evaluation_participant": participant,
+                    "text": " ".join(text_values),
+                    "phase": phase,
+                    "strategy": strategy,
+                    "prompt_id": prompt_id,
+                    "source": "manual_evaluation",
+                    "elicitation_engagement_score": engagement_score,
+                    "creative_confidence_score": confidence_score,
+                    "evaluation_moment": moment,
+                },
+            )
+
     def record_session_start_evaluation():
         nonlocal sequence_index, session_start_evaluation_recorded
         if session_start_evaluation_recorded or not evaluation_elicitation:
@@ -2226,22 +2666,81 @@ def run_continuous_live_dialog(
         if elicitation_mode == "off":
             return
 
-        engagement_score = prompt_start_elicitation_engagement(
-            input_queue=evaluation_input_queue(),
-            stop_event=stop_event,
-        )
+        engagement_scores = prompt_individual_start_engagement()
         if stop_event.is_set():
             return
 
-        confidence_score = prompt_creative_confidence(
-            "start",
-            input_queue=evaluation_input_queue(),
-            stop_event=stop_event,
-        )
-        if stop_event.is_set() or (engagement_score == "" and confidence_score == ""):
-            session_start_evaluation_recorded = True
+        confidence_scores = prompt_individual_creative_confidence("start")
+        if stop_event.is_set():
             return
 
+        append_evaluation_rows(
+            engagement_scores,
+            event_type="session_start_evaluation",
+            moment="start",
+            phase=current_phase,
+            strategy="session_start",
+            text_label="Session-start engagement scores",
+        )
+        append_evaluation_rows(
+            confidence_scores,
+            event_type="session_start_evaluation",
+            moment="start",
+            phase=current_phase,
+            strategy="session_start",
+            text_label="Session-start creative confidence scores",
+        )
+        session_start_evaluation_recorded = True
+
+    def score_pending_elicitation_window(force=False):
+        nonlocal last_elicitation_result, last_elicitation_phase_reply_index
+        if not evaluation_elicitation or not last_elicitation_result:
+            return
+
+        next_reply_index = phase_reply_count[current_phase] + 1
+        turns_since_elicitation = 0
+        if last_elicitation_phase_reply_index is not None:
+            turns_since_elicitation = next_reply_index - int(last_elicitation_phase_reply_index)
+        if not force and turns_since_elicitation < intervention_every:
+            return
+
+        rows = prompt_individual_previous_engagement(last_elicitation_result)
+        if stop_event.is_set():
+            return
+
+        append_evaluation_rows(
+            rows,
+            event_type="elicitation_window_evaluation",
+            moment="after_previous_elicitation",
+            phase=last_elicitation_result.get("phase", current_phase),
+            strategy=last_elicitation_result.get("strategy", ""),
+            prompt_id=last_elicitation_result.get("prompt_id", ""),
+        )
+        last_elicitation_result = None
+        last_elicitation_phase_reply_index = None
+
+    def record_pending_elicitation_evaluation(event_type="elicitation_window_evaluation"):
+        nonlocal sequence_index, last_elicitation_result, last_elicitation_phase_reply_index
+        if not evaluation_elicitation or not last_elicitation_result:
+            return
+
+        rows = prompt_individual_previous_engagement(last_elicitation_result)
+        if stop_event.is_set():
+            return
+
+        append_evaluation_rows(
+            rows,
+            event_type=event_type,
+            moment="after_previous_elicitation",
+            phase=last_elicitation_result.get("phase", current_phase),
+            strategy=last_elicitation_result.get("strategy", ""),
+            prompt_id=last_elicitation_result.get("prompt_id", ""),
+        )
+        last_elicitation_result = None
+        last_elicitation_phase_reply_index = None
+
+    def record_phase_change(new_phase):
+        nonlocal sequence_index
         now = timestamp_from_epoch()
         sequence_index += 1
         append_transcript_event(
@@ -2249,21 +2748,17 @@ def run_continuous_live_dialog(
             base_payload,
             {
                 "sequence_index": sequence_index,
-                "event_type": "session_start_evaluation",
+                "robot_turn_index": robot_turn_index,
+                "event_type": "phase_change",
                 "timestamp": now,
                 "start_timestamp": now,
                 "end_timestamp": now,
                 "speaker": "Researcher",
-                "text": "Session-start engagement and creative confidence scores",
-                "phase": current_phase,
-                "strategy": "session_start",
-                "source": "manual_evaluation",
-                "elicitation_engagement_score": engagement_score,
-                "creative_confidence_score": confidence_score,
-                "evaluation_moment": "start",
+                "text": f"Phase changed to {new_phase}",
+                "phase": new_phase,
+                "source": "manual_control",
             },
         )
-        session_start_evaluation_recorded = True
 
     def build_robot_result(request):
         mode = (elicitation_mode or "off").strip().lower()
@@ -2282,7 +2777,7 @@ def run_continuous_live_dialog(
                         break
 
                 if next_strategy:
-                    prompt_row = select_first_prompt_for_strategy(prompt_bank, next_strategy, current_phase)
+                    prompt_row = select_counterbalanced_prompt_for_strategy(prompt_bank, next_strategy, current_phase, request)
                     if prompt_row:
                         request["mode_combo"] = dict(request.get("mode_combo", {}))
                         request["mode_combo"]["elicitation"] = next_strategy
@@ -2292,7 +2787,7 @@ def run_continuous_live_dialog(
 
         elif mode != "off":
             strategy = normalize_elicitation(mode)
-            prompt_row = select_first_prompt_for_strategy(prompt_bank, strategy, current_phase)
+            prompt_row = select_counterbalanced_prompt_for_strategy(prompt_bank, strategy, current_phase, request)
             if prompt_row:
                 request["mode_combo"] = dict(request.get("mode_combo", {}))
                 request["mode_combo"]["elicitation"] = strategy
@@ -2308,7 +2803,7 @@ def run_continuous_live_dialog(
         return result
 
     def trigger_robot(triggering_turn, trigger_reason=None, trigger_reasons=None):
-        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result
+        nonlocal sequence_index, robot_turn_index, pending_participant_turns, last_elicitation_result, last_elicitation_phase_reply_index
         if not pending_participant_turns:
             return
 
@@ -2325,15 +2820,9 @@ def run_continuous_live_dialog(
 
         result = build_robot_result(request)
         result_is_elicitation = is_elicitation_result(result)
-        if evaluation_elicitation and result_is_elicitation and last_elicitation_result:
-            score = prompt_previous_elicitation_engagement(
-                last_elicitation_result,
-                input_queue=evaluation_input_queue(),
-                stop_event=stop_event,
-            )
-            attach_previous_elicitation_engagement(result, last_elicitation_result, score)
-            if stop_event.is_set():
-                return
+        score_pending_elicitation_window(force=result_is_elicitation)
+        if stop_event.is_set():
+            return
 
         robot_start_timestamp = timestamp_from_epoch()
 
@@ -2368,60 +2857,34 @@ def run_continuous_live_dialog(
         phase_reply_count[current_phase] += 1
         if result_is_elicitation:
             last_elicitation_result = result
+            last_elicitation_phase_reply_index = phase_reply_count[current_phase]
         pending_participant_turns = []
 
     def record_final_elicitation_evaluation():
-        nonlocal sequence_index, last_elicitation_result, final_evaluation_recorded
+        nonlocal sequence_index, last_elicitation_result, last_elicitation_phase_reply_index, final_evaluation_recorded
         if final_evaluation_recorded or not evaluation_elicitation:
             return
 
-        engagement_score = ""
-        event_phase = current_phase
-        event_strategy = ""
-        event_prompt_id = ""
         if last_elicitation_result:
-            engagement_score = prompt_previous_elicitation_engagement(
-                last_elicitation_result,
-                input_queue=evaluation_input_queue(),
-                stop_event=None,
-            )
-            event_phase = last_elicitation_result.get("phase", current_phase)
-            event_strategy = last_elicitation_result.get("strategy", "")
-            event_prompt_id = last_elicitation_result.get("prompt_id", "")
+            record_pending_elicitation_evaluation()
+            if stop_event.is_set():
+                return
 
-        confidence_score = prompt_creative_confidence(
-            "end",
-            input_queue=evaluation_input_queue(),
-            stop_event=None,
-        )
-        if engagement_score == "" and confidence_score == "":
-            final_evaluation_recorded = True
+        confidence_scores = prompt_individual_creative_confidence("end")
+        if stop_event.is_set():
             return
 
-        now = timestamp_from_epoch()
-        sequence_index += 1
-        append_transcript_event(
-            transcript_log_path,
-            base_payload,
-            {
-                "sequence_index": sequence_index,
-                "robot_turn_index": robot_turn_index,
-                "event_type": "session_end_evaluation",
-                "timestamp": now,
-                "start_timestamp": now,
-                "end_timestamp": now,
-                "speaker": "Researcher",
-                "text": "Session-end engagement and creative confidence scores",
-                "phase": event_phase,
-                "strategy": event_strategy,
-                "prompt_id": event_prompt_id,
-                "source": "manual_evaluation",
-                "elicitation_engagement_score": engagement_score,
-                "creative_confidence_score": confidence_score,
-                "evaluation_moment": "end",
-            },
+        append_evaluation_rows(
+            confidence_scores,
+            event_type="session_end_evaluation",
+            moment="end",
+            phase=current_phase,
+            strategy="session_end",
+            prompt_id="",
+            text_label="Session-end creative confidence scores",
         )
         last_elicitation_result = None
+        last_elicitation_phase_reply_index = None
         final_evaluation_recorded = True
 
     def handle_command(line):
@@ -2444,15 +2907,31 @@ def run_continuous_live_dialog(
             trigger_robot({"timestamp": timestamp_from_epoch()}, trigger_reason="manual")
             return True
 
+        if upper in {"SCORE", "WINDOW", "WINDOW SCORE"}:
+            record_pending_elicitation_evaluation()
+            if stop_event.is_set():
+                return False
+            return True
+
         if upper in {"CHANGE", "SWITCH", "NEXT PHASE"}:
+            record_pending_elicitation_evaluation()
+            if stop_event.is_set():
+                return False
             current_phase = "convergence" if current_phase == "divergence" else "divergence"
             base_payload["phase"] = current_phase
+            record_phase_change(current_phase)
             print(f"--- Switched to phase: {current_phase} ---")
             return True
 
         if upper in {"DIVERGENCE", "CONVERGENCE"}:
-            current_phase = upper.lower()
-            base_payload["phase"] = current_phase
+            selected_phase = upper.lower()
+            if current_phase != selected_phase:
+                record_pending_elicitation_evaluation()
+                if stop_event.is_set():
+                    return False
+                current_phase = selected_phase
+                base_payload["phase"] = current_phase
+                record_phase_change(current_phase)
             print(f"--- Phase set to: {current_phase} ---")
             return True
 
@@ -2492,8 +2971,8 @@ def run_continuous_live_dialog(
                 return True
 
             if command == "elicitation":
-                if selected not in {"off", "scheduled", "perspective_shift", "constraint_reframing", "generative", "elaboration_evidence"}:
-                    print("Elicitation must be off, scheduled, perspective_shift, generative, constraint_reframing, or elaboration_evidence.")
+                if selected not in {"off", "scheduled", "perspective_shift", "generative", "elaboration_evidence"}:
+                    print("Elicitation must be off, scheduled, perspective_shift, generative, or elaboration_evidence.")
                     return True
                 elicitation_mode = selected
                 print(f"--- Elicitation switched to: {selected} ---")
@@ -2598,6 +3077,20 @@ def run_continuous_live_dialog(
                 )
                 continue
 
+            if event_type == "nonverbal":
+                sequence_index += 1
+                print(
+                    f"[{event.get('end_timestamp', '')} {event.get('speaker', 'Participant')}] "
+                    f"{event.get('nonverbal_event', 'nonverbal')} ({event.get('nonverbal_source', 'audio')})"
+                )
+                append_nonverbal_transcript_event(
+                    transcript_log_path,
+                    base_payload,
+                    event,
+                    sequence_index=sequence_index,
+                )
+                continue
+
             if event_type in {"warning", "error"}:
                 message = event.get("message", "")
                 print(f"[Audio {event_type}] {message}")
@@ -2633,6 +3126,7 @@ def build_continuous_audio_transcriber_from_args(args, participant_channel_map):
     return ContinuousAudioTranscriber(
         api_key=args.deepgram_api_key,
         endpoint=args.deepgram_endpoint,
+        model=args.deepgram_model,
         input_mode=args.audio_input_mode,
         audio_device=args.audio_device,
         samplerate=args.audio_samplerate,
@@ -2645,6 +3139,12 @@ def build_continuous_audio_transcriber_from_args(args, participant_channel_map):
         vad_max_segment_seconds=args.vad_max_segment_seconds,
         blocksize=args.audio_blocksize,
         transcribe_workers=args.deepgram_workers,
+        deepgram_filler_words=args.deepgram_filler_words,
+        deepgram_punctuate=args.deepgram_punctuate,
+        deepgram_smart_format=args.deepgram_smart_format,
+        nonverbal_event_logging=args.nonverbal_event_logging,
+        nonverbal_rms_threshold=args.nonverbal_rms_threshold,
+        impact_rms_threshold=args.impact_rms_threshold,
     )
 
 
@@ -2730,19 +3230,21 @@ def prompt_1_100_score(prompt, input_queue=None, stop_event=None):
             print("Please enter a number from 1 to 100, or press Enter to skip.")
 
 
-def prompt_start_elicitation_engagement(input_queue=None, stop_event=None):
-    prompt = "[Evaluation] Engagement at start of conversation before first elicitation strategy, 1-100; Enter/skip to omit: "
+def prompt_start_elicitation_engagement(participant_label="", input_queue=None, stop_event=None):
+    participant_prefix = f"{participant_label} " if participant_label else ""
+    prompt = f"[Evaluation] {participant_prefix}engagement at start of conversation before first elicitation strategy, 1-100; Enter/skip to omit: "
     return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
 
 
-def prompt_creative_confidence(moment, input_queue=None, stop_event=None):
+def prompt_creative_confidence(moment, participant_label="", input_queue=None, stop_event=None):
     moment_label = (moment or "").strip().lower()
+    participant_prefix = f"{participant_label}: " if participant_label else ""
     suffix = f" ({moment_label}, 1-100; Enter/skip to omit): " if moment_label else " (1-100; Enter/skip to omit): "
-    prompt = f"[Evaluation] How confident are you in your creative abilities?{suffix}"
+    prompt = f"[Evaluation] {participant_prefix}How confident are you in your creative abilities?{suffix}"
     return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
 
 
-def prompt_previous_elicitation_engagement(previous_result, input_queue=None, stop_event=None):
+def prompt_previous_elicitation_engagement(previous_result, participant_label="", input_queue=None, stop_event=None):
     if not previous_result:
         print("[Evaluation] First elicitation prompt; the first completed window can be scored at the next elicitation prompt.")
         return ""
@@ -2751,7 +3253,8 @@ def prompt_previous_elicitation_engagement(previous_result, input_queue=None, st
         f"{previous_result.get('phase', '')}/{previous_result.get('strategy', '')} "
         f"{previous_result.get('prompt_id', '')}"
     ).strip()
-    prompt = f"[Evaluation] Engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
+    participant_prefix = f"{participant_label} " if participant_label else ""
+    prompt = f"[Evaluation] {participant_prefix}engagement for previous elicitation window ({label}), 1-100; Enter/skip to omit: "
     return prompt_1_100_score(prompt, input_queue=input_queue, stop_event=stop_event)
 
 
@@ -2795,6 +3298,7 @@ def print_live_control_summary(payload, elicitation_mode, intervention_every, ke
     if keyboard_controls:
         print(
             "Optional typed controls while mics run: ROBOT, CHANGE, DIVERGENCE, CONVERGENCE, "
+            "SCORE/WINDOW, "
             "ELICITATION off|scheduled|perspective_shift|generative|elaboration_evidence, "
             "STYLE off|passive|assertive|supportive, INITIATIVE off|reactive|proactive, "
             "ROLE off|facilitator|solutionist, GROUP G01, THEME T1, exit."
@@ -2819,6 +3323,9 @@ def build_live_payload(args):
         "transcript_log_path": args.transcript_log_path,
         "audio_input_mode": args.audio_input_mode if args.deepgram_live else "",
         "audio_device": args.audio_device or "",
+        "participant_1_name": args.participant_1_name,
+        "participant_2_name": args.participant_2_name,
+        "evaluation_participants": [args.participant_1_name, args.participant_2_name],
         "mode_combo": {
             "elicitation": "perspective_shift",
             "style": args.style_mode,
@@ -2841,7 +3348,6 @@ def build_live_payload(args):
 def main():
     parser = argparse.ArgumentParser(description="Minimal LM Studio bridge for scripted elicitation prompts")
     parser.add_argument("--request", help="Path to a one-turn JSON request")
-    parser.add_argument("--simulate", help="Path to a multi-turn session JSON file")
     parser.add_argument("--intervene", action="store_true", help="Manual intervention mode with counterbalancing schedule")
     parser.add_argument("--live", action="store_true", help="Live conversation mode (console or Pepper I/O)")
     parser.add_argument("--initiative", choices=["off", "reactive", "proactive"], help="Initiative mode for live/intervene (off|reactive|proactive)")
@@ -2851,7 +3357,7 @@ def main():
     parser.add_argument("--phase", choices=["divergence", "convergence"], default="divergence", help="Starting phase")
     parser.add_argument(
         "--elicitation-mode",
-        choices=["off", "scheduled", "perspective_shift", "constraint_reframing", "generative", "elaboration_evidence"],
+        choices=["off", "scheduled", "perspective_shift", "generative", "elaboration_evidence"],
         default="scheduled",
         help="Live robot strategy mode: off, scheduled counterbalancing, or a fixed elicitation strategy.",
     )
@@ -2861,10 +3367,10 @@ def main():
         "--evaluation-elicitation",
         action="store_true",
         dest="evaluation_elicitation",
-        help="In live scheduled/fixed elicitation mode, ask the researcher for 1-100 start/end evaluation scores, including engagement and creative-confidence ratings.",
+        help="In live scheduled/fixed elicitation mode, ask for Participant 1 and Participant 2 1-100 engagement and creative-confidence ratings.",
     )
-    parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="assertive", help="Robot style guidance")
-    parser.add_argument("--role-mode", choices=["off", "facilitator", "solutionist"], default="facilitator", help="Robot role guidance")
+    parser.add_argument("--style-mode", choices=["off", "passive", "assertive", "supportive"], default="supportive", help="Robot style guidance")
+    parser.add_argument("--role-mode", choices=["off", "facilitator", "solutionist"], default="off", help="Robot role guidance")
     parser.add_argument("--proactive-silence-threshold", type=float, default=PROACTIVE_SILENCE_THRESHOLD, help="Seconds of silence before proactive robot intervention")
     parser.add_argument("--no-live-keyboard-controls", action="store_true", help="Disable optional typed live controls while microphones run")
     parser.add_argument("--pepper", action="store_true", help="Use Pepper NAOqi I/O in live mode")
@@ -2880,7 +3386,11 @@ def main():
     parser.add_argument("--deepgram-audio", help="Path to an audio file for Deepgram transcription")
     parser.add_argument("--deepgram-live", action="store_true", help="Use microphone + Deepgram for live participant speech recognition")
     parser.add_argument("--deepgram-record-seconds", type=float, default=20.0, help="Maximum seconds to record from the microphone for each live speech turn")
-    parser.add_argument("--deepgram-endpoint", default="https://api.eu.deepgram.com/v1/listen", help="Deepgram STT endpoint URL")
+    parser.add_argument("--deepgram-endpoint", default=DEFAULT_DEEPGRAM_ENDPOINT, help="Deepgram STT endpoint URL")
+    parser.add_argument("--deepgram-model", default=DEFAULT_DEEPGRAM_MODEL, help="Deepgram speech-to-text model")
+    parser.add_argument("--deepgram-filler-words", action=argparse.BooleanOptionalAction, default=True, help="Request Deepgram filler/backchannel words such as um, uh, and mhm")
+    parser.add_argument("--deepgram-punctuate", action=argparse.BooleanOptionalAction, default=False, help="Request punctuation from Deepgram")
+    parser.add_argument("--deepgram-smart-format", action=argparse.BooleanOptionalAction, default=False, help="Request Deepgram smart formatting")
     parser.add_argument("--transcript-log-path", default=DEFAULT_TRANSCRIPT_LOG_PATH, help="CSV transcript log path for live microphone runs")
     parser.add_argument("--list-audio-devices", action="store_true", help="List available microphone/input devices and exit")
     parser.add_argument(
@@ -2911,14 +3421,17 @@ def main():
     parser.add_argument("--vad-max-segment-seconds", type=float, default=18.0, help="Continuous mode maximum segment length before forcing transcription")
     parser.add_argument("--audio-blocksize", type=int, default=1024, help="Continuous mode sounddevice block size")
     parser.add_argument("--deepgram-workers", type=int, default=2, help="Number of background Deepgram transcription workers")
+    parser.add_argument("--nonverbal-event-logging", action=argparse.BooleanOptionalAction, default=True, help="Log acoustic nonverbal observations such as laughter-like vocalizations, coughs, and impact noises")
+    parser.add_argument("--nonverbal-rms-threshold", type=float, default=650.0, help="RMS threshold for empty Deepgram segments to be logged as nonverbal/acoustic events")
+    parser.add_argument("--impact-rms-threshold", type=float, default=6000.0, help="RMS threshold for short high-energy impact noise events")
     args = parser.parse_args()
 
     if args.list_audio_devices:
         print_audio_devices()
         return
 
-    if not any([args.request, args.simulate, args.intervene, args.live, args.deepgram_audio, args.deepgram_live]):
-        parser.error("Choose --request, --simulate, --intervene, --live, --deepgram-audio, or --deepgram-live")
+    if not any([args.request, args.intervene, args.live, args.deepgram_audio, args.deepgram_live]):
+        parser.error("Choose --request, --intervene, --live, --deepgram-audio, or --deepgram-live")
 
     if args.deepgram_live and not (args.live or args.intervene):
         parser.error("--deepgram-live requires --live or --intervene")
@@ -2934,6 +3447,10 @@ def main():
             audio_path=args.deepgram_audio,
             api_key=args.deepgram_api_key,
             endpoint=args.deepgram_endpoint,
+            model=args.deepgram_model,
+            filler_words=args.deepgram_filler_words,
+            punctuate=args.deepgram_punctuate,
+            smart_format=args.deepgram_smart_format,
         )
         print(f"[Deepgram] Recognized speech: {transcript}")
 
@@ -2953,7 +3470,7 @@ def main():
                     "elicitation": "perspective_shift",
                     "style": MODE_DEFAULTS["style"],
                     "initiative": "reactive",
-                    "role": "facilitator",
+                    "role": MODE_DEFAULTS["role"],
                 },
                 "seed_ideas": [],
                 "conversation_history": [],
@@ -2974,11 +3491,6 @@ def main():
         payload = load_json(pathlib.Path(args.request))
         result = process(payload)
         print(json.dumps(result, ensure_ascii=True))
-        return
-
-    if args.simulate:
-        session_payload = load_json(pathlib.Path(args.simulate))
-        run_session(session_payload)
         return
 
     if args.live:
@@ -3019,12 +3531,16 @@ def main():
                 receive_fn = build_deepgram_live_receiver(
                     api_key=args.deepgram_api_key,
                     endpoint=args.deepgram_endpoint,
+                    model=args.deepgram_model,
                     record_seconds=args.deepgram_record_seconds,
                     input_mode=args.audio_input_mode,
                     audio_device=args.audio_device,
                     samplerate=args.audio_samplerate,
                     silence_rms=args.audio_silence_rms,
                     participant_channel_map=participant_channel_map,
+                    filler_words=args.deepgram_filler_words,
+                    punctuate=args.deepgram_punctuate,
+                    smart_format=args.deepgram_smart_format,
                 )
 
             run_live_dialog(payload, receive_fn, send_fn)
@@ -3067,7 +3583,7 @@ def main():
                 "elicitation": "perspective_shift",
                 "style": args.style_mode,
                 "initiative": chosen_initiative,
-                "role": "facilitator",
+                "role": args.role_mode,
             },
             "seed_ideas": [],
             "conversation_history": [],
@@ -3234,7 +3750,7 @@ def main():
                         break
 
                 if next_strategy:
-                    prompt_row = select_first_prompt_for_strategy(prompt_bank, next_strategy, current_phase)
+                    prompt_row = select_counterbalanced_prompt_for_strategy(prompt_bank, next_strategy, current_phase, payload)
                     if prompt_row:
                         payload["mode_combo"] = dict(payload.get("mode_combo", {}))
                         payload["mode_combo"]["elicitation"] = next_strategy
@@ -3332,6 +3848,22 @@ def main():
                 print(
                     f"[{event.get('end_timestamp', '')} {event.get('speaker', 'Participant')}] "
                     "No speech recognized."
+                )
+                return
+
+            if event_type == "nonverbal":
+                payload["phase"] = current_phase
+                sequence_index += 1
+                print(
+                    f"[{event.get('end_timestamp', '')} {event.get('speaker', 'Participant')}] "
+                    f"{event.get('nonverbal_event', 'nonverbal')} ({event.get('nonverbal_source', 'audio')})"
+                )
+                append_nonverbal_transcript_event(
+                    transcript_log_path,
+                    payload,
+                    event,
+                    sequence_index=sequence_index,
+                    robot_turn_index="",
                 )
                 return
 

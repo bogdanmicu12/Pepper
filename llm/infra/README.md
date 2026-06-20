@@ -1,111 +1,54 @@
-# Minimal run/test guide
+# Live Bridge
 
-## Run right now
+`lmstudio_minimal_bridge.py` runs the live Pepper elicitation workflow.
 
-From workspace root:
+## Requirements
 
-```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --request infra/test_request.json
-```
+- Python 3 with `httpx`, `sounddevice`, `numpy`, `pandas`, and `Pillow`
+  available where needed.
+- LM Studio running an OpenAI-compatible chat endpoint at
+  `http://127.0.0.1:1234/v1/chat/completions`.
+- `DEEPGRAM_API_KEY` set in the shell for microphone transcription.
+- Optional: Pepper reachable over NAOqi, or Python 2.7 available for
+  `pepper/tts.py`.
 
-List audio input devices:
+## Commands
 
-```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --list-audio-devices
-```
-
-Run continuous Focusrite speech input:
-
-```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1
-```
-
-In continuous Focusrite mode:
-
-- Input 1 is `Participant 1`.
-- Input 2 is `Participant 2`.
-- The microphones stay live and speech is segmented automatically.
-- Live mode supports experiment controls: `--elicitation-mode off|scheduled|perspective_shift|generative|elaboration_evidence`, `--style-mode off|passive|assertive|supportive`, `--initiative off|reactive|proactive`, `--role-mode off|facilitator|solutionist`, `--group-id`, `--theme-id`, and `--phase`.
-- In reactive mode, saying `Pepper` or the common transcript misrecognition `Paper` triggers the same robot intervention as the console `ROBOT` command.
-- In proactive mode, the robot triggers after `--proactive-silence-threshold` seconds of silence.
-- Full event transcripts are written to `logs/transcript.csv`.
-- Add `--evaluation_elicitation` to prompt the researcher for 1-100 evaluation
-  scores. It asks for start engagement before the first elicitation strategy,
-  asks "How confident are you in your creative abilities?" at the start and end,
-  and still logs mid-session engagement scores for the previous elicitation
-  window. When you type `exit`, the console asks once more for the final open
-  elicitation window.
-- The Deepgram API key is configured as the script default and can still be overridden with `--deepgram-api-key`.
-
-Example elicitation strategies: python llm/infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --phase divergence --elicitation-mode scheduled --intervention-every 4
-
-Expected result:
-
-- `"source": "lmstudio"` when the model replies before timeout.
-- `"source": "fallback"` if generation is slow or fails.
-- `"fallback_reason"` explains exactly why fallback happened.
-
-Run scripted two-person simulation:
+List audio devices:
 
 ```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --simulate infra/test_scenario_X.json
+python llm\infra\lmstudio_minimal_bridge.py --list-audio-devices
 ```
 
-Run experiment-controlled intervention mode:
+Run the live scheduled experiment:
 
 ```powershell
-C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --intervene
+python llm\infra\lmstudio_minimal_bridge.py `
+  --live --deepgram-live --pepper `
+  --group-id G01 --theme-id T1 `
+  --phase divergence `
+  --elicitation-mode scheduled `
+  --intervention-every 4 `
+  --evaluation_elicitation
 ```
 
-Type participant lines one by one. Type `exit` to stop.
+Use a fixed elicitation strategy:
 
-In `--intervene` mode:
-
-- You type `group_id` and `theme_id` at start.
-- If `theme_id` is recognized (T1 or T2 from design/themes.json), theme text is loaded automatically.
-- If `theme_id` is not recognized, you are prompted for theme text.
-- Participants can speak uninterrupted for any number of turns.
-- The robot only replies when you type `ROBOT`.
-- Type `CHANGE` to switch divergence/convergence phase.
-- Every 4th robot reply (within the current phase), the robot uses the next unused strategy from `design/counterbalancing_elicitation.csv`.
-- Non-4th replies are context-only (no prompt-bank shaping).
-- After all 3 phase strategies are used, remaining replies stay context-only until phase changes.
-
-## If you still see fallback
-
-Check `fallback_reason` in the JSON output.
-
-- `TimeoutError`: increase `timeout_seconds` in the request/session file.
-- `Unusable LM Studio reply`: the model returned reasoning text instead of a facilitator line.
-
-For `google/gemma-3-1b-it`, this can happen if reasoning/thinking is enabled in LM Studio.
-Disable thinking/reasoning mode in the LM Studio model settings, then run the same command again.
-
-## LM Studio settings
-
-- Endpoint: `http://127.0.0.1:1234/v1/chat/completions`
-- Model: `google/gemma-3-1b-it`
-- Temperature: `0.30-0.40`
-- Timeout in request/session files: start with `30.0`, then lower until acceptable latency/fallback tradeoff.
-
-## Logging format
-
-The bridge writes `logs/logs.csv` in readable blocks instead of one compact CSV row.
-
-Each conversation starts with:
-
-```text
-session_id,group_id,conversation_id
+```powershell
+python llm\infra\lmstudio_minimal_bridge.py `
+  --live --deepgram-live --pepper `
+  --elicitation-mode perspective_shift
 ```
 
-Each turn is stored as three lines:
+Transcribe one audio file and send it to LM Studio:
 
-```text
-timestamp,phase,strategy,prompt_id,,prompt_text
-participant_message_timestamp,participant_message
-robot_reply_timestamp,robot_reply
+```powershell
+python llm\infra\lmstudio_minimal_bridge.py `
+  --deepgram-audio path\to\audio.wav `
+  --deepgram-api-key your_key_here
 ```
 
-Blank lines separate turns and conversations.
+## Logging
 
-Continuous microphone runs also write `logs/transcript.csv`, with one row per participant utterance, robot reply, warning, or error. It includes session/group/conversation IDs, speaker, text, start/end timestamps, Focusrite channel metadata, trigger status, prompt/model metadata, and fallback reasons.
+`logs/transcript.csv` is the structured transcript used by analysis.
+`logs/logs.csv` is a readable block log for inspection.

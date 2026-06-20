@@ -44,8 +44,36 @@ except ImportError:
 		"NAOQI_PYTHONPATH to the SDK lib directory before running this helper."
 	)
 
+DEFAULT_VOICE_CANDIDATES = ("naoenu", "naoeng")
 
-def set_vocal_params(tts, speed=100, volume=0.7, pitch=1.0):
+
+def set_preferred_voice(tts, voice=None):
+	candidates = []
+	if voice:
+		candidates.append(str(voice))
+	candidates.extend(DEFAULT_VOICE_CANDIDATES)
+
+	try:
+		available = tts.getAvailableVoices()
+	except Exception:
+		available = []
+
+	available_by_lower = {}
+	for item in available:
+		available_by_lower[str(item).lower()] = item
+
+	for candidate in candidates:
+		selected = available_by_lower.get(str(candidate).lower())
+		if selected:
+			try:
+				tts.setVoice(selected)
+			except Exception:
+				pass
+			return
+
+
+def set_vocal_params(tts, speed=100, volume=0.7, pitch=1.0, voice=None):
+	set_preferred_voice(tts, voice=voice)
 	try:
 		speed_value = float(speed)
 		if speed_value <= 2.0:
@@ -74,13 +102,14 @@ def main():
 	parser.add_argument("--ip", default="192.168.1.35", help="Pepper robot IP")
 	parser.add_argument("--port", type=int, default=9559, help="Pepper NAOqi port")
 	parser.add_argument("--say", default="Hello, world!", help="Text to speak")
-	parser.add_argument("--speed", type=float, default=82.0, help="Speech speed percentage; 100 is Pepper default")
-	parser.add_argument("--volume", type=float, default=0.58, help="Speech volume from 0.0 to 1.0")
-	parser.add_argument("--pitch", type=float, default=0.97, help="Best-effort pitch level")
+	parser.add_argument("--speed", type=float, default=102.0, help="Speech speed percentage; 100 is Pepper default")
+	parser.add_argument("--volume", type=float, default=0.74, help="Speech volume from 0.0 to 1.0")
+	parser.add_argument("--pitch", type=float, default=1.02, help="Best-effort pitch level")
+	parser.add_argument("--voice", default="naoenu", help="Preferred installed Pepper voice name")
 	args = parser.parse_args()
 
 	tts = ALProxy("ALTextToSpeech", args.ip, args.port)
-	set_vocal_params(tts, speed=args.speed, volume=args.volume, pitch=args.pitch)
+	set_vocal_params(tts, speed=args.speed, volume=args.volume, pitch=args.pitch, voice=args.voice)
 	tts.say(args.say)
 
 

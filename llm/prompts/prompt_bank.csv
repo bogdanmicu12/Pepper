@@ -1,12 +1,12 @@
 prompt_id,strategy,phase,literature_basis,text
-P-D-01,perspective_shift,divergence,Galinsky & Moskowitz 2000,Imagine a day in the life of [target] as if you were that person, looking at the world through [their] eyes and walking through the world in [their] shoes.
-P-D-02,perspective_shift,divergence,Davis et al. 1996,Imagine how [target] feels.
-P-D-03,perspective_shift,divergence,Davis et al. 1996,Try to take [target]'s perspective.
-P-D-04,perspective_shift,divergence,Batson et al. 1997 / 2003,Imagine how [target] is feeling in that situation.
-P-C-01,perspective_shift,convergence,Batson et al. 1997 / 2003,Imagine how you would feel in [target]'s situation.
-P-C-02,perspective_shift,convergence,Davis et al. 1996,Try to take [target]'s perspective.
-P-C-03,perspective_shift,convergence,Batson et al. 1997 / 2003,Imagine how [target] is feeling in that situation.
-P-C-04,perspective_shift,convergence,Arriaga & Rusbult 1998,Visualize the incident from [target]'s point of view, and ask yourself why does [target] feel this way?
+P-D-01,perspective_shift,divergence,Hoever et al. 2012,Try to take [target]'s perspective as much as possible: what might [target] be noticing that we have not considered yet?
+P-D-02,perspective_shift,divergence,Hoever et al. 2012,View the situation from [target]'s position: what new idea becomes visible from there?
+P-D-03,perspective_shift,divergence,Hoever et al. 2012,Try to understand how [target] views this situation: what concern or opportunity might shape [target]'s view?
+P-D-04,perspective_shift,divergence,Hoever et al. 2012,Ask what is important to [target] then suggest one idea that could respond to that priority.
+P-C-01,perspective_shift,convergence,Hoever et al. 2012,As you narrow the options try to take [target]'s perspective: which option would still make sense from [target]'s point of view?
+P-C-02,perspective_shift,convergence,Hoever et al. 2012,View the leading option from [target]'s position: what would [target] see as its main strength or weakness?
+P-C-03,perspective_shift,convergence,Hoever et al. 2012,Try to understand how [target] views this choice: what concern should be discussed before deciding?
+P-C-04,perspective_shift,convergence,Hoever et al. 2012,Ask what is important to [target] then adjust the option so it better integrates that priority.
 P-D-05,generative,divergence,Chin 2007,What else?
 P-D-06,generative,divergence,Chin 2007,How is [target] going to solve the problem?
 P-D-07,generative,divergence,Chin 2007,In order to find [goal], what must we do?
