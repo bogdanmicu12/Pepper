@@ -2901,7 +2901,7 @@ def main():
     parser.add_argument("--proactive-silence-threshold", type=float, default=PROACTIVE_SILENCE_THRESHOLD, help="Seconds of silence before proactive robot intervention")
     parser.add_argument("--no-live-keyboard-controls", action="store_true", help="Disable optional typed live controls while microphones run")
     parser.add_argument("--pepper", action="store_true", help="Use Pepper NAOqi I/O in live mode")
-    parser.add_argument("--pepper-ip", default="192.168.1.108", help="Pepper robot IP")
+    parser.add_argument("--pepper-ip", default="169.254.159.32", help="Pepper robot IP")
     parser.add_argument("--pepper-port", type=int, default=9559, help="Pepper NAOqi port")
     parser.add_argument("--pepper-language", default="English", help="Pepper ASR language")
     parser.add_argument("--pepper-vocabulary", help="Comma-separated vocabulary for Pepper ASR")
