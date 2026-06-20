@@ -8,6 +8,37 @@ From workspace root:
 C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --request infra/test_request.json
 ```
 
+List audio input devices:
+
+```powershell
+C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --list-audio-devices
+```
+
+Run continuous Focusrite speech input:
+
+```powershell
+C:/Users/bogda/AppData/Local/Programs/Python/Python313/python.exe infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1
+```
+
+In continuous Focusrite mode:
+
+- Input 1 is `Participant 1`.
+- Input 2 is `Participant 2`.
+- The microphones stay live and speech is segmented automatically.
+- Live mode supports experiment controls: `--elicitation-mode off|scheduled|perspective_shift|generative|elaboration_evidence`, `--style-mode off|passive|assertive|supportive`, `--initiative off|reactive|proactive`, `--role-mode off|facilitator|solutionist`, `--group-id`, `--theme-id`, and `--phase`.
+- In reactive mode, saying `Pepper` or the common transcript misrecognition `Paper` triggers the same robot intervention as the console `ROBOT` command.
+- In proactive mode, the robot triggers after `--proactive-silence-threshold` seconds of silence.
+- Full event transcripts are written to `logs/transcript.csv`.
+- Add `--evaluation_elicitation` to prompt the researcher for 1-100 evaluation
+  scores. It asks for start engagement before the first elicitation strategy,
+  asks "How confident are you in your creative abilities?" at the start and end,
+  and still logs mid-session engagement scores for the previous elicitation
+  window. When you type `exit`, the console asks once more for the final open
+  elicitation window.
+- The Deepgram API key is configured as the script default and can still be overridden with `--deepgram-api-key`.
+
+Example elicitation strategies: python llm/infra/lmstudio_minimal_bridge.py --live --deepgram-live --pepper --group-id G01 --theme-id T1 --phase divergence --elicitation-mode scheduled --intervention-every 4
+
 Expected result:
 
 - `"source": "lmstudio"` when the model replies before timeout.
@@ -47,13 +78,13 @@ Check `fallback_reason` in the JSON output.
 - `TimeoutError`: increase `timeout_seconds` in the request/session file.
 - `Unusable LM Studio reply`: the model returned reasoning text instead of a facilitator line.
 
-For `google/gemma-4-e4b`, this can happen if reasoning/thinking is enabled in LM Studio.
+For `google/gemma-3-1b-it`, this can happen if reasoning/thinking is enabled in LM Studio.
 Disable thinking/reasoning mode in the LM Studio model settings, then run the same command again.
 
 ## LM Studio settings
 
 - Endpoint: `http://127.0.0.1:1234/v1/chat/completions`
-- Model: `google/gemma-4-e4b`
+- Model: `google/gemma-3-1b-it`
 - Temperature: `0.30-0.40`
 - Timeout in request/session files: start with `30.0`, then lower until acceptable latency/fallback tradeoff.
 
@@ -76,3 +107,5 @@ robot_reply_timestamp,robot_reply
 ```
 
 Blank lines separate turns and conversations.
+
+Continuous microphone runs also write `logs/transcript.csv`, with one row per participant utterance, robot reply, warning, or error. It includes session/group/conversation IDs, speaker, text, start/end timestamps, Focusrite channel metadata, trigger status, prompt/model metadata, and fallback reasons.
